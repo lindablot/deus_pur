@@ -33,7 +33,7 @@ def fisher_matrix(powertype = "power", galaxy = 0, list_par = [0,2,3,4], mainpat
             biased_cov=power_pcov
 
             if (galaxy==1):
-                bias=galaxy_bias(ioutput)
+                bias=galaxy_bias(power_k,ioutput)
                 ng=galaxy_density(ioutput)
                 for ik in range(0,power_k.size):
                     for jk in range(0,power_k.size):
@@ -81,3 +81,11 @@ def fisher_matrix(powertype = "power", galaxy = 0, list_par = [0,2,3,4], mainpat
                         fisher[ia][ib]+=deralpha[ik]*derbeta[jk]*inv_cov[ik][jk]
 
     return fisher
+
+
+def galaxy_bias(power_k=np.zeros(0), noutput=1):
+    bias=np.zeros(power_k.size)
+    for ik in range(0,power_k.size):
+        bias[ik]=1.5
+
+    return bias
