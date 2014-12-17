@@ -46,32 +46,6 @@ def file_path(filetype = "", mainpath = "", simset = "", nsim = 1, noutput = 1, 
 
 
 
-# -------------------------------- FILE PATH --------------------------------- #
-def sim_iterator(simset = "", isim = 1):
-    if(simset=="all_256"):
-        if (isim<4097):
-            true_set = "4096_furphase_256"
-            true_isim = isim
-        elif (isim<8193):
-            true_set = "4096_adaphase_256"
-            true_isim = isim - 4096
-        else:
-            true_set = "4096_otherphase_256"
-            true_isim = isim - 8192
-    elif(simset=="all_1024"):
-        if (isim<65):
-            true_set = "64_adaphase_1024"
-            true_isim = isim
-        else:
-            true_set = "64_curiephase_1024"
-            true_isim = isim - 64
-    else:
-        true_set = simset
-        true_isim = isim
-    return true_set, true_isim
-# ---------------------------------------------------------------------------- #
-
-
 # -------------------------------- READ DATA --------------------------------- #
 def read_data(mainpath = "", power_k = np.zeros(0), power_p = np.zeros(0), growth_a = np.zeros(0), growth_dplus = np.zeros(0), evolution_a = np.zeros(0), evolution_hh0 = np.zeros(0), evolution_tproperh0 = np.zeros(0)):
     power_k, power_p = np.loadtxt(mainpath+"/data/pk_lcdmw7.dat", unpack=True)

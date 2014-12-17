@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# power_types.py - Vincent Reverdy (vince.rev@gmail.com) - 2013
+# power_types.py - Vincent Reverdy (vince.rev@gmail.com) and Linda Blot (linda.blot@obspm.fr) - 2013
 # ---------------------------------- IMPORT ---------------------------------- #
 import math
 import glob
@@ -7,25 +7,13 @@ import os
 import sys
 import numpy as np
 from read_files import *
+from utilities import *
 import scipy.interpolate as itl
 # ---------------------------------------------------------------------------- #
 
 
-# ------------------------------- EXTRAPOLATE -------------------------------- #
-def extrapolate(value_x, array_x, array_y):
-    value_y = 0.
-    if (value_x < array_x[0]):
-        value_y = array_y[0]+(value_x-array_x[0])*(array_y[0]-array_y[1])/(array_x[0]-array_x[1])
-    elif (value_x > array_x[-1]):
-        value_y = array_y[-1]+(value_x-array_x[-1])*(array_y[-1]-array_y[-2])/(array_x[-1]-array_x[-2])
-    else:
-        value_y = np.interp(value_x, array_x, array_y)
-    return value_y
-# ---------------------------------------------------------------------------- #
 
-
-
-# --------------------------- RENORMALIZED POWER ----------------------------- #
+# --------------------------- RENORMALIZED POWER SPECTRUM ----------------------------- #
 def renormalized_power(mainpath = "", simset = "", nsim = 1, noutput = 1, growth_a = np.zeros(0), growth_dplus = np.zeros(0)):
     power_k, power_p_ini, dummy = read_power(file_path("power", mainpath, simset, nsim, 1))
     power_k, power_p_end, dummy = read_power(file_path("power", mainpath, simset, nsim, noutput))
@@ -39,7 +27,7 @@ def renormalized_power(mainpath = "", simset = "", nsim = 1, noutput = 1, growth
 
 
 
-# ----------------------------- CORRECTED POWER ------------------------------ #
+# ----------------------------- POWER SPECTRUM CORRECTED FOR a DIFFERENCES ------------------------------ #
 def corrected_power(mainpath = "", simset = "", aexp = 0., nsim = 1, noutput = 1, growth_a = np.zeros(0), growth_dplus = np.zeros(0)):
     power_k, power_p_raw, dummy = read_power(file_path("power", mainpath, simset, nsim, noutput))
     if (aexp != 0.):
@@ -54,7 +42,7 @@ def corrected_power(mainpath = "", simset = "", aexp = 0., nsim = 1, noutput = 1
 
 
 
-# ----------------------------- NYQUIST CUT POWER ------------------------------ #
+# ----------------------------- POWER SPECTRUM CUT AT NYQUIST FREQUENCY ------------------------------ #
 def nyquist_power(mainpath = "", simset = "", nsim = 1, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0)):
     pi = math.pi
     power_k, power_p = corrected_power(mainpath,simset,aexp,nsim,noutput,growth_a,growth_dplus)
@@ -82,7 +70,7 @@ def nyquist_power(mainpath = "", simset = "", nsim = 1, noutput = 1, aexp = 0., 
 
 
 
-#------------------------------- REBIN Y(k) WITH Dk/k FIXED ------------------ #
+#------------------------------- POWER SPECTRUM COMPUTED BY PkANN ------------------ #
 def pkann_power(ipar = 0, dpar = 0.05, fact = 1, powertype = "power", ioutput = 1, mainpath = "", aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0)):
     
     par=np.array([0.2573*0.5184,0.04356*0.5184,0.963,-1.,0.801,0.]) #omega_m h^2, omega_b h^2, n_s, w, sigma_8, m_nu
@@ -126,54 +114,3 @@ def pkann_power(ipar = 0, dpar = 0.05, fact = 1, powertype = "power", ioutput = 
     return power_k, power_pkann
 # ---------------------------------------------------------------------------- #
 
-
-
-#------------------------------- REBIN Y(k) WITH Dk/k FIXED ------------------ #
-def rebin(k= np.zeros(0),y= np.zeros(0),lim=0.1):
-    delta_k = np.zeros(k.size)
-    for i in range(0,k.size-1):
-        delta_k[i] = k[i+1]-k[i]
-    delta_k[delta_k.size-1]=delta_k[delta_k.size-2]
-    
-    interval=0.
-    j=0
-    count=0
-    new_y=np.zeros(k.size)
-    new_k=np.zeros(k.size)
-
-    for i in range(0,k.size):
-        interval+=delta_k[i]
-        new_y[j]+=y[i]
-        new_k[j]=k[i]-interval/2.
-        count+=1
-        if (interval/new_k[j]>=lim):
-            new_y[j]/=float(count)
-            count=0
-            interval=0.
-            j+=1
-            max_i = i
-        
-    rebin_y = new_y[0:j]
-    rebin_k = new_k[0:j]
-
-    error=np.zeros(y.size)
-    interval=0
-    count=0
-    j=0
-    for i in range(0,max_i+1):
-        interval+=delta_k[i]
-        nw_k=k[i]-interval/2.
-        error[j]=(y[i]-rebin_y[j])*(y[i]-rebin_y[j])
-        count+=1
-        if (interval/nw_k>=lim):
-            if (count==1):
-                error[j]=0.
-            else:
-                error[j]/=float(count-1)
-            j+=1
-            count=0
-            interval=0
-    error=np.sqrt(error)
-    rebin_e = error[0:j]
-
-    return rebin_k,rebin_y,rebin_e
