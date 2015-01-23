@@ -86,7 +86,7 @@ def mean_power_all(powertype = "power", mainpath = "", noutput = 1, aexp = 0., g
                 current_file = file_path("power", mainpath, true_simset, true_isim, noutput)
                 print current_file
             dummy, power_p = power_spectrum(powertype,mainpath,true_simset,true_isim,noutput,aexp,growth_a,growth_dplus,okprint)
-                power_psigma += (power_p-power_pmean)*(power_p-power_pmean)
+            power_psigma += (power_p-power_pmean)*(power_p-power_pmean)
         power_psigma /= float(nsim-1)
         power_psigma = np.sqrt(power_psigma)
 
