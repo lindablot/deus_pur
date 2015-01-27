@@ -513,7 +513,7 @@ def power_spectrum(powertype = "power", mainpath = "", simset = "", nsim = 1, no
     if (powertype=="power"):
         power_k, power_p, dummy = read_power(file_path("power", mainpath, simset, nsim, noutput))
     elif (powertype=="nyquist"):
-        power_k, power_p = nyquist_power(powertype,mainpath,simset,nsim,noutput,aexp,growth_a, growth_dplus)
+        power_k, power_p = nyquist_power(mainpath, simset, nsim, noutput, aexp, growth_a, growth_dplus)
     elif (powertype=="renormalized"):
         power_k, power_p = renormalized_power(mainpath, simset, nsim, noutput, growth_a, growth_dplus)
     elif (powertype=="corrected"):

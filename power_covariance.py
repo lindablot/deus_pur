@@ -22,9 +22,9 @@ compute power spectrum covariance matrix, precision matrix, signal-to-noise
 # -------------------------------- COVARIANCE POWER -------------------------------- #
 def cov_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isimmax = 2, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), okprint = False):
     
-    n_sim = isimmax-isimmin
+    nsim = isimmax-isimmin
     
-    if ((simset=="all_256" and n_sim==12288) or (simset=="all_1024" and n_sim==96)):
+    if ((simset=="all_256" and nsim==12288) or (simset=="all_1024" and nsim==96)):
         fname = "cov_"+simset+"_"+powertype+"_"+str("%05d"%noutput)+".txt"
         if(os.path.isfile(fname)):
             power_pcov = np.loadtxt(fname,unpack=True)
@@ -220,7 +220,7 @@ def signoise(power_type = "nyquist", mainpath = "", simset = "", noutput = 1, ns
             f.write(str(fltformat%kmax[i])+" "+str(fltformat%sig_noise[i])+"\n")
         f.close()
 
-return kmax, sig_noise
+    return kmax, sig_noise
 # --------------------------------------------------------------------------- #
 
 
@@ -275,7 +275,7 @@ def signoise_k(power_type = "nyquist", mainpath = "", simset = "", noutput = 1, 
             signoise2+=power_p_new[ik]*cov_inv[ik][jk]*power_p_new[jk]
     sig_noise=sqrt(signoise2)
     
-return kmax, sig_noise
+    return kmax, sig_noise
 # --------------------------------------------------------------------------- #
 
 

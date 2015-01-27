@@ -82,7 +82,6 @@ def inv_cov_variance(powertype = "power", mainpath = "", noutput = 1 , aexp = 1.
         nsub = 12288/nr
         nbin = power_k.size
         var_inv = np.zeros((nsub,nbin))
-        nsim = 0
         totsim = 12288 - int(math.fmod(12288,nr))
         
         print nr,totsim
@@ -115,25 +114,6 @@ def inv_cov_variance(powertype = "power", mainpath = "", noutput = 1 , aexp = 1.
                 var_inv_mean[ik] += var_inv[isub][ik]
         var_inv_mean /= float(nsub)
         
-        #print "all begin"
-        #filename1="tmp/inv_cov_"+powertype+"_"+str("%05d"%totsim)+"_all.txt"
-        #if(os.path.isfile(filename1)):
-        #    cov_inv_all=np.loadtxt(filename, unpack=True)
-        #else:
-        #    k_cov_all,dummy,dummy,cov_all=cov_power(powertype,mainpath,simset,1,totsim+1,noutput,aexp,growth_a,growth_dplus)
-        #    cov_inv_all=linalg.inv(cov_all)
-        #    cov_inv_all=float(totsim-nbin-2)*cov_inv_all/float(totsim-1)
-        #    fltformat="%-.12e"
-        #    f = open(filename1, "w")
-        #    for ik in range(0, nbin):
-        #        for jk in range(0, nbin):
-        #            f.write(str(fltformat%cov_inv_all[ik][jk])+" ")
-        #        f.write("\n")
-        #    f.close()
-        #print "all end"
-        #for ik in range(0,nbin):
-        #    var_all[ik]=cov_inv_all[ik][ik]
-
         fact=0.
         sigma2=np.zeros(nbin)
         for ik in range(0,nbin):
@@ -169,13 +149,11 @@ def inv_cov_bias(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., gr
     for nr in list_nr:
         nsub = 12288/nr
         nbin = power_k.size
-#        var_inv = np.zeros((nsub,nbin))
-        nsim = 0
         totsim = 12288 - int(math.fmod(12288,nr))
         
         print nr,totsim
 
-        var_inv_mean = np.zeros(nbin)
+        #var_inv_mean = np.zeros(nbin)
         for isub in range(0, nsub):
             isimmin = isub * nr + 1
             isimmax = (isub+1)*nr
@@ -194,13 +172,13 @@ def inv_cov_bias(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., gr
                 f.close()
 
 
-            for ik in range(0,nbin):
-                var_inv_mean[ik]+=cov_inv[ik][ik]
-        var_inv_mean /= float(nsub)
+            #for ik in range(0,nbin):
+                #var_inv_mean[ik]+=cov_inv[ik][ik]
+        #var_inv_mean /= float(nsub)
 
         trace=0.
         for ik in range(0,nbin):
-            trace+=var_inv_mean[ik]
+            trace+=cov_inv[ik][ik]
         print trace
         bias[i]=(trace-trace_all)/trace_all
         i+=1
