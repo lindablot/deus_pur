@@ -42,9 +42,17 @@ def cov_variance(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., gr
         for isub in range(0, nsub):
             isimmin = isub * nr + 1
             isimmax = (isub+1)*nr
-            
-            dummy,dummy,power_psigma=mean_power(powertype, mainpath, simset, isimmin, isimmax+1, noutput, aexp, growth_a, growth_dplus)
-                
+            filename="tmp/"+str("%05d"%noutput)+"/sigma_"+powertype+"_"+str("%05d"%nr)+"_"+str("%05d"%isub)+".txt"
+            if(os.path.isfile(filename)):
+                power_psigma=np.loadtxt(filename, unpack=True)
+            else:
+                dummy,dummy,power_psigma=mean_power(powertype, mainpath, simset, isimmin, isimmax+1, noutput, aexp, growth_a, growth_dplus)
+                fltformat="%-.12e"
+                f = open(filename, "w")
+                for ik in range(0, nbin):
+                    f.write(str(fltformat%power_psigma[ik])+"\n")
+                f.close()
+
             for ik in range(0,nbin):
                 power_pvar[isub][ik]=power_psigma[ik]*power_psigma[ik]
 
