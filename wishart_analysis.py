@@ -120,7 +120,7 @@ def cov_variance_kmax(kmax = 1., powertype = "power", mainpath = "", noutput = 1
         for ik in range(0,nbin):
             for isubset in range(0,nsub):
                 var_mean[ik] += power_pvar[isubset][ik]
-var_mean /= float(nsub)
+    var_mean /= float(nsub)
     
     sigma2 = np.zeros(nbin)
         fact = 0.
