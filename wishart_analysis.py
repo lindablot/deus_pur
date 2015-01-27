@@ -180,6 +180,7 @@ def inv_cov_bias(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., gr
         for ik in range(0,nbin):
             trace+=cov_inv[ik][ik]
         print trace
+
         bias[i]=(trace-trace_all)/trace_all
         i+=1
     return list_nr, bias
