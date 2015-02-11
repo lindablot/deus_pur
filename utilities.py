@@ -25,7 +25,7 @@ def extrapolate(value_x, array_x, array_y):
 
 
 # ------------------------------ SIMULATION SET ITERATOR FOR 256 AND 1024 --------------------------------- #
-def sim_iterator(simset = "", isim = 1):
+def sim_iterator(simset = "", isim = 1, replace = 0, index = 0):
     if(simset=="all_256"):
         if (isim<4097):
             true_set = "4096_furphase_256"
@@ -43,6 +43,29 @@ def sim_iterator(simset = "", isim = 1):
         else:
             true_set = "64_curiephase_1024"
             true_isim = isim - 64
+    elif (simset=="random_256"):
+        fname = "random_series.txt"
+        
+        if(os.path.isfile(fname) and replace==0):
+            series = np.loadtxt(fname,unpack=True)
+            isim = series[index]
+        else:
+            series = np.random.permutation(12288)
+            isim = series[0]
+            f = open(fname, "w")
+            for i in range(1,series.size):
+                f.write(str("%05d"%series[i])+"\n")
+            f.close()
+
+        if (isim<4097):
+            true_set = "4096_furphase_256"
+            true_isim = isim
+        elif (isim<8193):
+            true_set = "4096_adaphase_256"
+            true_isim = isim - 4096
+        else:
+            true_set = "4096_otherphase_256"
+            true_isim = isim - 8192
     else:
         true_set = simset
         true_isim = isim
