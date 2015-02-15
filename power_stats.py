@@ -20,12 +20,12 @@ import random
 # -------------------------------- MEAN POWER -------------------------------- #
 def mean_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isimmax = 2, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), okprint = False):
     
-    if (simset=="all_256" and isimmax-isimmin==12288):
+    nsim = isimmax-isimmin
+    if (simset=="all_256" and nsim==12288):
         power_k, power_pmean, power_psigma = mean_power_all(powertype,mainpath,noutput,aexp,growth_a,growth_dplus,okprint)
-    elif (simset=="all_1024" and isimmax-isimmin==96):
+    elif (simset=="all_1024" and nsim==96):
         power_k, power_pmean, power_psigma = mean_power_all1024(powertype,mainpath,noutput,aexp,growth_a,growth_dplus,okprint)
     else:
-        nsim = 0
         true_simset, true_isimmin = sim_iterator(simset, isimmin)
         power_k, power_p = power_spectrum(powertype,mainpath,true_simset,true_isimmin,noutput,aexp,growth_a,growth_dplus)
         power_pmean = np.zeros(power_k.size)
@@ -38,7 +38,7 @@ def mean_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isi
                 print current_file
             dummy, power_p = power_spectrum(powertype,mainpath,true_simset,true_isim,noutput,aexp,growth_a,growth_dplus,okprint)
             power_pmean += power_p
-            nsim += 1
+
         power_pmean /= float(nsim)
 
         if (nsim > 1):
@@ -61,11 +61,12 @@ def mean_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isi
 def mean_power_all(powertype = "power", mainpath = "", noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), okprint = False):
     
     fname = "mean_"+powertype+"_256_"+str("%05d"%noutput)+".txt"
+    simset = "all_256"
     if(os.path.isfile(fname)):
         power_k, power_pmean, power_psigma = np.loadtxt(fname,unpack=True)
     else:
         nsim = 12288
-        true_simset, true_isimmin = sim_iterator(simset, isimmin)
+        true_simset, true_isimmin = sim_iterator(simset, 1)
         power_k, power_p = power_spectrum(powertype,mainpath,true_simset,true_isimmin,noutput,aexp,growth_a,growth_dplus,okprint)
         power_pmean = np.zeros(power_k.size)
         power_psigma = np.zeros(power_k.size)
@@ -77,7 +78,7 @@ def mean_power_all(powertype = "power", mainpath = "", noutput = 1, aexp = 0., g
                 print current_file
             dummy, power_p = power_spectrum(powertype,mainpath,true_simset,true_isim,noutput,aexp,growth_a,growth_dplus,okprint)
             power_pmean += power_p
-            nsim += 1
+            
         power_pmean /= float(nsim)
 
         for isim in range(1,nsim+1):
@@ -104,11 +105,12 @@ def mean_power_all(powertype = "power", mainpath = "", noutput = 1, aexp = 0., g
 def mean_power_all_1024(powertype = "power", mainpath = "", noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), okprint = False):
     
     fname = "mean_"+powertype+"_1024_"+str("%05d"%noutput)+".txt"
+    simset = "all_1024"
     if(os.path.isfile(fname)):
         power_k, power_pmean, power_psigma = np.loadtxt(fname,unpack=True)
     else:
         nsim = 96
-        true_simset, true_isimmin = sim_iterator(simset, isimmin)
+        true_simset, true_isimmin = sim_iterator(simset, 1)
         power_k, power_p = power_spectrum(powertype,mainpath,true_simset,true_isimmin,noutput,aexp,growth_a,growth_dplus)
         power_pmean = np.zeros(power_k.size)
         power_psigma = np.zeros(power_k.size)
@@ -120,7 +122,7 @@ def mean_power_all_1024(powertype = "power", mainpath = "", noutput = 1, aexp = 
                 print current_file
             dummy, power_p = power_spectrum(powertype,mainpath,true_simset,true_isim,noutput,aexp,growth_a,growth_dplus,okprint)
             power_pmean += power_p
-            nsim += 1
+
         power_pmean /= float(nsim)
 
         for isim in range(1,nsim+1):
