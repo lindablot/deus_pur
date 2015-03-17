@@ -132,7 +132,7 @@ def cov_variance_kmax(kmax = 1., powertype = "power", mainpath = "", noutput = 1
         trace_sigma2[i]/=(fact*float(nsub-1))
         
         i+=1
-return list_nr, trace_sigma2
+    return list_nr, trace_sigma2
 # ---------------------------------------------------------------------------- #
 
 
@@ -259,8 +259,8 @@ def inv_cov_variance_kmax(kmax = 1., powertype = "power", mainpath = "", noutput
     
         trace_sigma2[i]/=(fact*float(nsub-1))
 
-    i+=1
-return list_nr, trace_sigma2
+        i+=1
+    return list_nr, trace_sigma2
 # ---------------------------------------------------------------------------- #
 
 
@@ -314,7 +314,7 @@ def inv_cov_bias(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., gr
             trace+=cov_inv[ik][ik]
         print trace
 
-        bias[i]=(trace-trace_all)/trace_all
+        bias[i]=trace/trace_all
         i+=1
     return list_nr, bias
 # ---------------------------------------------------------------------------- #
