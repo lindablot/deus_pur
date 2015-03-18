@@ -56,6 +56,22 @@ def read_data(mainpath = "", power_k = np.zeros(0), power_p = np.zeros(0), growt
 
 
 
+# -------------------------------- READ CAMB POWER SPECTRUM ------------------ #
+def read_power_camb(mainpath = "", power_k = np.zeros(0), power_p = np.zeros(0)):
+    power_k, power_p = np.loadtxt(mainpath+"/data/pk_lcdmw7.dat", unpack=True)
+    return power_k, power_p
+# ---------------------------------------------------------------------------- #
+
+
+
+# -------------------------------- READ GROWTH FACTOR ------------------------ #
+def read_growth(mainpath = "", growth_a = np.zeros(0), growth_dplus = np.zeros(0)):
+    growth_a, dummy, growth_dplus, dummy = np.loadtxt(mainpath+"/data/mpgrafic_input_lcdmw7.dat", unpack=True)
+    return growth_a, growth_dplus
+# ---------------------------------------------------------------------------- #
+
+
+
 # -------------------------------- READ POWER -------------------------------- #
 def read_power(filename = "", refcol = np.zeros(0), column1 = np.zeros(0), column2 = np.zeros(0), column3 = np.zeros(0)):
     data1, data2, data3 = np.loadtxt(filename, unpack=True)
