@@ -41,22 +41,22 @@ def cov_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isim
                 
             power_pcov = np.zeros((power_k.size,power_k.size))
                 
-            for isim in range(1, nsim+1):
+            for isim in xrange(1, nsim+1):
                 true_simset,true_isim = sim_iterator(simset, isim)
                 if (okprint) :
                     current_file = file_path("power", mainpath, iset, isim, noutput)
                     print current_file
                 dummy, power_p = power_spectrum(powertype,mainpath,true_simset,true_isim,noutput,aexp,growth_a,growth_dplus,okprint)
-                for ik in range(0, power_k.size):
-                    for jk in range(0, power_k.size):
+                for ik in xrange(0, power_k.size):
+                    for jk in xrange(0, power_k.size):
                         power_pcov[ik][jk] += (power_p[ik]-power_pmean[ik])*(power_p[jk]-power_pmean[jk])
 
             power_pcov /= float(nsim-1)
 
             fltformat="%-.12e"
             f = open(fname, "w")
-            for i in range(0, power_k.size):
-                for j in range(0, power_k.size):
+            for i in xrange(0, power_k.size):
+                for j in xrange(0, power_k.size):
                     f.write(str(fltformat%power_pcov[i][j])+" ")
                 f.write("\n")
             f.close()
@@ -64,14 +64,14 @@ def cov_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isim
         power_k, power_pmean, power_psigma = mean_power(powertype, mainpath, simset, isimmin, isimmax, noutput, aexp, growth_a, growth_dplus, okprint)
         power_pcov = np.zeros((power_k.size,power_k.size))
         
-        for isim in range(isimmin, isimmax):
+        for isim in xrange(isimmin, isimmax):
             true_simset,true_isim = sim_iterator(simset, isim)
             if (okprint) :
                 current_file = file_path("power", mainpath, true_simset, true_isim, noutput)
                 print current_file
             dummy, power_p = power_spectrum(powertype,mainpath,true_simset,true_isim,noutput,aexp,growth_a,growth_dplus,okprint)
-            for ik in range(0, power_k.size):
-                for jk in range(0, power_k.size):
+            for ik in xrange(0, power_k.size):
+                for jk in xrange(0, power_k.size):
                     power_pcov[ik][jk] += (power_p[ik]-power_pmean[ik])*(power_p[jk]-power_pmean[jk])
 
         power_pcov /= float(nsim-1)
@@ -93,15 +93,15 @@ def cov_power_kmax(powertype, kmax, mainpath = "", simset = "", isimmin = 1, isi
 
     power_pcov = np.zeros((power_k_kmax.size,power_k_kmax.size))
     
-    for isim in range(isimmin, isimmax):
+    for isim in xrange(isimmin, isimmax):
         iset, isimu = sim_iterator(simset, isim)
         if (okprint) :
             current_file = file_path("power", mainpath, iset, isimu, noutput)
             print current_file
         power_k, power_p = power_spectrum(powertype,mainpath,iset,isimu,noutput,aexp,growth_a,growth_dplus,okprint)
         
-        for ik in range(0, power_k_kmax.size):
-            for jk in range(0, power_k_kmax.size):
+        for ik in xrange(0, power_k_kmax.size):
+            for jk in xrange(0, power_k_kmax.size):
                 power_pcov[ik][jk] += (power_p[ik]-power_pmean[ik])*(power_p[jk]-power_pmean[jk])
 
     power_pcov /= float(nsim-1)
@@ -117,8 +117,8 @@ def corr_coeff(powertype = "power", mainpath = "", simset = "", isimmin = 1, isi
     power_k, power_pmean, power_psigma, power_pcov = cov_power(powertype, mainpath, simset, isimmin, isimmax, noutput, aexp, growth_a, growth_dplus, okprint)
     
     corr_coeff = np.zeros((power_k.size,power_k.size))
-    for ik in range(0, power_k.size):
-        for jk in range(0, power_k.size):
+    for ik in xrange(0, power_k.size):
+        for jk in xrange(0, power_k.size):
             corr_coeff[ik][jk] = power_pcov[ik][jk]/(sqrt(power_pcov[ik][ik])*sqrt(power_pcov[jk][jk]))#/(power_psigma[ik]*power_psigma[jk])
             
     return corr_coeff
@@ -196,7 +196,7 @@ def signoise(power_type = "nyquist", mainpath = "", simset = "", noutput = 1, ns
         sig_noise = np.zeros(num_iter/step)
         kmax = np.zeros(num_iter/step)
         print kmax.size, num_iter
-        for ikmax in range(0,num_iter/step):
+        for ikmax in xrange(0,num_iter/step):
             ikk=ikmax*step+1
             kmax[ikmax]=power_k[ikk]
             idx=(power_k < kmax[ikmax])
@@ -208,15 +208,15 @@ def signoise(power_type = "nyquist", mainpath = "", simset = "", noutput = 1, ns
             if (unbiased):
                 cov_inv= float(nmax-num_iter-2)*cov_inv/float(nmax-1)
             signoise2=0.
-            for ik in range(0,power_kk.size):
-                for jk in range(0,power_kk.size):
+            for ik in xrange(0,power_kk.size):
+                for jk in xrange(0,power_kk.size):
                     signoise2+=power_p_new[ik]*cov_inv[ik][jk]*power_p_new[jk]
             sig_noise[ikmax]=sqrt(signoise2)
         #print kmax[ikmax],sig_noise[ikmax]
         
         fltformat = "%-.12e"
         f = open(fname, "w")
-        for i in range(0, kmax.size):
+        for i in xrange(0, kmax.size):
             f.write(str(fltformat%kmax[i])+" "+str(fltformat%sig_noise[i])+"\n")
         f.close()
 
@@ -270,8 +270,8 @@ def signoise_k(power_type = "nyquist", mainpath = "", simset = "", noutput = 1, 
     if (unbiased):
         cov_inv= float(nmax-num_iter-2)*cov_inv/float(nmax-1)
     signoise2=0.
-    for ik in range(0,power_kk.size):
-        for jk in range(0,power_kk.size):
+    for ik in xrange(0,power_kk.size):
+        for jk in xrange(0,power_kk.size):
             signoise2+=power_p_new[ik]*cov_inv[ik][jk]*power_p_new[jk]
     sig_noise=sqrt(signoise2)
     
@@ -286,7 +286,7 @@ def cov_convergence(powertype = "power", mainpath = "", noutput = 1 , aexp = 1.,
     power_k, mean_all, sigma_all = mean_power_all(powertype, mainpath, noutput)
     ik1 = 0
     ik2 = 0
-    for k in range(0,power_k.size):
+    for k in xrange(0,power_k.size):
         if (power_k[k] < kref1 + 0.0024 and power_k[k] > kref1 - 0.0024):
             ik1 = k
         if (power_k[k] < kref2 + 0.0024 and power_k[k] > kref2 - 0.0024):
@@ -310,7 +310,7 @@ def cov_convergence(powertype = "power", mainpath = "", noutput = 1 , aexp = 1.,
         print nr,totsim
         subset=0
         #while (subset < 12288/nr):
-        for isim in range(1, totsim+1):
+        for isim in xrange(1, totsim+1):
             true_simset, true_isim = sim_iterator("all_256",isim)
             current_file = file_path("power", mainpath, simset, true_isim, noutput)
             if (okprint) :
@@ -325,7 +325,7 @@ def cov_convergence(powertype = "power", mainpath = "", noutput = 1 , aexp = 1.,
                 print "power type not supported"
             power_pmean1[subset] += power_p[ik1]
             power_pmean2[subset] += power_p[ik2]
-            for ik in range(0,power_k.size):
+            for ik in xrange(0,power_k.size):
                 power_pmean[ik] += power_p[ik]
             if (math.fmod(isim,nr)==0 and isim>0):
                 subset+=1
@@ -337,7 +337,7 @@ def cov_convergence(powertype = "power", mainpath = "", noutput = 1 , aexp = 1.,
         print nsim, nr
 
         subset=0
-        for isim in range(1, totsim+1):
+        for isim in xrange(1, totsim+1):
             true_simset, true_isim = sim_iterator("all_256",isim)
             current_file = file_path("power", mainpath, simset, true_isim, noutput)
             if (okprint) :
@@ -351,7 +351,7 @@ def cov_convergence(powertype = "power", mainpath = "", noutput = 1 , aexp = 1.,
         power_pcov /= float(nr -1)
         cov_all12 /= float(totsim-1)
 
-        for isubset in range(0,12288/nr):
+        for isubset in xrange(0,12288/nr):
                 sigma2[i]+=(power_pcov[isubset] - cov_all12) * (power_pcov[isubset] - cov_all12)
         sigma2[i]/=float(12288/nr * cov_all12 * cov_all12)
         i+=1
@@ -380,13 +380,13 @@ def backup_cov(power_type = "nyquist", mainpath = "", simset = "", ioutput = 1, 
     else:
         isimmax = 4096
         noutputmax = 9
-    #for ioutput in range(noutputmax, noutputmax+1):
+    #for ioutput in xrange(noutputmax, noutputmax+1):
     power_k, power_pmean, power_psigma, power_pcov = cov_power(power_type, mainpath, simset, 1, isimmax+1, ioutput, aexp, growth_a, growth_dplus, okprint)
 
     fname = "cov_"+simset+"_"+power_type+"_"+str("%05d"%ioutput)+".txt"
     f = open(fname, "w")
-    for i in range(0, power_k.size):
-        for j in range(0, power_k.size):
+    for i in xrange(0, power_k.size):
+        for j in xrange(0, power_k.size):
             f.write(str(fltformat%power_pcov[i][j])+" ")
         f.write("\n")
     f.close()
@@ -441,8 +441,8 @@ def backup_corr(powertype="power", mainpath = "", simset = "", ioutput = 1, aexp
         power_k, dummy, dummy = read_power(file_path("power", mainpath, sim_set, 1, ioutput))
 
     f = open(fname_corr, "w")
-    for i in range(0, power_k.size):
-        for j in range(0, power_k.size):
+    for i in xrange(0, power_k.size):
+        for j in xrange(0, power_k.size):
             #print i, j, corr_coeffi[i][j]
             f.write(str(fltformat%corr_coeffi[i][j])+" ")
         f.write("\n")

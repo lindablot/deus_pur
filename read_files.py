@@ -76,7 +76,7 @@ def read_power(filename = "", refcol = np.zeros(0), column1 = np.zeros(0), colum
                 j -= 1
             else:
                 break
-        for i in range(0, refcol.size):
+        for i in xrange(0, refcol.size):
             if (counter[i] > 0.):
                 column2[i] /= counter[i]
                 column3[i] /= counter[i]
@@ -93,7 +93,7 @@ def read_power(filename = "", refcol = np.zeros(0), column1 = np.zeros(0), colum
 def read_info(filename = ""):
     aexp = 0
     lines = [line.strip() for line in open(filename)]
-    for i in range(0, len(lines)):
+    for i in xrange(0, len(lines)):
         if (lines[i].count("aexp") > 0):
             words = lines[i].split("=")
             aexp = float(words[1].strip())

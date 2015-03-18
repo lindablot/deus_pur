@@ -20,7 +20,7 @@ from math import sqrt as sqrt
 def fisher_matrix(powertype = "power", galaxy = 0, list_par = [0,2,3,4], mainpath = "", simset = "", isimmin = 1, isimmax = 2, list_noutput = [1], list_aexp = [0.], growth_a = np.zeros(0), growth_dplus = np.zeros(0), okprint = False):
 
     nsim=isimmax-isimmin
-    for i in range(0,len(list_aexp)):
+    for i in xrange(0,len(list_aexp)):
         ioutput=list_noutput[i]
         aexp=list_aexp[i]
 
@@ -35,13 +35,13 @@ def fisher_matrix(powertype = "power", galaxy = 0, list_par = [0,2,3,4], mainpat
             if (galaxy==1):
                 bias=galaxy_bias(power_k,ioutput)
                 ng=galaxy_density()
-                for ik in range(0,power_k.size):
-                    for jk in range(0,power_k.size):
+                for ik in xrange(0,power_k.size):
+                    for jk in xrange(0,power_k.size):
                         biased_cov[ik][jk]=pow(bias,4.)*power_pcov[ik][jk]+pow(bias,2.)*(power_pmean[ik]+power_pmean[jk])/ng+1./(ng*ng)
             fltformat="%-.12e"
             fout = open(covfile,"w")
-            for i in range(0, power_k.size):
-                for j in range(0, power_k.size):
+            for i in xrange(0, power_k.size):
+                for j in xrange(0, power_k.size):
                     fout.write(str(fltformat%biased_cov[i][j])+" ")
                 fout.write("\n")
             fout.close()
@@ -50,11 +50,11 @@ def fisher_matrix(powertype = "power", galaxy = 0, list_par = [0,2,3,4], mainpat
     dbeta = 0.05
     fisher = np.zeros((len(list_par),len(list_par)))
     npar=len(list_par)
-    for ia in range(0,npar):
+    for ia in xrange(0,npar):
         ialpha=list_par[ia]
-        for ib in range(0,npar):
+        for ib in xrange(0,npar):
             ibeta=list_par[ib]
-            for i in range(0,len(list_aexp)):
+            for i in xrange(0,len(list_aexp)):
                 ioutput=list_noutput[i]
                 aexp=list_aexp[i]
 
@@ -76,8 +76,8 @@ def fisher_matrix(powertype = "power", galaxy = 0, list_par = [0,2,3,4], mainpat
                 else:
                     print "warning: biased inverse covariance estimator"
 
-                for ik in range(0,power_k.size):
-                    for jk in range(0,power_k.size):
+                for ik in xrange(0,power_k.size):
+                    for jk in xrange(0,power_k.size):
                         fisher[ia][ib]+=deralpha[ik]*derbeta[jk]*inv_cov[ik][jk]
 
     return fisher
@@ -85,7 +85,7 @@ def fisher_matrix(powertype = "power", galaxy = 0, list_par = [0,2,3,4], mainpat
 
 def galaxy_bias(power_k=np.zeros(0), noutput=1):
     bias=np.zeros(power_k.size)
-    for ik in range(0,power_k.size):
+    for ik in xrange(0,power_k.size):
         bias[ik]=1.5
 
     return bias

@@ -53,7 +53,7 @@ def sim_iterator(simset = "", isim = 1, replace = 0, index = 0):
             series = np.random.permutation(12288)
             isim = series[0]
             f = open(fname, "w")
-            for i in range(1,series.size):
+            for i in xrange(1,series.size):
                 f.write(str("%05d"%series[i])+"\n")
             f.close()
 
@@ -77,7 +77,7 @@ def sim_iterator(simset = "", isim = 1, replace = 0, index = 0):
 #------------------------------- REBIN Y(k) WITH Dk/k FIXED ------------------ #
 def rebin(k= np.zeros(0),y= np.zeros(0),lim=0.1):
     delta_k = np.zeros(k.size)
-    for i in range(0,k.size-1):
+    for i in xrange(0,k.size-1):
         delta_k[i] = k[i+1]-k[i]
     delta_k[delta_k.size-1]=delta_k[delta_k.size-2]
     
@@ -87,7 +87,7 @@ def rebin(k= np.zeros(0),y= np.zeros(0),lim=0.1):
     new_y=np.zeros(k.size)
     new_k=np.zeros(k.size)
 
-    for i in range(0,k.size):
+    for i in xrange(0,k.size):
         interval+=delta_k[i]
         new_y[j]+=y[i]
         new_k[j]=k[i]-interval/2.
@@ -106,7 +106,7 @@ def rebin(k= np.zeros(0),y= np.zeros(0),lim=0.1):
     interval=0
     count=0
     j=0
-    for i in range(0,max_i+1):
+    for i in xrange(0,max_i+1):
         interval+=delta_k[i]
         nw_k=k[i]-interval/2.
         error[j]=(y[i]-rebin_y[j])*(y[i]-rebin_y[j])

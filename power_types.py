@@ -45,23 +45,30 @@ def corrected_power(mainpath = "", simset = "", aexp = 0., nsim = 1, noutput = 1
 # ----------------------------- POWER SPECTRUM CUT AT NYQUIST FREQUENCY ------------------------------ #
 def nyquist_power(mainpath = "", simset = "", nsim = 1, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0)):
     pi = math.pi
-    power_k, power_p = corrected_power(mainpath,simset,aexp,nsim,noutput,growth_a,growth_dplus)
+    power_k, power_p_raw, dummy = read_power(file_path("power", mainpath, simset, nsim, noutput))
+    if (aexp != 0.):
+        aexp_raw = read_info(file_path("info", mainpath, simset, nsim, noutput))
+        dplus_raw = extrapolate([aexp_raw], growth_a, growth_dplus)
+        dplus = extrapolate([aexp], growth_a, growth_dplus)
+        power_p = (power_p_raw*dplus*dplus)/(dplus_raw*dplus_raw)
+    else:
+        power_p = power_p_raw
     if (simset == "4096_furphase"):
-        nyquist = (pi / 10000.) * 4096.#(4096. / 2.)
+        nyquist = (pi / 10000.) * 4096.
     elif (simset == "4096_otherphase"):
-        nyquist= (pi / 10000.)* 4096.#(4096. / 2.)
+        nyquist= (pi / 10000.)* 4096.
     elif (simset == "4096_furphase_512"):
-        nyquist= (pi / 1312.5)*512. #(512. / 2.)
+        nyquist= (pi / 1312.5)*512.
     elif (simset == "4096_furphase_256"):
-        nyquist= (pi / 656.25)*256.# (256. / 2.)
+        nyquist= (pi / 656.25)*256.
     elif (simset == "4096_otherphase_256"):
-        nyquist= (pi / 656.25)*256.# (256. / 2.)
+        nyquist= (pi / 656.25)*256.
     elif (simset == "4096_adaphase_256"):
-        nyquist= (pi / 656.25)*256.# (256. / 2.)
+        nyquist= (pi / 656.25)*256.
     elif (simset == "64_adaphase_1024"):
-        nyquist= (pi / 656.25)*1024.# (1024. / 2.)
+        nyquist= (pi / 656.25)*1024.
     elif (simset == "64_curiephase_1024"):
-        nyquist= (pi / 656.25)*1024.# (1024. / 2.)
+        nyquist= (pi / 656.25)*1024.
     idx = (power_k < nyquist) 
     power_k_new = power_k[idx]
     power_p_new = power_p[idx]
@@ -107,7 +114,7 @@ def pkann_power(ipar = 0, dpar = 0.05, fact = 1, powertype = "power", ioutput = 
 
         fltformat2="%-.12e"
         fout = open(pfile, "w")
-        for i in range(0,power_k.size):
+        for i in xrange(0,power_k.size):
             fout.write(str(fltformat2%power_k[i])+" "+str(fltformat2%power_pkann[i])+"\n")
         fout.close()
 
