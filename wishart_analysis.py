@@ -274,17 +274,14 @@ def inv_cov_bias(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., gr
 
     power_k, power_pmean, power_psigma, power_pcov = cov_power(powertype, mainpath, simset,1,12289,noutput,aexp,growth_a,growth_dplus)
     cov_inv_all=linalg.inv(power_pcov)
-    trace_all=0.
-    for ik in xrange(0,power_k.size):
-        trace_all+=cov_inv_all[ik][ik]
-    print trace_all
+    trace_all=np.trace(cov_inv_all)
 
     for nr in list_nr:
         nsub = 12288/nr
         nbin = power_k.size
-        totsim = 12288 - int(math.fmod(12288,nr))
-        
-        print nr,totsim
+        if (okprint):
+            totsim = 12288 - int(math.fmod(12288,nr))
+            print nr,totsim
 
         var_inv_mean = np.zeros(nbin)
         for isub in xrange(0, nsub):
@@ -309,10 +306,7 @@ def inv_cov_bias(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., gr
                 var_inv_mean[ik]+=cov_inv[ik][ik]
         var_inv_mean /= float(nsub)
 
-        trace=0.
-        for ik in xrange(0,nbin):
-            trace+=cov_inv[ik][ik]
-        print trace
+        trace=np.sum(var_inv_mean)
 
         bias[i]=trace/trace_all
         i+=1

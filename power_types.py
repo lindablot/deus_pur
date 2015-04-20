@@ -80,9 +80,9 @@ def nyquist_power(mainpath = "", simset = "", nsim = 1, noutput = 1, aexp = 0., 
 #------------------------------- POWER SPECTRUM COMPUTED BY PkANN ------------------ #
 def pkann_power(ipar = 0, dpar = 0.05, fact = 1, powertype = "power", ioutput = 1, mainpath = "", aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0)):
     
-    par=np.array([0.2573*0.5184,0.04356*0.5184,0.963,-1.,0.801,0.]) #omega_m h^2, omega_b h^2, n_s, w, sigma_8, m_nu
+    par=np.array([0.2573*0.5184,0.04356*0.5184,0.963,-1.,0.801,0.,1.]) #omega_m h^2, omega_b h^2, n_s, w, sigma_8, m_nu, bias
     list_z = [99., 2., 1.5, 1., 0.7, 0.5, 0.3, 0.01, 0.]
-    par[ipar]+=fact*dpar*par[ipar]
+    par[ipar]+=fact*dpar*abs(par[ipar])
     redshift = list_z[ioutput-1]
 
     pfile = "pkann_spectra/pkann_"+str(ipar)+"_"+str(dpar)+"_"+str(fact)+"_"+powertype+"_"+str(ioutput)+".txt"
@@ -110,7 +110,7 @@ def pkann_power(ipar = 0, dpar = 0.05, fact = 1, powertype = "power", ioutput = 
             power_k,dummy=nyquist_power(mainpath,"4096_adaphase_256",1,ioutput,aexp,growth_a,growth_dplus)
         else:
             power_k,dummy,dummy=read_power(file_path("power", mainpath, "4096_adaphase_256", 1, ioutput))
-        power_pkann = np.interp(power_k,kpkann,ppkann)
+        power_pkann = par[6]*par[6]*np.interp(power_k,kpkann,ppkann)
 
         fltformat2="%-.12e"
         fout = open(pfile, "w")
