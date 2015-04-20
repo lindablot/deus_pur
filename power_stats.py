@@ -372,7 +372,7 @@ def correction_power(mainpath = "", noutput = 1, aexp = 1.,growth_a = np.zeros(0
         if (corr_type == "var_pres"):
 
             power_k, power_pmean, power_psigma = mean_power_all("nyquist",mainpath,noutput,aexp,growth_a,growth_dplus)
-            power_k_CAMB, power_p_CAMB, dummy, dummy, dummy, dummy, dummy = read_data(mainpath)
+            power_k_CAMB, power_p_CAMB = read_power_camb(mainpath)
             aexp_end = 1.
             dplus_a = extrapolate([aexp], growth_a, growth_dplus)
             dplus_end = extrapolate([aexp_end], growth_a, growth_dplus)
