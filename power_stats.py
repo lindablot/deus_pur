@@ -25,6 +25,8 @@ def mean_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isi
         power_k, power_pmean, power_psigma = mean_power_all(powertype,mainpath,noutput,aexp,growth_a,growth_dplus,okprint)
     elif (simset=="all_1024" and nsim==96):
         power_k, power_pmean, power_psigma = mean_power_all1024(powertype,mainpath,noutput,aexp,growth_a,growth_dplus,okprint)
+    elif (simset=="4096_furphase_512" and nsim==512):
+        power_k, power_pmean, power_psigma = mean_power_all512(powertype,mainpath,noutput,aexp,growth_a,growth_dplus,okprint)
     else:
         true_simset, true_isimmin = sim_iterator(simset, isimmin)
         power_k, power_p = power_spectrum(powertype,mainpath,true_simset,true_isimmin,noutput,aexp,growth_a,growth_dplus)
@@ -141,6 +143,47 @@ def mean_power_all_1024(powertype = "power", mainpath = "", noutput = 1, aexp = 
         f.close()
             
     return power_k, power_pmean, power_psigma
+# ---------------------------------------------------------------------------- #
+
+
+
+# ------------------------------- MEAN POWER ON ALL 512 ------------------------ #
+def mean_power_all_512(powertype = "power", mainpath = "", noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), okprint = False):
+    
+    fname = "mean_"+powertype+"_512_"+str("%05d"%noutput)+".txt"
+    simset = "4096_furphase_512"
+    if(os.path.isfile(fname)):
+        power_k, power_pmean, power_psigma = np.loadtxt(fname,unpack=True)
+    else:
+        nsim = 512
+        power_k, power_p = power_spectrum(powertype,mainpath,simset,1,noutput,aexp,growth_a,growth_dplus)
+        power_pmean = np.zeros(power_k.size)
+        power_psigma = np.zeros(power_k.size)
+        
+        for isim in xrange(1,nsim+1):
+            if (okprint) :
+                current_file = file_path("power", mainpath, simset, isim, noutput)
+                print current_file
+            dummy, power_p = power_spectrum(powertype,mainpath,simset,isim,noutput,aexp,growth_a,growth_dplus,okprint)
+            power_pmean += power_p
+
+        power_pmean /= float(nsim)
+
+        for isim in xrange(1,nsim+1):
+            if (okprint) :
+                current_file = file_path("power", mainpath, simset, isim, noutput)
+                print current_file
+            dummy, power_p = power_spectrum(powertype,mainpath,simset,isim,noutput,aexp,growth_a,growth_dplus,okprint)
+            power_psigma += (power_p-power_pmean)*(power_p-power_pmean)
+        power_psigma /= float(nsim-1)
+        power_psigma = np.sqrt(power_psigma)
+        
+        f = open(fname, "w")
+        for i in xrange(0, power_k.size):
+            f.write(str("%-.12e"%power_k[i])+" "+str("%-.12e"%power_pmean[i])+" "+str("%-.12e"%power_psigma[i])+"\n")
+        f.close()
+
+return power_k, power_pmean, power_psigma
 # ---------------------------------------------------------------------------- #
 
 
