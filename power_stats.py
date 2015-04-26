@@ -183,7 +183,57 @@ def mean_power_all_512(powertype = "power", mainpath = "", noutput = 1, aexp = 0
             f.write(str("%-.12e"%power_k[i])+" "+str("%-.12e"%power_pmean[i])+" "+str("%-.12e"%power_psigma[i])+"\n")
         f.close()
 
-return power_k, power_pmean, power_psigma
+    return power_k, power_pmean, power_psigma
+# ---------------------------------------------------------------------------- #
+
+
+# ------------------------------- MEAN POWER ON ALL 512 REBINNED ------------------------ #
+def mean_power_all_512r256(powertype = "power", mainpath = "", noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), okprint = False):
+    
+    def N_k(power_k=np.zeros(0),L_box=656.25):
+        return math.pi/24.+power_k*power_k*L_box*L_box/(2.*math.pi)
+    
+    fname = "mean_"+powertype+"_512r256_"+str("%05d"%noutput)+".txt"
+    simset = "4096_furphase_512"
+    if(os.path.isfile(fname)):
+        power_k, power_pmean, power_psigma = np.loadtxt(fname,unpack=True)
+    else:
+        nsim = 512
+        power_k256, dummy = power_spectrum(powertype,mainpath,"all_256",1,noutput,aexp,growth_a,growth_dplus)
+        power_pmean = np.zeros(power_k256.size)
+        power_psigma = np.zeros(power_k256.size)
+        
+        for isim in xrange(1,nsim+1):
+            if (okprint) :
+                current_file = file_path("power", mainpath, simset, isim, noutput)
+                print current_file
+            power_k, power_p = power_spectrum(powertype,mainpath,simset,isim,noutput,aexp,growth_a,growth_dplus,okprint)
+            nh = N_k(power_k,1312.5)
+            for ik in xrange(0,power_k256.size-1):
+                pr256[ik]=1./(nh[2*ik+1]/2.+nh[2*ik+2]+nh[2*ik+3]/2.)*(nh[2*ik+1]/2.*power_p[2*ik+1]+nh[2*ik+2]*power_p[2*ik+2]+nh[2*ik+3]/2.*power_p[2*ik+3])
+            pr256[power_k256.size-1]=1./(nh[power_p.size-2]+nh[power_p.size-1])*(nh[power_p.size-1]*power_p[power_p.size-1]+nh[power_p.size-2]*power_p[power_p.size-2])
+            power_pmean += pr256
+
+        power_pmean /= float(nsim)
+
+        for isim in xrange(1,nsim+1):
+            if (okprint) :
+                current_file = file_path("power", mainpath, simset, isim, noutput)
+                print current_file
+            dummy, power_p = power_spectrum(powertype,mainpath,simset,isim,noutput,aexp,growth_a,growth_dplus,okprint)
+            for ik in xrange(0,power_k256.size-1):
+                pr256[ik]=1./(nh[2*ik+1]/2.+nh[2*ik+2]+nh[2*ik+3]/2.)*(nh[2*ik+1]/2.*power_p[2*ik+1]+nh[2*ik+2]*power_p[2*ik+2]+nh[2*ik+3]/2.*power_p[2*ik+3])
+            pr256[power_k256.size-1]=power_p[power_p.size-1]
+            power_psigma += (pr256-power_pmean)*(pr256-power_pmean)
+        power_psigma /= float(nsim-1)
+        power_psigma = np.sqrt(power_psigma)
+        
+        f = open(fname, "w")
+        for i in xrange(0, power_k256.size):
+            f.write(str("%-.12e"%power_k256[i])+" "+str("%-.12e"%power_pmean[i])+" "+str("%-.12e"%power_psigma[i])+"\n")
+        f.close()
+
+    return power_k256, power_pmean, power_psigma
 # ---------------------------------------------------------------------------- #
 
 
@@ -571,7 +621,7 @@ def power_spectrum(powertype = "power", mainpath = "", simset = "", nsim = 1, no
         power_k, power_p = mass_corrected_power(mainpath, simset, nsim, noutput, aexp, growth_a, growth_dplus)
     else:
         if (okprint):
-            print "powetype not existent in function power_spectrum"
+            print "powertype not existent in function power_spectrum"
 
     return power_k, power_p
 # ---------------------------------------------------------------------------- #
