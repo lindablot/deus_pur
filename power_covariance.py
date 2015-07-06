@@ -49,7 +49,7 @@ def cov_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isim
                 dummy, power_p = power_spectrum(powertype,mainpath,true_simset,true_isim,noutput,aexp,growth_a,growth_dplus,okprint)
                 for ik in xrange(0, power_k.size):
                     for jk in xrange(0, power_k.size):
-                        power_pcov[ik][jk] += (power_p[ik]-power_pmean[ik])*(power_p[jk]-power_pmean[jk])
+                        power_pcov[ik,jk] += (power_p[ik]-power_pmean[ik])*(power_p[jk]-power_pmean[jk])
 
             power_pcov /= float(nsim-1)
 
@@ -57,7 +57,7 @@ def cov_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isim
             f = open(fname, "w")
             for i in xrange(0, power_k.size):
                 for j in xrange(0, power_k.size):
-                    f.write(str(fltformat%power_pcov[i][j])+" ")
+                    f.write(str(fltformat%power_pcov[i,j])+" ")
                 f.write("\n")
             f.close()
     else:
@@ -72,7 +72,7 @@ def cov_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isim
             dummy, power_p = power_spectrum(powertype,mainpath,true_simset,true_isim,noutput,aexp,growth_a,growth_dplus,okprint)
             for ik in xrange(0, power_k.size):
                 for jk in xrange(0, power_k.size):
-                    power_pcov[ik][jk] += (power_p[ik]-power_pmean[ik])*(power_p[jk]-power_pmean[jk])
+                    power_pcov[ik,jk] += (power_p[ik]-power_pmean[ik])*(power_p[jk]-power_pmean[jk])
 
         power_pcov /= float(nsim-1)
 
@@ -102,7 +102,7 @@ def cov_power_kmax(powertype, kmax, mainpath = "", simset = "", isimmin = 1, isi
         
         for ik in xrange(0, power_k_kmax.size):
             for jk in xrange(0, power_k_kmax.size):
-                power_pcov[ik][jk] += (power_p[ik]-power_pmean[ik])*(power_p[jk]-power_pmean[jk])
+                power_pcov[ik,jk] += (power_p[ik]-power_pmean[ik])*(power_p[jk]-power_pmean[jk])
 
     power_pcov /= float(nsim-1)
 
@@ -119,7 +119,7 @@ def corr_coeff(powertype = "power", mainpath = "", simset = "", isimmin = 1, isi
     corr_coeff = np.zeros((power_k.size,power_k.size))
     for ik in xrange(0, power_k.size):
         for jk in xrange(0, power_k.size):
-            corr_coeff[ik][jk] = power_pcov[ik][jk]/(sqrt(power_pcov[ik][ik])*sqrt(power_pcov[jk][jk]))#/(power_psigma[ik]*power_psigma[jk])
+            corr_coeff[ik,jk] = power_pcov[ik,jk]/(sqrt(power_pcov[ik,ik])*sqrt(power_pcov[jk,jk]))#/(power_psigma[ik]*power_psigma[jk])
             
     return corr_coeff
 # ---------------------------------------------------------------------------- #
@@ -210,7 +210,7 @@ def signoise(power_type = "nyquist", mainpath = "", simset = "", noutput = 1, ns
             signoise2=0.
             for ik in xrange(0,power_kk.size):
                 for jk in xrange(0,power_kk.size):
-                    signoise2+=power_p_new[ik]*cov_inv[ik][jk]*power_p_new[jk]
+                    signoise2+=power_p_new[ik]*cov_inv[ik,jk]*power_p_new[jk]
             sig_noise[ikmax]=sqrt(signoise2)
         #print kmax[ikmax],sig_noise[ikmax]
         
@@ -272,7 +272,7 @@ def signoise_k(power_type = "nyquist", mainpath = "", simset = "", noutput = 1, 
     signoise2=0.
     for ik in xrange(0,power_kk.size):
         for jk in xrange(0,power_kk.size):
-            signoise2+=power_p_new[ik]*cov_inv[ik][jk]*power_p_new[jk]
+            signoise2+=power_p_new[ik]*cov_inv[ik,jk]*power_p_new[jk]
     sig_noise=sqrt(signoise2)
     
     return kmax, sig_noise

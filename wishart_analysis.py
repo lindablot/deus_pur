@@ -64,7 +64,7 @@ def cov_variance_trace(powertype = "power", mainpath = "", noutput = 1 , aexp = 
         fact = 0.
         for ik in xrange(0,nbin):
             for isubset in xrange(0,nsub):
-                sigma2[ik]+=(power_pvar[isubset][ik] - var_mean[ik]) * (power_pvar[isubset][ik] - var_mean[ik])
+                sigma2[ik]+=(power_pvar[isubset,ik] - var_mean[ik]) * (power_pvar[isubset,ik] - var_mean[ik])
             fact+=var_mean[ik]*var_mean[ik]
             trace_sigma2[i]+=sigma2[ik]
         trace_sigma2[i]/=(fact*float(nsub-1))
@@ -76,6 +76,65 @@ def cov_variance_trace(powertype = "power", mainpath = "", noutput = 1 , aexp = 
 
 
 # --------------------------- LOG DET OF SAMPLE COVARIANCE VARIANCE --------------------------- #
+def cov_variance_logdet(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., growth_a = np.zeros(0), growth_dplus = np.zeros(0), list_nr = [10,50,100,500,700,1000,3000,5000,6000], okprint=False):
+    
+    simset = "all_256"
+    trace_sigma2=np.zeros(len(list_nr))
+    i=0 #index on list_nr
+    
+    power_k,dummy = power_spectrum(powertype,mainpath,"4096_adaphase_256",1,noutput,aexp,growth_a,growth_dplus)
+    nbin = power_k.size
+    
+    for nr in list_nr:
+        
+        nsub = 12288/nr
+        power_pmean = np.zeros((nsub,nbin))
+        cov_sub = np.zeros((nsub,nbin,nbin))
+        nsim = 0
+        totsim = 12288 - int(math.fmod(12288,nr))
+        
+        print nr,totsim
+        
+        for isub in xrange(0, nsub):
+            isimmin = isub * nr + 1
+            isimmax = (isub+1)*nr
+            filename="tmp/"+str("%05d"%noutput)+"/cov_"+powertype+"_"+str("%05d"%nr)+"_"+str("%05d"%isub)+".txt"
+            if(os.path.isfile(filename)):
+                power_pcov=np.loadtxt(filename, unpack=True)
+            else:
+                dummy,dummy,dummy,power_pcov=cov_power(powertype, mainpath, simset, isimmin, isimmax+1, noutput, aexp, growth_a, growth_dplus)
+                fltformat="%-.12e"
+                f = open(filename, "w")
+                for ik in xrange(0, nbin):
+                    for jk in xrange(0, nbin):
+                        f.write(str(fltformat%power_pcov[ik,jk])+" ")
+                    f.write("\n")
+                f.close()
+                    
+            cov_sub[isub]=power_pcov
+    
+        cov_mean = np.zeros((nbin,nbin))
+        for ik in xrange(0,nbin):
+            for jk in xrange(0,nbin):
+                cov_mean[ik,jk]=np.mean(cov_sub[:,ik,jk])
+    
+        sigma2 = np.zeros((nbin,nbin))
+        fact = 0.
+        for ik in xrange(0,nbin):
+            for jk in xrange(0,nbin):
+                for isubset in xrange(0,nsub):
+                    sigma2[ik,jk]+=(cov_sub[isubset,ik,jk] - cov_mean[ik,jk]) * (cov_sub[isubset,ik,jk] - cov_mean[ik,jk])
+        sigma2/=float(nsub-1)
+        
+        trace_sigma2[i]=log(np.linalg.det(np.exp(sigma2)))/log(np.linalg.det(np.exp(cov_mean**2)))
+        
+        i+=1
+    return list_nr, trace_sigma2
+# ---------------------------------------------------------------------------- #
+
+
+
+# --------------------------- COVARIANCE VARIANCE --------------------------- #
 def cov_variance(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., growth_a = np.zeros(0), growth_dplus = np.zeros(0), list_nr = [10,50,100,500,700,1000,3000,5000,6000], okprint=False):
     
     simset = "all_256"
@@ -105,31 +164,31 @@ def cov_variance(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., gr
                 dummy,dummy,dummy,power_pcov=cov_power(powertype, mainpath, simset, isimmin, isimmax+1, noutput, aexp, growth_a, growth_dplus)
                 fltformat="%-.12e"
                 f = open(filename, "w")
-                for jk in xrange(0, nbin):
-                    for ik in xrange(0, nbin):
-                        f.write(str(fltformat%power_pcov[ik][jk])+" ")
+                for ik in xrange(0, nbin):
+                    for jk in xrange(0, nbin):
+                        f.write(str(fltformat%power_pcov[ik,jk])+" ")
                     f.write("\n")
                 f.close()
-                    
+            
             cov_sub[isub]=power_pcov
-    
+        
         cov_mean = np.zeros((nbin,nbin))
-        for jk in xrange(0,nbin):
-            for ik in xrange(0,nbin):
+        for ik in xrange(0,nbin):
+            for jk in xrange(0,nbin):
                 cov_mean[ik,jk]=np.mean(cov_sub[:,ik,jk])
     
         sigma2 = np.zeros((nbin,nbin))
         fact = 0.
-        for jk in xrange(0,nbin):
-            for ik in xrange(0,nbin):
+        for ik in xrange(0,nbin):
+            for jk in xrange(0,nbin):
                 for isubset in xrange(0,nsub):
                     sigma2[ik,jk]+=(cov_sub[isubset,ik,jk] - cov_mean[ik,jk]) * (cov_sub[isubset,ik,jk] - cov_mean[ik,jk])
         sigma2/=float(nsub-1)
-        
+    
         trace_sigma2[i]=log(np.linalg.det(np.exp(sigma2)))/log(np.linalg.det(np.exp(cov_mean**2)))
         
         i+=1
-    return list_nr, trace_sigma2
+    return list_nr, sigma2
 # ---------------------------------------------------------------------------- #
 
 
@@ -180,7 +239,7 @@ def cov_variance_kcut(kmin=0.03, kmax = 1., powertype = "power", mainpath = "", 
         fact = 0.
         for ik in xrange(0,nbin):
             for isubset in xrange(0,nsub):
-                sigma2[ik]+=(power_pvar[isubset][ik] - var_mean[ik]) * (power_pvar[isubset][ik] - var_mean[ik])
+                sigma2[ik]+=(power_pvar[isubset,ik] - var_mean[ik]) * (power_pvar[isubset,ik] - var_mean[ik])
             fact+=var_mean[ik]*var_mean[ik]
             trace_sigma2[i]+=sigma2[ik]
         trace_sigma2[i]/=(fact*float(nsub-1))
@@ -227,20 +286,20 @@ def inv_cov_variance(powertype = "power", mainpath = "", noutput = 1 , aexp = 1.
                 f = open(filename, "w")
                 for ik in xrange(0, nbin):
                     for jk in xrange(0, nbin):
-                        f.write(str(fltformat%cov_inv[ik][jk])+" ")
+                        f.write(str(fltformat%cov_inv[ik,jk])+" ")
                     f.write("\n")
                 f.close()
 
             for ik in xrange(0,nbin):
-                var_inv[isub][ik] = cov_inv[ik,ik]
-                var_inv_mean[ik] += var_inv[isub][ik]
+                var_inv[isub,ik] = cov_inv[ik,ik]
+                var_inv_mean[ik] += var_inv[isub,ik]
         var_inv_mean /= float(nsub)
         
         fact=0.
         sigma2=np.zeros(nbin)
         for ik in xrange(0,nbin):
             for isub in xrange(0,nsub):
-                sigma2[ik]+=(var_inv[isub][ik] - var_inv_mean[ik]) * (var_inv[isub][ik] - var_inv_mean[ik])
+                sigma2[ik]+=(var_inv[isub,ik] - var_inv_mean[ik]) * (var_inv[isub,ik] - var_inv_mean[ik])
                 #sigma2[ik]+=(var_inv[isub][ik] - var_all[ik]) * (var_inv[isub][ik] - var_all[ik])
             #fact+= var_all[ik] * var_all[ik]
             fact += var_inv_mean[ik] * var_inv_mean[ik]
@@ -296,20 +355,20 @@ def inv_cov_variance_kcut(kmin = 0.03, kmax = 1., powertype = "power", mainpath 
                 f = open(filename, "w")
                 for ik in xrange(0, nbin):
                     for jk in xrange(0, nbin):
-                        f.write(str(fltformat%cov_inv[ik][jk])+" ")
+                        f.write(str(fltformat%cov_inv[ik,jk])+" ")
                     f.write("\n")
                 f.close()
             
             for ik in xrange(0,nbin):
                 var_inv[isub][ik] = cov_inv[ik,ik]
-                var_inv_mean[ik] += var_inv[isub][ik]
+                var_inv_mean[ik] += var_inv[isub,ik]
         var_inv_mean /= float(nsub)
         
         fact=0.
         sigma2=np.zeros(nbin)
         for ik in xrange(0,nbin):
             for isub in xrange(0,nsub):
-                sigma2[ik]+=(var_inv[isub][ik] - var_inv_mean[ik]) * (var_inv[isub][ik] - var_inv_mean[ik])
+                sigma2[ik]+=(var_inv[isub,ik] - var_inv_mean[ik]) * (var_inv[isub,ik] - var_inv_mean[ik])
             #sigma2[ik]+=(var_inv[isub][ik] - var_all[ik]) * (var_inv[isub][ik] - var_all[ik])
             #fact+= var_all[ik] * var_all[ik]
             fact += var_inv_mean[ik] * var_inv_mean[ik]
@@ -355,13 +414,13 @@ def inv_cov_bias(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., gr
                 f = open(filename, "w")
                 for ik in xrange(0, nbin):
                     for jk in xrange(0, nbin):
-                        f.write(str(fltformat%cov_inv[ik][jk])+" ")
+                        f.write(str(fltformat%cov_inv[ik,jk])+" ")
                     f.write("\n")
                 f.close()
 
 
             for ik in xrange(0,nbin):
-                var_inv_mean[ik]+=cov_inv[ik][ik]
+                var_inv_mean[ik]+=cov_inv[ik,ik]
         var_inv_mean /= float(nsub)
 
         trace=np.sum(var_inv_mean)

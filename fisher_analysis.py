@@ -37,12 +37,12 @@ def fisher_matrix(powertype = "power", galaxy = 0, list_par = [0,2,3,4], mainpat
                 ng=galaxy_density()
                 for ik in xrange(0,power_k.size):
                     for jk in xrange(0,power_k.size):
-                        biased_cov[ik][jk]=pow(bias,4.)*power_pcov[ik][jk]+pow(bias,2.)*(power_pmean[ik]+power_pmean[jk])/ng+1./(ng*ng)
+                        biased_cov[ik,jk]=pow(bias,4.)*power_pcov[ik,jk]+pow(bias,2.)*(power_pmean[ik]+power_pmean[jk])/ng+1./(ng*ng)
             fltformat="%-.12e"
             fout = open(covfile,"w")
             for i in xrange(0, power_k.size):
                 for j in xrange(0, power_k.size):
-                    fout.write(str(fltformat%biased_cov[i][j])+" ")
+                    fout.write(str(fltformat%biased_cov[i,j])+" ")
                 fout.write("\n")
             fout.close()
 
@@ -78,7 +78,7 @@ def fisher_matrix(powertype = "power", galaxy = 0, list_par = [0,2,3,4], mainpat
 
                 for ik in xrange(0,power_k.size):
                     for jk in xrange(0,power_k.size):
-                        fisher[ia][ib]+=deralpha[ik]*derbeta[jk]*inv_cov[ik][jk]
+                        fisher[ia,ib]+=deralpha[ik]*derbeta[jk]*inv_cov[ik,jk]
 
     return fisher
 
