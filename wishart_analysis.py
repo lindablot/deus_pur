@@ -225,7 +225,7 @@ def cov_variance_kcut(kmin=0.03, kmax = 1., powertype = "power", mainpath = "", 
             filename_cov="tmp/"+str("%05d"%noutput)+"/cov_"+powertype+"_"+str("%05d"%nr)+"_"+str("%05d"%isub)+".txt"
             if(os.path.isfile(filename)):
                 power_psigma=np.loadtxt(filename, unpack=True)
-            else if(os.path.isfile(filename_cov)):
+            elif(os.path.isfile(filename_cov)):
                 power_pcov=np.loadtxt(filename_cov, unpack=True)
                 power_psigma=np.sqrt(np.diag(power_pcov))
             else:
@@ -239,9 +239,9 @@ def cov_variance_kcut(kmin=0.03, kmax = 1., powertype = "power", mainpath = "", 
             power_psigma_kcut = power_psigma[index]
             power_pvar[isub]=power_psigma_kcut**2
                         
-            var_mean = np.zeros(nbin)
-            for ik in xrange(0,nbin):
-                var_mean[ik]=np.mean(power_pvar[:,ik])
+        var_mean = np.zeros(nbin)
+        for ik in xrange(0,nbin):
+            var_mean[ik]=np.mean(power_pvar[:,ik])
 
     
         sigma2 = np.zeros(nbin)
