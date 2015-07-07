@@ -42,8 +42,12 @@ def cov_variance_trace(powertype = "power", mainpath = "", noutput = 1 , aexp = 
             isimmin = isub * nr + 1
             isimmax = (isub+1)*nr
             filename="tmp/"+str("%05d"%noutput)+"/sigma_"+powertype+"_"+str("%05d"%nr)+"_"+str("%05d"%isub)+".txt"
+            filename_cov="tmp/"+str("%05d"%noutput)+"/cov_"+powertype+"_"+str("%05d"%nr)+"_"+str("%05d"%isub)+".txt"
             if(os.path.isfile(filename)):
                 power_psigma=np.loadtxt(filename, unpack=True)
+            else if(os.path.isfile(filename_cov)):
+                power_pcov=np.loadtxt(filename_cov, unpack=True)
+                power_psigma=np.sqrt(np.diag(power_pcov))
             else:
                 dummy,dummy,power_psigma=mean_power(powertype, mainpath, simset, isimmin, isimmax+1, noutput, aexp, growth_a, growth_dplus)
                 fltformat="%-.12e"
@@ -52,8 +56,6 @@ def cov_variance_trace(powertype = "power", mainpath = "", noutput = 1 , aexp = 
                     f.write(str(fltformat%power_psigma[ik])+"\n")
                 f.close()
 
-            #for ik in xrange(0,nbin):
-                #power_pvar[isub][ik]=power_psigma[ik]*power_psigma[ik]
             power_pvar[isub]=power_psigma**2
 
         var_mean = np.zeros(nbin)
@@ -204,7 +206,7 @@ def cov_variance_kcut(kmin=0.03, kmax = 1., powertype = "power", mainpath = "", 
     i=0 #index on list_nr
     
     power_k,dummy = power_spectrum(powertype,mainpath,"4096_adaphase_256",1,noutput,aexp,growth_a,growth_dplus)
-    index = [(power_k_kmax > kmin) & (power_k < kmax)]
+    index = [(power_k > kmin) & (power_k < kmax)]
     power_k_cut = power_k[index]
     nbin = power_k_cut.size
     
@@ -219,18 +221,22 @@ def cov_variance_kcut(kmin=0.03, kmax = 1., powertype = "power", mainpath = "", 
         for isub in xrange(0, nsub):
             isimmin = isub * nr + 1
             isimmax = (isub+1)*nr
-            filename="tmp/"+str("%05d"%noutput)+"/sigma_"+powertype+"_"+str("%05d"%nr)+"_"+str("%05d"%isub)+"_"+str("%1.2f"%kmin)+"_"+str("%1.2f"%kmax)+".txt"
+            filename="tmp/"+str("%05d"%noutput)+"/sigma_"+powertype+"_"+str("%05d"%nr)+"_"+str("%05d"%isub)+".txt"
+            filename_cov="tmp/"+str("%05d"%noutput)+"/cov_"+powertype+"_"+str("%05d"%nr)+"_"+str("%05d"%isub)+".txt"
             if(os.path.isfile(filename)):
-                power_psigma_cut=np.loadtxt(filename, unpack=True)
+                power_psigma=np.loadtxt(filename, unpack=True)
+            else if(os.path.isfile(filename_cov)):
+                power_pcov=np.loadtxt(filename_cov, unpack=True)
+                power_psigma=np.sqrt(np.diag(power_pcov))
             else:
                 dummy,dummy,power_psigma=mean_power(powertype, mainpath, simset, isimmin, isimmax+1, noutput, aexp, growth_a, growth_dplus)
-                power_psigma_kcut = power_psigma[index]
                 fltformat="%-.12e"
                 f = open(filename, "w")
                 for ik in xrange(0, nbin):
-                    f.write(str(fltformat%power_psigma_kcut[ik])+"\n")
+                    f.write(str(fltformat%power_psigma[ik])+"\n")
                 f.close()
             
+            power_psigma_kcut = power_psigma[index]
             power_pvar[isub]=power_psigma_kcut**2
                         
             var_mean = np.zeros(nbin)
