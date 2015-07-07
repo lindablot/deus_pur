@@ -144,6 +144,8 @@ def cov_variance(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., gr
     power_k,dummy = power_spectrum(powertype,mainpath,"4096_adaphase_256",1,noutput,aexp,growth_a,growth_dplus)
     nbin = power_k.size
     
+    sigma2_all = np.zeros((len(list_nr),nbin,nbin))
+    
     for nr in list_nr:
         
         nsub = 12288/nr
@@ -183,12 +185,13 @@ def cov_variance(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., gr
             for jk in xrange(0,nbin):
                 for isubset in xrange(0,nsub):
                     sigma2[ik,jk]+=(cov_sub[isubset,ik,jk] - cov_mean[ik,jk]) * (cov_sub[isubset,ik,jk] - cov_mean[ik,jk])
+                sigma2[ik,jk]/=(cov_mean[ik,ik]*cov_mean[jk,jk]+cov_mean[ik,jk]**2)
         sigma2/=float(nsub-1)
-    
-        trace_sigma2[i]=log(np.linalg.det(np.exp(sigma2)))/log(np.linalg.det(np.exp(cov_mean**2)))
+
+        sigma2_all[i]=sigma2
         
         i+=1
-    return list_nr, sigma2
+    return list_nr, sigma2_all
 # ---------------------------------------------------------------------------- #
 
 
