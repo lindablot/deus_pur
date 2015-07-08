@@ -45,7 +45,7 @@ def cov_variance_trace(powertype = "power", mainpath = "", noutput = 1 , aexp = 
             filename_cov="tmp/"+str("%05d"%noutput)+"/cov_"+powertype+"_"+str("%05d"%nr)+"_"+str("%05d"%isub)+".txt"
             if(os.path.isfile(filename)):
                 power_psigma=np.loadtxt(filename, unpack=True)
-            else if(os.path.isfile(filename_cov)):
+            elif(os.path.isfile(filename_cov)):
                 power_pcov=np.loadtxt(filename_cov, unpack=True)
                 power_psigma=np.sqrt(np.diag(power_pcov))
             else:
@@ -283,22 +283,22 @@ def inv_cov_variance(powertype = "power", mainpath = "", noutput = 1 , aexp = 1.
             isimmax = (isub+1)*nr
             #if(isub==nsub-1):
                 #print isub, isimmin, isimmax
-            filename="tmp/"+str("%05d"%noutput)+"/inv_cov_"+powertype+"_"+str("%05d"%nr)+"_"+str("%05d"%isub)+".txt"
+            filename="tmp/"+str("%05d"%noutput)+"/cov_"+powertype+"_"+str("%05d"%nr)+"_"+str("%05d"%isub)+".txt"
             if(os.path.isfile(filename)):
-                cov_inv=np.loadtxt(filename, unpack=True)
-                #cov_inv= float(nr-1)*cov_inv/float(nr-nbin-2)
+                cov=np.loadtxt(filename, unpack=True)
             else:
                 kcov,dummy,dummy,cov=cov_power(powertype, mainpath, simset, isimmin, isimmax+1, noutput, aexp, growth_a, growth_dplus)
-                cov_inv=linalg.inv(cov)
-                #cov_inv= float(nr-nbin-2)*cov_inv/float(nr-1)
                 fltformat="%-.12e"
                 f = open(filename, "w")
                 for ik in xrange(0, nbin):
                     for jk in xrange(0, nbin):
-                        f.write(str(fltformat%cov_inv[ik,jk])+" ")
+                        f.write(str(fltformat%cov[ik,jk])+" ")
                     f.write("\n")
                 f.close()
 
+            cov_inv=linalg.inv(cov)
+            #cov_inv= float(nr-nbin-2)*cov_inv/float(nr-1)
+            
             for ik in xrange(0,nbin):
                 var_inv[isub,ik] = cov_inv[ik,ik]
                 var_inv_mean[ik] += var_inv[isub,ik]
@@ -334,7 +334,7 @@ def inv_cov_variance_kcut(kmin = 0.03, kmax = 1., powertype = "power", mainpath 
     power_k_kcut = power_k[index]
     nbin = power_k_kcut.size
     
-    aa = np.arange(power_k.size)
+    aa = np.arange(0,power_k.size-1)
     iks = aa[index]
     ikmin = iks[0]
     ikmax = iks[iks.size-1]
@@ -351,25 +351,26 @@ def inv_cov_variance_kcut(kmin = 0.03, kmax = 1., powertype = "power", mainpath 
         for isub in xrange(0, nsub):
             isimmin = isub * nr + 1
             isimmax = (isub+1)*nr
-            filename="tmp/"+str("%05d"%noutput)+"/inv_cov_"+powertype+"_"+str("%05d"%nr)+"_"+str("%05d"%isub)+"_"+str("%1.2f"%kmin)+"_"+str("%1.2f"%kmax)+".txt"
+            filename="tmp/"+str("%05d"%noutput)+"/cov_"+powertype+"_"+str("%05d"%nr)+"_"+str("%05d"%isub)+"_"+str("%1.2f"%kmin)+"_"+str("%1.2f"%kmax)+".txt"
             if(os.path.isfile(filename)):
-                cov_inv=np.loadtxt(filename, unpack=True)
-                #cov_inv= float(nr-1)*cov_inv/float(nr-nbin-2)
+                cov=np.loadtxt(filename, unpack=True)
+                cov_kcut = cov[ikmin:ikmax,ikmin:ikmax]
             else:
                 kcov,dummy,dummy,cov=cov_power(powertype, mainpath, simset, isimmin, isimmax+1, noutput, aexp, growth_a, growth_dplus)
                 cov_kcut = cov[ikmin:ikmax,ikmin:ikmax]
-                cov_inv=linalg.inv(cov_kcut)
-                #cov_inv= float(nr-nbin-2)*cov_inv/float(nr-1)
                 fltformat="%-.12e"
                 f = open(filename, "w")
                 for ik in xrange(0, nbin):
                     for jk in xrange(0, nbin):
-                        f.write(str(fltformat%cov_inv[ik,jk])+" ")
+                        f.write(str(fltformat%cov[ik,jk])+" ")
                     f.write("\n")
                 f.close()
+
+            cov_inv=linalg.inv(cov_kcut)
+            #cov_inv= float(nr-nbin-2)*cov_inv/float(nr-1)
             
             for ik in xrange(0,nbin):
-                var_inv[isub][ik] = cov_inv[ik,ik]
+                var_inv[isub,ik] = cov_inv[ik,ik]
                 var_inv_mean[ik] += var_inv[isub,ik]
         var_inv_mean /= float(nsub)
         
@@ -413,20 +414,20 @@ def inv_cov_bias(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., gr
         for isub in xrange(0, nsub):
             isimmin = isub * nr + 1
             isimmax = (isub+1)*nr
-            filename="tmp/"+str("%05d"%noutput)+"/inv_cov_"+powertype+"_"+str("%05d"%nr)+"_"+str("%05d"%isub)+".txt"
+            filename="tmp/"+str("%05d"%noutput)+"/cov_"+powertype+"_"+str("%05d"%nr)+"_"+str("%05d"%isub)+".txt"
             if(os.path.isfile(filename)):
-                cov_inv=np.loadtxt(filename, unpack=True)
+                cov=np.loadtxt(filename, unpack=True)
             else:
                 kcov,dummy,dummy,cov=cov_power(powertype, mainpath, simset, isimmin, isimmax+1, noutput, aexp, growth_a, growth_dplus)
-                cov_inv=linalg.inv(cov)
                 fltformat="%-.12e"
                 f = open(filename, "w")
                 for ik in xrange(0, nbin):
                     for jk in xrange(0, nbin):
-                        f.write(str(fltformat%cov_inv[ik,jk])+" ")
+                        f.write(str(fltformat%cov[ik,jk])+" ")
                     f.write("\n")
                 f.close()
 
+            cov_inv=linalg.inv(cov)
 
             for ik in xrange(0,nbin):
                 var_inv_mean[ik]+=cov_inv[ik,ik]
