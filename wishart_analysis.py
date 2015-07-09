@@ -77,11 +77,11 @@ def cov_variance_trace(powertype = "power", mainpath = "", noutput = 1 , aexp = 
 
 
 
-# --------------------------- LOG DET OF SAMPLE COVARIANCE VARIANCE --------------------------- #
-def cov_variance_logdet(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., growth_a = np.zeros(0), growth_dplus = np.zeros(0), list_nr = [10,50,100,500,700,1000,3000,5000,6000], okprint=False):
+# --------------------------- DET OF SAMPLE COVARIANCE VARIANCE --------------------------- #
+def cov_variance_det(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., growth_a = np.zeros(0), growth_dplus = np.zeros(0), list_nr = [10,50,100,500,700,1000,3000,5000,6000], okprint=False):
     
     simset = "all_256"
-    trace_sigma2=np.zeros(len(list_nr))
+    det_sigma2=np.zeros(len(list_nr))
     i=0 #index on list_nr
     
     power_k,dummy = power_spectrum(powertype,mainpath,"4096_adaphase_256",1,noutput,aexp,growth_a,growth_dplus)
@@ -92,7 +92,6 @@ def cov_variance_logdet(powertype = "power", mainpath = "", noutput = 1 , aexp =
         nsub = 12288/nr
         power_pmean = np.zeros((nsub,nbin))
         cov_sub = np.zeros((nsub,nbin,nbin))
-        nsim = 0
         totsim = 12288 - int(math.fmod(12288,nr))
         
         print nr,totsim
@@ -119,19 +118,20 @@ def cov_variance_logdet(powertype = "power", mainpath = "", noutput = 1 , aexp =
         for ik in xrange(0,nbin):
             for jk in xrange(0,nbin):
                 cov_mean[ik,jk]=np.mean(cov_sub[:,ik,jk])
-    
+                    
         sigma2 = np.zeros((nbin,nbin))
-        fact = 0.
+        rhs = np.zeros((nbin,nbin))
         for ik in xrange(0,nbin):
             for jk in xrange(0,nbin):
                 for isubset in xrange(0,nsub):
                     sigma2[ik,jk]+=(cov_sub[isubset,ik,jk] - cov_mean[ik,jk]) * (cov_sub[isubset,ik,jk] - cov_mean[ik,jk])
+                rhs[ik,jk]=(cov_mean[ik,ik]*cov_mean[jk,jk]+cov_mean[ik,jk]**2)
         sigma2/=float(nsub-1)
         
-        trace_sigma2[i]=log(np.linalg.det(np.exp(sigma2)))/log(np.linalg.det(np.exp(cov_mean**2)))
+        det_sigma2[i]=np.linalg.det(sigma2)/np.linalg.det(rhs)
         
         i+=1
-    return list_nr, trace_sigma2
+    return list_nr, det_sigma2
 # ---------------------------------------------------------------------------- #
 
 
