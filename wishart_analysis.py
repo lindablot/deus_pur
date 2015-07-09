@@ -333,7 +333,7 @@ def inv_cov_variance_kcut(kmin = 0.03, kmax = 1., powertype = "power", mainpath 
     aa = np.arange(0,power_k.size-1)
     iks = aa[index]
     ikmin = iks[0]
-    ikmax = iks[iks.size-1]
+    ikmax = iks[iks.size-1]+1
     
     for nr in list_nr:
         nsub = 12288/nr
@@ -429,6 +429,66 @@ def inv_cov_bias(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., gr
 
         trace=np.sum(var_inv_mean)
 
+        bias[i]=trace/trace_all
+        i+=1
+    return list_nr, bias
+# ---------------------------------------------------------------------------- #
+
+
+
+# --------------------------- PRECISION MATRIX BIAS WITH k CUT --------------------------- #
+def inv_cov_bias_kcut(kmin=0.03,kmax=1.,powertype = "power", mainpath = "", noutput = 1 , aexp = 1., growth_a = np.zeros(0), growth_dplus = np.zeros(0), list_nr = [300,500,700,1000,3000,5000,6000], okprint=False):
+    
+    simset = "all_256"
+    bias=np.zeros(len(list_nr))
+    i=0
+    
+    power_k, power_pmean, power_psigma, power_pcov = cov_power(powertype, mainpath, simset,1,12289,noutput,aexp,growth_a,growth_dplus)
+    index = [(power_k < kmax) & (power_k > kmin)]
+    power_k_kcut = power_k[index]
+    nbin = power_k_kcut.size
+    
+    aa = np.arange(0,power_k.size-1)
+    iks = aa[index]
+    ikmin = iks[0]
+    ikmax = iks[iks.size-1]+1
+    cov_all_kcut = power_pcov[ikmin:ikmax,ikmin:ikmax]
+    cov_inv_all=linalg.inv(cov_all_kcut)
+    trace_all=np.trace(cov_inv_all)
+    
+    for nr in list_nr:
+        nsub = 12288/nr
+        nbin = power_k.size
+        if (okprint):
+            totsim = 12288 - int(math.fmod(12288,nr))
+            print nr,totsim
+    
+        var_inv_mean = np.zeros(nbin)
+        for isub in xrange(0, nsub):
+            isimmin = isub * nr + 1
+            isimmax = (isub+1)*nr
+            filename="tmp/"+str("%05d"%noutput)+"/cov_"+powertype+"_"+str("%05d"%nr)+"_"+str("%05d"%isub)+".txt"
+            if(os.path.isfile(filename)):
+                cov=np.loadtxt(filename, unpack=True)
+            else:
+                kcov,dummy,dummy,cov=cov_power(powertype, mainpath, simset, isimmin, isimmax+1, noutput, aexp, growth_a, growth_dplus)
+                fltformat="%-.12e"
+                f = open(filename, "w")
+                for ik in xrange(0, nbin):
+                    for jk in xrange(0, nbin):
+                        f.write(str(fltformat%cov[ik,jk])+" ")
+                    f.write("\n")
+                f.close()
+        
+            cov_kcut=cov[ikmin:ikmax,ikmin:ikmax]
+            cov_inv=linalg.inv(cov_kcut)
+            
+            for ik in xrange(0,nbin):
+                var_inv_mean[ik]+=cov_inv[ik,ik]
+        var_inv_mean /= float(nsub)
+    
+        trace=np.sum(var_inv_mean)
+        
         bias[i]=trace/trace_all
         i+=1
     return list_nr, bias
