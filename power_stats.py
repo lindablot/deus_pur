@@ -59,7 +59,7 @@ def mean_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isi
 
 
 
-# ------------------------------- MEAN POWER ON 12288 ------------------------ #
+# ------------------------------- MEAN POWER ON ALL 256 ------------------------ #
 def mean_power_all(powertype = "power", mainpath = "", noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), okprint = False):
     
     fname = "mean_"+powertype+"_256_"+str("%05d"%noutput)+".txt"
@@ -240,7 +240,6 @@ def mean_power_all_512r256(powertype = "power", mainpath = "", noutput = 1, aexp
 
 
 # --------------------- PDF OF POWER SPECTRA --------------------------- #
-
 def distrib_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isimmax = 2, noutput = 1, nbin = 50, kref = 0.2, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), okprint = False):
     
     nsim = isimmax - isimmin
@@ -255,7 +254,7 @@ def distrib_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, 
         power_k, power_p = power_spectrum(powertype,mainpath,true_simset,true_isim,noutput,aexp,growth_a,growth_dplus)
         
         for ik in xrange(0,power_k.size):
-            if (power_k[ik]-kref < 0.0048):
+            if (power_k[ik]-kref < 0.0024):
                 power_values[isim-1] = power_p[ik]
                 control = 1
         if (control == 0):
@@ -276,7 +275,6 @@ def distrib_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, 
     npower_bin/=float(nsim)
 
     return bincenter, npower_bin
-
 # ---------------------------------------------------------------------------- #
 
 
@@ -284,7 +282,8 @@ def distrib_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, 
 # ------------------ HIGH MOMENTS OF SPECTRA PDF ---------------------- #
 def high_moments(powertype = "power", mainpath = "", simset = "", isimmin = 1, isimmax = 2, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), unbiased = True, okprint = False):
 
-    nsim = 0
+    nsim = isimmax-isimmin
+    
     if(unbiased):
         bias="unbiased"
     else:
@@ -294,9 +293,6 @@ def high_moments(powertype = "power", mainpath = "", simset = "", isimmin = 1, i
     if(os.path.isfile(fname)):
         power_k, power_skew, power_kurt = np.loadtxt(fname,unpack=True)
     else:
-
-        nsim = isimmax-isimmin
-
         if (simset=="all_256" and nsim==12288):
             power_k, power_pmean, power_psigma = mean_power_all(powertype, mainpath, noutput, aexp, growth_a, growth_dplus, False)
         
@@ -351,60 +347,7 @@ def high_moments(powertype = "power", mainpath = "", simset = "", isimmin = 1, i
 
 
 
-# ----------------------------- MEAN MASSFUNCTION ---------------------------- #
-def mean_massfunction(mainpath = "", simset = "", isimmin = 1, isimmax = 2, noutput = 1, okprint = False):
-    nsim = 0
-    mf_binmin, mf_binmax, dummy = read_massfunction(file_path("massfunction", mainpath, simset, isimmin, noutput))
-    mf_bin = (mf_binmin+mf_binmax)/2
-    mf_mean = np.zeros(mf_bin.size)
-    mf_sigma = np.zeros(mf_bin.size)
-    for isim in xrange(isimmin, isimmax):
-        current_file = file_path("massfunction", mainpath, simset, isim, noutput)
-        if (okprint) : 
-            print current_file
-        dummy, dummy, mf_count = read_massfunction(current_file)
-        mf_mean += mf_count
-        nsim += 1
-    mf_mean /= float(nsim)
-    if (nsim > 1):
-        for isim in xrange(isimmin, isimmax):
-            current_file = file_path("massfunction", mainpath, simset, isim, noutput)
-            if (okprint) : 
-                print current_file
-            dummy, dummy, mf_count = read_massfunction(current_file)
-            mf_sigma += (mf_count-mf_mean)*(mf_count-mf_mean)
-        mf_sigma /= float(nsim-1)
-        mf_sigma = np.sqrt(mf_sigma)
-    return mf_binmin, mf_binmax, mf_bin, mf_mean, mf_sigma
-# ---------------------------------------------------------------------------- #
-
-
-
-# -------------------------------- BACKUP MEAN ------------------------------- #
-def backup_mean(mainpath = "", simset = "", growth_a = np.zeros(0), growth_dplus = np.zeros(0), fltformat = "%-.12e", outdir = "power", outprefix = "power_"):
-    if (simset == "4096_furphase" or simset == "4096_otherphase"):
-        isimmax = 1
-        noutputmax = 31
-    elif (simset == "4096_furphase_512"):
-        isimmax = 512
-        noutputmax = 9
-    else:
-        isimmax = 4096
-        noutputmax = 9
-    for ioutput in xrange(1, noutputmax+1):
-        power_k, power_pmean, power_psigma = mean_power("power", mainpath, simset, 1, isimmax+1, ioutput, growth_a, growth_dplus, True)
-        rpower_k, rpower_pmean, rpower_psigma = mean_power("renormalized", mainpath, simset, 1, isimmax+1, ioutput, growth_a, growth_dplus, True)
-        f = open(outdir+"/"+outprefix+simset+"_"+str("%05d"%ioutput)+".txt", "w")
-        f.write("# DEUS-PUR: Mean power spectrum - V. Reverdy 2013 - "+simset+" - [power_k, power_pmean, power_psigma, renormalized_pmean, renormalized_psigma]\n")
-        for i in xrange(0, power_k.size):
-            f.write(str(fltformat%power_k[i])+" "+str(fltformat%power_pmean[i])+" "+str(fltformat%power_psigma[i])+" "+str(fltformat%rpower_pmean[i])+" "+str(fltformat%rpower_psigma[i])+"\n")
-        f.close()
-    return
-# ---------------------------------------------------------------------------- #
-
-
-
-# ---------------------------------------------------------------------------- #
+# ------------------------- SPECTRUM CORRECTED FOR MASS RES EFFECT --------------------------- #
 def mass_corrected_power(mainpath = "", simset = "", nsim = 1, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), corr_type = "var_pres_smooth"):
     
     pi = math.pi
@@ -457,7 +400,7 @@ def mass_corrected_power(mainpath = "", simset = "", nsim = 1, noutput = 1, aexp
 
 
 
-# ---------------------------------------------------------------------------- #
+# ------------------------- CORRECTION TO THE LOW RES SPECTRA ------------------------------ #
 def correction_power(mainpath = "", noutput = 1, aexp = 1.,growth_a = np.zeros(0),growth_dplus = np.zeros(0), corr_type = "var_pres_smooth"):
     fname = "correction_"+corr_type+"_"+str("%05d"%noutput)+".txt"
     if(os.path.isfile(fname)):
@@ -604,7 +547,7 @@ def correction_power(mainpath = "", noutput = 1, aexp = 1.,growth_a = np.zeros(0
 
 
 
-# ---------------------------------------------------------------------------- #
+# ----------------------- WRAPPER FOR ALL POWER TYPES ------------------------- #
 def power_spectrum(powertype = "power", mainpath = "", simset = "", nsim = 1, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), okprint = False):
     if (simset=="all_256"):
         if (okprint):
