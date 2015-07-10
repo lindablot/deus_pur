@@ -128,10 +128,9 @@ def cov_variance_det(powertype = "power", mainpath = "", noutput = 1 , aexp = 1.
                 rhs[ik,jk]=(cov_mean[ik,ik]*cov_mean[jk,jk]+cov_mean[ik,jk]**2)
         sigma2/=float(nsub-1)
         
-        s1,det1 = np.linalg.slogdet(sigma2)
-        s2,det2 = np.linalg.slogdet(rhs)
-        det_sigma2[i]=s1*exp(det1)/(s2*exp(det2))
-        #det_sigma2[i]=np.linalg.det(sigma2)/np.linalg.det(rhs)
+        ldet1=np.trace(np.log(sigma2))
+        ldet2=np.trace(np.log(rhs))
+        det_sigma2[i]=np.exp((ldet1-ldet2)/nbin)
         
         i+=1
     return list_nr, det_sigma2
