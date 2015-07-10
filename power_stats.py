@@ -563,9 +563,28 @@ def power_spectrum(powertype = "power", mainpath = "", simset = "", nsim = 1, no
         power_k, power_p = corrected_power(mainpath, simset, aexp, nsim, noutput, growth_a, growth_dplus)
     elif (powertype=="mcorrected"):
         power_k, power_p = mass_corrected_power(mainpath, simset, nsim, noutput, aexp, growth_a, growth_dplus)
+    elif (powertype=="linear"):
+        power_k_CAMB, power_p_CAMB = np.loadtxt(mainpath+"/data/pk_lcdmw7.dat",unpack=True)
+        power_k, dummy, dummy = read_power(file_path("power", mainpath, simset, nsim, noutput))
+        aexp_end = 1.
+        dplus_a = extrapolate([aexp], growth_a, growth_dplus)
+        dplus_end = extrapolate([aexp_end], growth_a, growth_dplus)
+        plin = power_p_CAMB * dplus_a * dplus_a / (dplus_end * dplus_end)
+                                                     
+        plin_interp = np.interp(power_k, power_k_CAMB, plin)
+        N_k = np.zeros(power_k.size)
+        L_box = 656.25
+        for j in xrange(0, power_k.size):
+            if (j!=power_k.size-1):
+                delta_k = power_k[j+1]-power_k[j]
+            N_k[j]=L_box*L_box*L_box*power_k[j]*power_k[j]*delta_k/(2.*math.pi*math.pi)
+                                                             
+        noise = np.sqrt(2./N_k)*(plin_interp)
+        error = np.random.normal(0.,noise,noise.size)
+        power_p = plin_interp + error
     else:
-        if (okprint):
-            print "powertype not existent in function power_spectrum"
+        print "powertype not existent in function power_spectrum"
+        sys.exit()
 
     return power_k, power_p
 # ---------------------------------------------------------------------------- #
