@@ -128,7 +128,10 @@ def cov_variance_det(powertype = "power", mainpath = "", noutput = 1 , aexp = 1.
                 rhs[ik,jk]=(cov_mean[ik,ik]*cov_mean[jk,jk]+cov_mean[ik,jk]**2)
         sigma2/=float(nsub-1)
         
-        det_sigma2[i]=np.linalg.det(sigma2)/np.linalg.det(rhs)
+        s1,det1 = np.linalg.slogdet(sigma2)
+        s2,det2 = np.linalg.slogdet(rhs)
+        det_sigma2[i]=s1*exp(det1)/(s2*exp(det2))
+        #det_sigma2[i]=np.linalg.det(sigma2)/np.linalg.det(rhs)
         
         i+=1
     return list_nr, det_sigma2
@@ -330,7 +333,7 @@ def inv_cov_variance_kcut(kmin = 0.03, kmax = 1., powertype = "power", mainpath 
     power_k_kcut = power_k[index]
     nbin = power_k_kcut.size
     
-    aa = np.arange(0,power_k.size-1)
+    aa = np.arange(0,power_k.size)
     iks = aa[index]
     ikmin = iks[0]
     ikmax = iks[iks.size-1]+1
@@ -448,7 +451,7 @@ def inv_cov_bias_kcut(kmin=0.03,kmax=1.,powertype = "power", mainpath = "", nout
     power_k_kcut = power_k[index]
     nbin = power_k_kcut.size
     
-    aa = np.arange(0,power_k.size-1)
+    aa = np.arange(0,power_k.size)
     iks = aa[index]
     ikmin = iks[0]
     ikmax = iks[iks.size-1]+1
@@ -458,7 +461,6 @@ def inv_cov_bias_kcut(kmin=0.03,kmax=1.,powertype = "power", mainpath = "", nout
     
     for nr in list_nr:
         nsub = 12288/nr
-        nbin = power_k.size
         if (okprint):
             totsim = 12288 - int(math.fmod(12288,nr))
             print nr,totsim
