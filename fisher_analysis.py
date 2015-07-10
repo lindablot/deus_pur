@@ -69,20 +69,21 @@ def fisher_matrix(powertype = "power", galaxy = 0, list_par = [0,2,3,4],  fiduci
         # ------- variations of power spectrum wrt parameters ----- #
         for ia in range(0,npar):
             ialpha=list_par[ia]
+            if ((ialpha>5) and (ialpha!=6+i)):
+                deralpha=np.zeros(power_k.size)
+            else:
+                if (ialpha==6+i):
+                    ialpha=6
+                dummy,Ppda=pkann_power(ialpha,dalpha,1,powertype,ioutput,mainpath,aexp,growth_a,growth_dplus)
+                dummy,Pmda=pkann_power(ialpha,dalpha,-1,powertype,ioutput,mainpath,aexp,growth_a,growth_dplus)
+                dummy,Pp2da=pkann_power(ialpha,dalpha,2,powertype,ioutput,mainpath,aexp,growth_a,growth_dplus)
+                dummy,Pm2da=pkann_power(ialpha,dalpha,-2,powertype,ioutput,mainpath,aexp,growth_a,growth_dplus)
+                dtheta_alpha=dalpha*abs(fiducial[ialpha])
+                deralpha=2.*(Ppda-Pmda)/(3.*dtheta_alpha)+(Pp2da-Pm2da)/(12.*dtheta_alpha)
+
             for ib in range(0,npar):
                 ibeta=list_par[ib]
             
-                if ((ialpha>5) and (ialpha!=6+i)):
-                    deralpha=np.zeros(power_k.size)
-                else:
-                    if (ialpha==6+i):
-                        ialpha=6
-                    dummy,Ppda=pkann_power(ialpha,dalpha,1,powertype,ioutput,mainpath,aexp,growth_a,growth_dplus)
-                    dummy,Pmda=pkann_power(ialpha,dalpha,-1,powertype,ioutput,mainpath,aexp,growth_a,growth_dplus)
-                    dummy,Pp2da=pkann_power(ialpha,dalpha,2,powertype,ioutput,mainpath,aexp,growth_a,growth_dplus)
-                    dummy,Pm2da=pkann_power(ialpha,dalpha,-2,powertype,ioutput,mainpath,aexp,growth_a,growth_dplus)
-                    dtheta_alpha=dalpha*abs(fiducial[ialpha])
-                    deralpha=2.*(Ppda-Pmda)/(3.*dtheta_alpha)+(Pp2da-Pm2da)/(12.*dtheta_alpha)
                 if ((ibeta>5) and (ibeta!=6+i)):
                     derbeta=np.zeros(power_k.size)
                 else:
