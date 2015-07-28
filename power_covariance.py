@@ -16,9 +16,8 @@ from math import sqrt as sqrt
 #import os.path
 # ---------------------------------------------------------------------------- #
 
-"""@package covariance
-compute power spectrum covariance matrix, precision matrix, signal-to-noise 
-"""
+
+
 # -------------------------------- COVARIANCE POWER -------------------------------- #
 def cov_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isimmax = 2, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), okprint = False):
     
