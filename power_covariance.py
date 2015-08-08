@@ -45,6 +45,16 @@ def cov_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isim
         power_pmean = plin_interp
         power_psigma = np.sqrt(2./N_k)*(plin_interp)
         power_pcov = np.diag(power_psigma*power_psigma)
+            
+        if ((simset=="all_256" and nsim==12288) or (simset=="all_1024" and nsim==96)):
+            fname = "cov_"+simset+"_"+powertype+"_"+str("%05d"%noutput)+".txt"
+            fltformat="%-.12e"
+            f = open(fname, "w")
+            for i in xrange(0, power_k.size):
+                for j in xrange(0, power_k.size):
+                    f.write(str(fltformat%power_pcov[i,j])+" ")
+                f.write("\n")
+            f.close()
 
     elif ((simset=="all_256" and nsim==12288) or (simset=="all_1024" and nsim==96)):
         fname = "cov_"+simset+"_"+powertype+"_"+str("%05d"%noutput)+".txt"
