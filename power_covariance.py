@@ -23,7 +23,30 @@ def cov_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isim
     
     nsim = isimmax-isimmin
     
-    if ((simset=="all_256" and nsim==12288) or (simset=="all_1024" and nsim==96)):
+    if (powertype=="linear"):
+        power_k_CAMB, power_p_CAMB = np.loadtxt(mainpath+"/data/pk_lcdmw7.dat",unpack=True)
+        power_k, dummy = power_spectrum("nyquist",mainpath,simset,1,noutput,aexp,growth_a,growth_dplus)
+        aexp_end = 1.
+        dplus_a = extrapolate([aexp], growth_a, growth_dplus)
+        dplus_end = extrapolate([aexp_end], growth_a, growth_dplus)
+        plin = power_p_CAMB * dplus_a * dplus_a / (dplus_end * dplus_end)
+        
+        plin_interp = np.interp(power_k, power_k_CAMB, plin)
+        N_k = np.zeros(power_k.size)
+        if (simset=="all_512" or simset=="4096_furphase_512"):
+            L_box = 1312.5
+        else:
+            L_box = 656.25
+        for j in xrange(0, power_k.size):
+            if (j!=power_k.size-1):
+                delta_k = power_k[j+1]-power_k[j]
+            N_k[j]=L_box*L_box*L_box*power_k[j]*power_k[j]*delta_k/(2.*math.pi*math.pi)
+        
+        power_pmean = plin_interp
+        power_psigma = np.sqrt(2./N_k)*(plin_interp)
+        power_pcov = np.diag(power_psigma*power_psigma)
+
+    elif ((simset=="all_256" and nsim==12288) or (simset=="all_1024" and nsim==96)):
         fname = "cov_"+simset+"_"+powertype+"_"+str("%05d"%noutput)+".txt"
         if(os.path.isfile(fname)):
             power_pcov = np.loadtxt(fname,unpack=True)
