@@ -26,7 +26,7 @@ def fisher_matrix(powertype = "power", galaxy = 0, list_par = [0,2,3,4],  fiduci
     fisher = np.zeros((len(list_par),len(list_par)))
     npar=len(list_par)
 
-    for i in range(0,len(list_aexp)):
+    for iz in range(0,len(list_aexp)):
         ioutput=list_noutput[i]
         aexp=list_aexp[i]
                 
@@ -54,9 +54,9 @@ def fisher_matrix(powertype = "power", galaxy = 0, list_par = [0,2,3,4],  fiduci
             if (galaxy < 2):
                 fltformat="%-.12e"
                 fout = open(covfile,"w")
-                for i in range(0, power_k.size):
-                    for j in range(0, power_k.size):
-                        fout.write(str(fltformat%biased_cov[i,j])+" ")
+                for ik in range(0, power_k.size):
+                    for jk in range(0, power_k.size):
+                        fout.write(str(fltformat%biased_cov[ik,jk])+" ")
                     fout.write("\n")
                 fout.close()
     
@@ -69,10 +69,10 @@ def fisher_matrix(powertype = "power", galaxy = 0, list_par = [0,2,3,4],  fiduci
         # ------- variations of power spectrum wrt parameters ----- #
         for ia in range(0,npar):
             ialpha=list_par[ia]
-            if ((ialpha>5) and (ialpha!=6+i)):
+            if ((ialpha>5) and (ialpha!=6+iz)):
                 deralpha=np.zeros(power_k.size)
             else:
-                if (ialpha==6+i):
+                if (ialpha==6+iz):
                     ialpha=6
                 dummy,Ppda=pkann_power(ialpha,dalpha,1,powertype,ioutput,mainpath,aexp,growth_a,growth_dplus)
                 dummy,Pmda=pkann_power(ialpha,dalpha,-1,powertype,ioutput,mainpath,aexp,growth_a,growth_dplus)
@@ -84,10 +84,10 @@ def fisher_matrix(powertype = "power", galaxy = 0, list_par = [0,2,3,4],  fiduci
             for ib in range(0,npar):
                 ibeta=list_par[ib]
             
-                if ((ibeta>5) and (ibeta!=6+i)):
+                if ((ibeta>5) and (ibeta!=6+iz)):
                     derbeta=np.zeros(power_k.size)
                 else:
-                    if (ibeta==6+i):
+                    if (ibeta==6+iz):
                         ibeta=6
                     dummy,Ppdb=pkann_power(ibeta,dbeta,1,powertype,ioutput,mainpath,aexp,growth_a,growth_dplus)
                     dummy,Pmdb=pkann_power(ibeta,dbeta,-1,powertype,ioutput,mainpath,aexp,growth_a,growth_dplus)
