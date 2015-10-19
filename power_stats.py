@@ -504,6 +504,7 @@ def correction_power(mainpath = "", noutput = 1, aexp = 1.,growth_a = np.zeros(0
             f.close()
 
         elif (corr_type == "mode"):
+            print "WARNING: obsolete type of correction for mass resolution effect:", corr_type
             power_k, power_p = nyquist_power(mainpath, "4096_furphase_256", 1, noutput, aexp, growth_a, growth_dplus)
             median_1024 = np.zeros(power_k.size)
             median_256 = np.zeros(power_k.size)
@@ -522,6 +523,7 @@ def correction_power(mainpath = "", noutput = 1, aexp = 1.,growth_a = np.zeros(0
             fit_par = np.polyfit(power_k,correction_to_fit,13)
             correction = np.polyval(fit_par,power_k)
         else:
+            print "WARNING: obsolete type of correction for mass resolution effect:", corr_type
             n256 = random.randint(1,4096)
             nset = random.randint(1,3)
             n1024 = random.randint(1,96)
@@ -564,6 +566,15 @@ def power_spectrum(powertype = "power", mainpath = "", simset = "", nsim = 1, no
     elif (powertype=="mcorrected"):
         power_k, power_p = mass_corrected_power(mainpath, simset, nsim, noutput, aexp, growth_a, growth_dplus)
     elif (powertype=="linear"):
+        power_k_CAMB, power_p_CAMB = np.loadtxt(mainpath+"/data/pk_lcdmw7.dat",unpack=True)
+        power_k, dummy, dummy = read_power(file_path("power", mainpath, simset, nsim, noutput))
+        aexp_end = 1.
+        dplus_a = extrapolate([aexp], growth_a, growth_dplus)
+        dplus_end = extrapolate([aexp_end], growth_a, growth_dplus)
+        plin = power_p_CAMB * dplus_a * dplus_a / (dplus_end * dplus_end)
+        power_p = np.interp(power_k, power_k_CAMB, plin)
+
+    elif (powertype=="linear_mock"):
         power_k_CAMB, power_p_CAMB = np.loadtxt(mainpath+"/data/pk_lcdmw7.dat",unpack=True)
         power_k, dummy, dummy = read_power(file_path("power", mainpath, simset, nsim, noutput))
         aexp_end = 1.
