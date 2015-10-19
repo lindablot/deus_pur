@@ -117,35 +117,14 @@ def cov_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isim
 def cov_power_kcut(kmin, kmax, powertype, mainpath = "", simset = "", isimmin = 1, isimmax = 2, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), sampling=0, okprint = True):
     
     nsim = isimmax - isimmin
-    if (simset=="all_256" and nsim==12288):
-        power_k, power_pmean, power_psigma, power_pcov_nocut = cov_power(powertype,mainpath,simset,noutput,aexp,growth_a,growth_dplus)
-        idx=[(power_k > kmin) & (power_k < kmax)]
-        power_k_kcut=power_k[idx]
-        power_pmean_kcut = power_pmean[idx]
-        power_psigma_kcut = power_psigma[idx]
-        imin=np.where(power_k==power_k_kcut[0])[0]
-        imax=np.where(power_k==power_k_kcut[power_k_kcut.size-1])[0]+1
-        power_pcov = power_pcov_nocut[imin:imax,imin:imax]
-    
-    else:
-        power_k, power_pmean, power_psigma = mean_power(powertype, mainpath, simset, isimmin, isimmax, noutput, aexp, growth_a, growth_dplus, okprint)
-        idx=[(power_k > kmin) & (power_k < kmax)]
-        power_k_kcut = power_k[idx]
-        power_pmean_kcut = power_pmean[idx]
-        power_psigma_kcut = power_psigma[idx]
-
-        power_pcov = np.zeros((power_k_kcut.size,power_k_kcut.size))
-        for isim in xrange(isimmin, isimmax):
-            iset, isimu = sim_iterator(simset, isim)
-            if (okprint) :
-                current_file = file_path("power", mainpath, iset, isimu, noutput)
-                print current_file
-            dummy, power_p = power_spectrum(powertype,mainpath,iset,isimu,noutput,aexp,growth_a,growth_dplus,okprint)
-            power_p_kcut = power_p[idx]
-            for ik in xrange(0, power_k_kcut.size):
-                for jk in xrange(0, power_k_kcut.size):
-                    power_pcov[ik,jk] += (power_p_kcut[ik]-power_pmean_kcut[ik])*(power_p_kcut[jk]-power_pmean_kcut[jk])
-        power_pcov /= float(nsim-1)
+    power_k, power_pmean, power_psigma, power_pcov_nocut = cov_power(powertype,mainpath,simset,noutput,aexp,growth_a,growth_dplus)
+    idx=[(power_k > kmin) & (power_k < kmax)]
+    power_k_kcut=power_k[idx]
+    power_pmean_kcut = power_pmean[idx]
+    power_psigma_kcut = power_psigma[idx]
+    imin=np.where(power_k==power_k_kcut[0])[0]
+    imax=np.where(power_k==power_k_kcut[power_k_kcut.size-1])[0]+1
+    power_pcov = power_pcov_nocut[imin:imax,imin:imax]
 
     return power_k_kcut, power_pmean_kcut, power_psigma_kcut, power_pcov
 # ---------------------------------------------------------------------------- #
@@ -160,7 +139,7 @@ def corr_coeff(powertype = "power", mainpath = "", simset = "", isimmin = 1, isi
     corr_coeff = np.zeros((power_k.size,power_k.size))
     for ik in xrange(0, power_k.size):
         for jk in xrange(0, power_k.size):
-            corr_coeff[ik,jk] = power_pcov[ik,jk]/(sqrt(power_pcov[ik,ik])*sqrt(power_pcov[jk,jk]))#/(power_psigma[ik]*power_psigma[jk])
+            corr_coeff[ik,jk] = power_pcov[ik,jk]/(power_psigma[ik]*power_psigma[jk])
             
     return corr_coeff
 # ---------------------------------------------------------------------------- #
