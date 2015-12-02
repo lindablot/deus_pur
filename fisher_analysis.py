@@ -48,6 +48,8 @@ def fisher_matrix(powertype = "power", galaxy = 0, list_par = [0,2,3,4],  fiduci
                 for ik in range(0,power_k.size):
                     for jk in range(0,power_k.size):
                         biased_cov[ik,jk]=pow(bias,4.)*power_pcov[ik,jk]+pow(bias,2.)*(power_pmean[ik]+power_pmean[jk])/ng+1./(ng*ng)
+            else:
+                biased_cov=power_pcov
                 
             if (galaxy < 2):
                 fltformat="%-.12e"
@@ -135,6 +137,8 @@ def fisher_matrix_cho(powertype = "power", galaxy = 0, list_par = [0,2,3,4],  fi
                 for ik in range(0,power_k.size):
                     for jk in range(0,power_k.size):
                         biased_cov[ik,jk]=pow(bias,4.)*power_pcov[ik,jk]+pow(bias,2.)*(power_pmean[ik]+power_pmean[jk])/ng+1./(ng*ng)
+            else:
+                biased_cov=power_pcov
         
             if (galaxy < 2):
                 fltformat="%-.12e"

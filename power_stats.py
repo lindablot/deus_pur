@@ -567,12 +567,31 @@ def power_spectrum(powertype = "power", mainpath = "", simset = "", nsim = 1, no
         power_k, power_p = mass_corrected_power(mainpath, simset, nsim, noutput, aexp, growth_a, growth_dplus)
     elif (powertype=="linear"):
         power_k_CAMB, power_p_CAMB = np.loadtxt(mainpath+"/data/pk_lcdmw7.dat",unpack=True)
-        power_k, dummy, dummy = read_power(file_path("power", mainpath, simset, nsim, noutput))
+        power_k_nocut, dummy, dummy = read_power(file_path("power", mainpath, simset, nsim, noutput))
         aexp_end = 1.
         dplus_a = extrapolate([aexp], growth_a, growth_dplus)
         dplus_end = extrapolate([aexp_end], growth_a, growth_dplus)
         plin = power_p_CAMB * dplus_a * dplus_a / (dplus_end * dplus_end)
-        power_p = np.interp(power_k, power_k_CAMB, plin)
+        power_p_nocut = np.interp(power_k, power_k_CAMB, plin)
+        if (simset == "4096_furphase"):
+            nyquist = (pi / 10000.) * 4096.
+        elif (simset == "4096_otherphase"):
+            nyquist= (pi / 10000.)* 4096.
+        elif (simset == "4096_furphase_512"):
+            nyquist= (pi / 1312.5)*512.
+        elif (simset == "4096_furphase_256"):
+            nyquist= (pi / 656.25)*256.
+        elif (simset == "4096_otherphase_256"):
+            nyquist= (pi / 656.25)*256.
+        elif (simset == "4096_adaphase_256"):
+            nyquist= (pi / 656.25)*256.
+        elif (simset == "64_adaphase_1024"):
+            nyquist= (pi / 656.25)*1024.
+        elif (simset == "64_curiephase_1024"):
+            nyquist= (pi / 656.25)*1024.
+        idx = (power_k < nyquist)
+        power_k = power_k_nocut[idx]
+        power_p = power_p_nocut[idx]
 
     elif (powertype=="linear_mock"):
         power_k_CAMB, power_p_CAMB = np.loadtxt(mainpath+"/data/pk_lcdmw7.dat",unpack=True)
