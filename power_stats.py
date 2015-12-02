@@ -572,7 +572,6 @@ def power_spectrum(powertype = "power", mainpath = "", simset = "", nsim = 1, no
         dplus_a = extrapolate([aexp], growth_a, growth_dplus)
         dplus_end = extrapolate([aexp_end], growth_a, growth_dplus)
         plin = power_p_CAMB * dplus_a * dplus_a / (dplus_end * dplus_end)
-        power_p_nocut = np.interp(power_k, power_k_CAMB, plin)
         if (simset == "4096_furphase"):
             nyquist = (pi / 10000.) * 4096.
         elif (simset == "4096_otherphase"):
@@ -589,9 +588,9 @@ def power_spectrum(powertype = "power", mainpath = "", simset = "", nsim = 1, no
             nyquist= (pi / 656.25)*1024.
         elif (simset == "64_curiephase_1024"):
             nyquist= (pi / 656.25)*1024.
-        idx = (power_k < nyquist)
+        idx = (power_k_nocut < nyquist)
         power_k = power_k_nocut[idx]
-        power_p = power_p_nocut[idx]
+        power_p = np.interp(power_k, power_k_CAMB, plin)
 
     elif (powertype=="linear_mock"):
         power_k_CAMB, power_p_CAMB = np.loadtxt(mainpath+"/data/pk_lcdmw7.dat",unpack=True)
