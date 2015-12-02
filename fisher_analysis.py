@@ -169,7 +169,7 @@ def fisher_matrix_cho(powertype = "power", galaxy = 0, list_par = [0,2,3,4],  fi
                 derpar_T[ia]=2.*(Ppda-Pmda)/(3.*dtheta_alpha)+(Pp2da-Pm2da)/(12.*dtheta_alpha)
 
         inv_cov_der =  scipy.linalg.cho_solve(cov_fac,derpar_T.T)
-        fisher_iz = np.dot(derpar_T.T, inv_cov_der)
+        fisher_iz = np.dot(derpar_T, inv_cov_der)
         fisher+=fisher_iz
         print np.shape(fisher_iz), npar
                 
