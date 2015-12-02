@@ -177,7 +177,7 @@ def fisher_matrix_cho(powertype = "power", galaxy = 0, list_par = [0,2,3,4],  fi
                 #    for jk in range(0,power_k.size):
 #       fisher[ia,ib]+=deralpha[ik]*derbeta[jk]*inv_cov[ik,jk]
 
-return fisher
+    return fisher
 
 
 
