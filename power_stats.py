@@ -573,21 +573,17 @@ def power_spectrum(powertype = "power", mainpath = "", simset = "", nsim = 1, no
         dplus_end = extrapolate([aexp_end], growth_a, growth_dplus)
         plin = power_p_CAMB * dplus_a * dplus_a / (dplus_end * dplus_end)
         if (simset == "4096_furphase"):
-            nyquist = (pi / 10000.) * 4096.
+            nyquist = (math.pi / 10000.) * 4096.
         elif (simset == "4096_otherphase"):
-            nyquist= (pi / 10000.)* 4096.
+            nyquist= (math.pi / 10000.)* 4096.
         elif (simset == "4096_furphase_512"):
-            nyquist= (pi / 1312.5)*512.
-        elif (simset == "4096_furphase_256"):
-            nyquist= (pi / 656.25)*256.
-        elif (simset == "4096_otherphase_256"):
-            nyquist= (pi / 656.25)*256.
-        elif (simset == "4096_adaphase_256"):
-            nyquist= (pi / 656.25)*256.
+            nyquist= (math.pi / 1312.5)*512.
         elif (simset == "64_adaphase_1024"):
-            nyquist= (pi / 656.25)*1024.
+            nyquist= (math.pi / 656.25)*1024.
         elif (simset == "64_curiephase_1024"):
-            nyquist= (pi / 656.25)*1024.
+            nyquist= (math.pi / 656.25)*1024.
+        else:
+            nyquist= (math.pi / 656.25)*256.
         idx = (power_k_nocut < nyquist)
         power_k = power_k_nocut[idx]
         power_p = np.interp(power_k, power_k_CAMB, plin)
