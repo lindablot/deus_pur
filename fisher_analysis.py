@@ -157,7 +157,7 @@ def fisher_matrix_cho(powertype = "power", galaxy = 0, list_par = [0,2,3,4],  fi
         for ia in range(0,npar):
             ialpha=list_par[ia]
             if ((ialpha>5) and (ialpha!=6+iz)):
-                derpar_T[ia]=np.zeros(npar,power_k.size)
+                derpar_T[ia]=np.zeros(power_k.size)
             else:
                 if (ialpha==6+iz):
                     ialpha=6
