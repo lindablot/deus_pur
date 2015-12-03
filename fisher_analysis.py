@@ -206,18 +206,21 @@ def fisher_matrix_kcut(kmin, kmax, powertype = "power", galaxy = 0, list_par = [
                 for ik in range(0,power_k.size):
                     for jk in range(0,power_k.size):
                         biased_cov[ik,jk]=pow(bias,4.)*power_pcov[ik,jk]+pow(bias,2.)*(power_pmean[ik]+power_pmean[jk])/ng+1./(ng*ng)
+            else:
+                biased_cov=power_pcov
 
         inv_cov = np.linalg.inv(biased_cov)
-        if (nsim>power_k.size+2):
-            inv_cov = float(nsim-power_k.size-2)*inv_cov/float(nsim-1)
-        else:
-            print "warning: biased inverse covariance estimator"
+            #if (nsim>power_k.size+2):
+            #inv_cov = float(nsim-power_k.size-2)*inv_cov/float(nsim-1)
+            #else:
+            #print "warning: biased inverse covariance estimator"
 
         # ------- variations of power spectrum wrt parameters ----- #
+        derpar_T=np.zeros((npar,power_k.size))
         for ia in range(0,npar):
             ialpha=list_par[ia]
             if ((ialpha>5) and (ialpha!=6+iz)):
-                deralpha=np.zeros(power_k.size)
+                derpar_T[ia]=np.zeros(power_k.size)
             else:
                 if (ialpha==6+iz):
                     ialpha=6
@@ -226,28 +229,11 @@ def fisher_matrix_kcut(kmin, kmax, powertype = "power", galaxy = 0, list_par = [
                 dummy,Pp2da=pkann_power(ialpha,dalpha,2,powertype,ioutput,mainpath,aexp,growth_a,growth_dplus)
                 dummy,Pm2da=pkann_power(ialpha,dalpha,-2,powertype,ioutput,mainpath,aexp,growth_a,growth_dplus)
                 dtheta_alpha=dalpha*abs(fiducial[ialpha])
-                deralpha_nocut=2.*(Ppda-Pmda)/(3.*dtheta_alpha)+(Pp2da-Pm2da)/(12.*dtheta_alpha)
-                deralpha = deralpha_nocut[imin:imax]
-
-            for ib in range(0,npar):
-                ibeta=list_par[ib]
-                
-                if ((ibeta>5) and (ibeta!=6+iz)):
-                    derbeta=np.zeros(power_k.size)
-                else:
-                    if (ibeta==6+iz):
-                        ibeta=6
-                    dummy,Ppdb=pkann_power(ibeta,dbeta,1,powertype,ioutput,mainpath,aexp,growth_a,growth_dplus)
-                    dummy,Pmdb=pkann_power(ibeta,dbeta,-1,powertype,ioutput,mainpath,aexp,growth_a,growth_dplus)
-                    dummy,Pp2db=pkann_power(ibeta,dbeta,2,powertype,ioutput,mainpath,aexp,growth_a,growth_dplus)
-                    dummy,Pm2db=pkann_power(ibeta,dbeta,-2,powertype,ioutput,mainpath,aexp,growth_a,growth_dplus)
-                    dtheta_beta=dbeta*abs(fiducial[ibeta])
-                    derbeta_nocut=2.*(Ppdb-Pmdb)/(3.*dtheta_beta)+(Pm2db-Pp2db)/(12.*dtheta_beta)
-                    derbeta = derbeta_nocut[imin:imax]
-                
-                for ik in range(0,power_k.size):
-                    for jk in range(0,power_k.size):
-                        fisher[ia,ib]+=deralpha[ik]*derbeta[jk]*inv_cov[ik,jk]
+                derpar_T_nocut=2.*(Ppda-Pmda)/(3.*dtheta_alpha)+(Pp2da-Pm2da)/(12.*dtheta_alpha)
+                derpar_T[ia]=derpar_T_nocut[imin,imax]
+        
+        fisher_iz=np.dot(derpar_T,np.dot(inv_cov,derpar_T.T))
+        fisher+=fisher_iz
 
     return fisher
 
