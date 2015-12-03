@@ -47,7 +47,7 @@ def fisher_matrix(powertype = "power", galaxy = 0, list_par = [0,2,3,4],  fiduci
                 ng=galaxy_density(ioutput,frac)
                 for ik in range(0,power_k.size):
                     for jk in range(0,power_k.size):
-                        biased_cov[ik,jk]=pow(bias,4.)*power_pcov[ik,jk]+pow(bias,2.)*(power_pmean[ik]+power_pmean[jk])/ng+1./(ng*ng)
+                        biased_cov[ik,jk]=pow(bias,4.)*power_pcov[ik,jk]+pow(bias,2.)*math.sqrt(power_pmean[ik]*power_pmean[jk])/ng+1./(ng*ng)
             else:
                 biased_cov=power_pcov
                 
@@ -61,16 +61,17 @@ def fisher_matrix(powertype = "power", galaxy = 0, list_par = [0,2,3,4],  fiduci
                 fout.close()
     
         inv_cov = np.linalg.inv(biased_cov)
-        if (nsim>power_k.size+2):
-            inv_cov = float(nsim-power_k.size-2)*inv_cov/float(nsim-1)
-        else:
-            print "warning: biased inverse covariance estimator"
+            #if (nsim>power_k.size+2):
+            #inv_cov = float(nsim-power_k.size-2)*inv_cov/float(nsim-1)
+            #else:
+            #print "warning: biased inverse covariance estimator"
 
         # ------- variations of power spectrum wrt parameters ----- #
+        derpar_T=np.zeros((npar,power_k.size))
         for ia in range(0,npar):
             ialpha=list_par[ia]
             if ((ialpha>5) and (ialpha!=6+iz)):
-                deralpha=np.zeros(power_k.size)
+                derpar_T[ia]=np.zeros(power_k.size)
             else:
                 if (ialpha==6+iz):
                     ialpha=6
@@ -79,26 +80,10 @@ def fisher_matrix(powertype = "power", galaxy = 0, list_par = [0,2,3,4],  fiduci
                 dummy,Pp2da=pkann_power(ialpha,dalpha,2,powertype,ioutput,mainpath,aexp,growth_a,growth_dplus)
                 dummy,Pm2da=pkann_power(ialpha,dalpha,-2,powertype,ioutput,mainpath,aexp,growth_a,growth_dplus)
                 dtheta_alpha=dalpha*abs(fiducial[ialpha])
-                deralpha=2.*(Ppda-Pmda)/(3.*dtheta_alpha)+(Pp2da-Pm2da)/(12.*dtheta_alpha)
+                derpar_T[ia]=2.*(Ppda-Pmda)/(3.*dtheta_alpha)+(Pp2da-Pm2da)/(12.*dtheta_alpha)
 
-            for ib in range(0,npar):
-                ibeta=list_par[ib]
-            
-                if ((ibeta>5) and (ibeta!=6+iz)):
-                    derbeta=np.zeros(power_k.size)
-                else:
-                    if (ibeta==6+iz):
-                        ibeta=6
-                    dummy,Ppdb=pkann_power(ibeta,dbeta,1,powertype,ioutput,mainpath,aexp,growth_a,growth_dplus)
-                    dummy,Pmdb=pkann_power(ibeta,dbeta,-1,powertype,ioutput,mainpath,aexp,growth_a,growth_dplus)
-                    dummy,Pp2db=pkann_power(ibeta,dbeta,2,powertype,ioutput,mainpath,aexp,growth_a,growth_dplus)
-                    dummy,Pm2db=pkann_power(ibeta,dbeta,-2,powertype,ioutput,mainpath,aexp,growth_a,growth_dplus)
-                    dtheta_beta=dbeta*abs(fiducial[ibeta])
-                    derbeta=2.*(Ppdb-Pmdb)/(3.*dtheta_beta)+(Pm2db-Pp2db)/(12.*dtheta_beta)
-                
-                for ik in range(0,power_k.size):
-                    for jk in range(0,power_k.size):
-                        fisher[ia,ib]+=deralpha[ik]*derbeta[jk]*inv_cov[ik,jk]
+        fisher_iz=np.dot(derpar_T,np.dot(inv_cov,derpar_T.T))
+        fisher+=fisher_iz
 
     return fisher
 
@@ -175,11 +160,6 @@ def fisher_matrix_cho(powertype = "power", galaxy = 0, list_par = [0,2,3,4],  fi
         inv_cov_der =  scipy.linalg.cho_solve(cov_fac,derpar_T.T)
         fisher_iz = np.dot(derpar_T, inv_cov_der)
         fisher+=fisher_iz
-        print np.shape(fisher_iz), npar
-                
-                #                for ik in range(0,power_k.size):
-                #    for jk in range(0,power_k.size):
-#       fisher[ia,ib]+=deralpha[ik]*derbeta[jk]*inv_cov[ik,jk]
 
     return fisher
 
