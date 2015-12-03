@@ -230,7 +230,7 @@ def fisher_matrix_kcut(kmin, kmax, powertype = "power", galaxy = 0, list_par = [
                 dummy,Pm2da=pkann_power(ialpha,dalpha,-2,powertype,ioutput,mainpath,aexp,growth_a,growth_dplus)
                 dtheta_alpha=dalpha*abs(fiducial[ialpha])
                 derpar_T_nocut=2.*(Ppda-Pmda)/(3.*dtheta_alpha)+(Pp2da-Pm2da)/(12.*dtheta_alpha)
-                derpar_T[ia]=derpar_T_nocut[imin,imax]
+                derpar_T[ia]=derpar_T_nocut[imin:imax]
         
         fisher_iz=np.dot(derpar_T,np.dot(inv_cov,derpar_T.T))
         fisher+=fisher_iz
