@@ -209,7 +209,8 @@ def fisher_matrix_kcut(kmin, kmax, powertype = "power", galaxy = 0, list_par = [
             else:
                 biased_cov=power_pcov
 
-        inv_cov = np.linalg.inv(biased_cov)
+        cov_fac = scipy.linalg.cho_factor(biased_cov)
+        #inv_cov = np.linalg.inv(biased_cov)
             #if (nsim>power_k.size+2):
             #inv_cov = float(nsim-power_k.size-2)*inv_cov/float(nsim-1)
             #else:
@@ -232,7 +233,9 @@ def fisher_matrix_kcut(kmin, kmax, powertype = "power", galaxy = 0, list_par = [
                 derpar_T_nocut=2.*(Ppda-Pmda)/(3.*dtheta_alpha)+(Pp2da-Pm2da)/(12.*dtheta_alpha)
                 derpar_T[ia]=derpar_T_nocut[imin:imax]
         
-        fisher_iz=np.dot(derpar_T,np.dot(inv_cov,derpar_T.T))
+        #fisher_iz=np.dot(derpar_T,np.dot(inv_cov,derpar_T.T))
+        inv_cov_der =  scipy.linalg.cho_solve(cov_fac,derpar_T.T)
+        fisher_iz = np.dot(derpar_T, inv_cov_der)
         fisher+=fisher_iz
 
     return fisher
