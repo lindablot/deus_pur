@@ -117,7 +117,7 @@ def cov_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isim
 def cov_power_kcut(kmin, kmax, powertype, mainpath = "", simset = "", isimmin = 1, isimmax = 2, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), sampling=0, okprint = True):
     
     nsim = isimmax - isimmin
-    power_k, power_pmean, power_psigma, power_pcov_nocut = cov_power(powertype,mainpath,simset,noutput,aexp,growth_a,growth_dplus)
+    power_k, power_pmean, power_psigma, power_pcov_nocut = cov_power(powertype,mainpath,simset,isimmin,isimmax,noutput,aexp,growth_a,growth_dplus)
     idx=[(power_k > kmin) & (power_k < kmax)]
     power_k_kcut=power_k[idx]
     power_pmean_kcut = power_pmean[idx]
