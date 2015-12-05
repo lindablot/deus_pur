@@ -27,44 +27,39 @@ def fisher_matrix(powertype = "power", galaxy = 0, list_par = [0,2,3,4],  fiduci
     for iz in range(0,len(list_aexp)):
         ioutput=list_noutput[iz]
         aexp=list_aexp[iz]
-                
+        
         # ------------------- covariance ------------------- #
-        covfile = "tmp/cov_"+str(nsim)+"_"+powertype+"_"+str(ioutput)+"_"+str(galaxy)+".txt"
-        covfile_nosn = "tmp/cov_"+str(nsim)+"_"+powertype+"_"+str(ioutput)+"_"+str(0)+".txt"
-        if (os.path.isfile(covfile) and galaxy<2):
-            biased_cov=np.loadtxt(covfile,unpack=True)
-            power_k,dummy=power_spectrum(powertype,mainpath,simset,1,ioutput,aexp,growth_a,growth_dplus,False)
+        covfile = "tmp/cov_"+str(nsim)+"_"+powertype+"_"+str(ioutput)+".txt"
+        if (os.path.isfile(covfile)):
+            power_pcov=np.loadtxt(covfile,unpack=True)
+            power_k,dummy=power_spectrum(powertype,mainpath,simset,isimmin,ioutput,aexp,growth_a,growth_dplus)
         else:
-            if (os.path.isfile(covfile_nosn) and galaxy==2):
-                power_pcov=np.loadtxt(covfile_nosn)
-                power_k,power_pmean,dummy=mean_power(powertype,mainpath,simset,isimmin,isimmax,ioutput,aexp,growth_a,growth_dplus)
-            else:
-                power_k,power_pmean,power_psigma,power_pcov=cov_power(powertype,mainpath,simset,isimmin,isimmax,ioutput,aexp,growth_a,growth_dplus)
-                    
-            biased_cov=np.zeros(np.shape(power_pcov))
-            if (galaxy > 0):
-                bias=1.#galaxy_bias(power_k,ioutput)
-                ng=galaxy_density(ioutput,frac)
-                for ik in range(0,power_k.size):
-                    for jk in range(0,power_k.size):
-                        biased_cov[ik,jk]=pow(bias,4.)*power_pcov[ik,jk]+2.*pow(bias,2.)*math.sqrt(power_pmean[ik]*power_pmean[jk])/ng+1./(ng*ng)
-            else:
-                biased_cov=power_pcov
-                
+            power_k,dummy,dummy,power_pcov=cov_power(powertype,mainpath,simset,isimmin,isimmax,ioutput,aexp,growth_a,growth_dplus)
+            
             if (galaxy < 2):
                 fltformat="%-.12e"
                 fout = open(covfile,"w")
                 for ik in range(0, power_k.size):
                     for jk in range(0, power_k.size):
-                        fout.write(str(fltformat%biased_cov[ik,jk])+" ")
+                        fout.write(str(fltformat%power_pcov[ik,jk])+" ")
                     fout.write("\n")
                 fout.close()
-    
-        inv_cov = np.linalg.inv(biased_cov)
-            #if (nsim>power_k.size+2):
-            #inv_cov = float(nsim-power_k.size-2)*inv_cov/float(nsim-1)
-            #else:
-            #print "warning: biased inverse covariance estimator"
+
+        if (galaxy > 0):
+            power_k,power_pmean,dummy=mean_power_all("mcorrected",mainpath,ioutput,aexp,growth_a,growth_dplus)
+            biased_cov=np.zeros(np.shape(power_pcov))
+            bias=1.#galaxy_bias(power_k,ioutput)
+            ng=galaxy_density(ioutput,frac)
+            for ik in range(0,power_k.size):
+                for jk in range(0,power_k.size):
+                    biased_cov[ik,jk]=pow(bias,4.)*power_pcov[ik,jk]+2.*pow(bias,2.)*math.sqrt(power_pmean[ik]*power_pmean[jk])/ng+1./(ng*ng)
+            inv_cov = np.linalg.inv(biased_cov)
+        else:
+            inv_cov = np.linalg.inv(power_pcov)
+        if (nsim>power_k.size+2):
+            inv_cov = float(nsim-power_k.size-2)*inv_cov/float(nsim-1)
+        else:
+            print "warning: biased inverse covariance estimator"
 
         # ------- variations of power spectrum wrt parameters ----- #
         derpar_T=np.zeros((npar,power_k.size))
@@ -103,43 +98,33 @@ def fisher_matrix_cho(powertype = "power", galaxy = 0, list_par = [0,2,3,4],  fi
         aexp=list_aexp[iz]
         
         # ------------------- covariance ------------------- #
-        covfile = "tmp/cov_"+str(nsim)+"_"+powertype+"_"+str(ioutput)+"_"+str(galaxy)+".txt"
-        covfile_nosn = "tmp/cov_"+str(nsim)+"_"+powertype+"_"+str(ioutput)+"_"+str(0)+".txt"
-        if (os.path.isfile(covfile) and galaxy<2):
-            biased_cov=np.loadtxt(covfile,unpack=True)
-            power_k,dummy=power_spectrum(powertype,mainpath,simset,1,ioutput,aexp,growth_a,growth_dplus,False)
+        covfile = "tmp/cov_"+str(nsim)+"_"+powertype+"_"+str(ioutput)+".txt"
+        if (os.path.isfile(covfile)):
+            power_pcov=np.loadtxt(covfile,unpack=True)
         else:
-            if (os.path.isfile(covfile_nosn) and galaxy==2):
-                power_pcov=np.loadtxt(covfile_nosn)
-                power_k,power_pmean,dummy=mean_power(powertype,mainpath,simset,isimmin,isimmax,ioutput,aexp,growth_a,growth_dplus)
-            else:
-                power_k,power_pmean,power_psigma,power_pcov=cov_power(powertype,mainpath,simset,isimmin,isimmax,ioutput,aexp,growth_a,growth_dplus)
+            power_k,dummy,dummy,power_pcov=cov_power(powertype,mainpath,simset,isimmin,isimmax,ioutput,aexp,growth_a,growth_dplus)
             
-            biased_cov=np.zeros(np.shape(power_pcov))
-            if (galaxy > 0):
-                bias=1.#galaxy_bias(power_k,ioutput)
-                ng=galaxy_density(ioutput,frac)
-                for ik in range(0,power_k.size):
-                    for jk in range(0,power_k.size):
-                        biased_cov[ik,jk]=pow(bias,4.)*power_pcov[ik,jk]+2.*pow(bias,2.)*math.sqrt(power_pmean[ik]*power_pmean[jk])/ng+1./(ng*ng)
-            else:
-                biased_cov=power_pcov
-        
             if (galaxy < 2):
                 fltformat="%-.12e"
                 fout = open(covfile,"w")
                 for ik in range(0, power_k.size):
                     for jk in range(0, power_k.size):
-                        fout.write(str(fltformat%biased_cov[ik,jk])+" ")
+                        fout.write(str(fltformat%power_pcov[ik,jk])+" ")
                     fout.write("\n")
                 fout.close()
 
-        cov_fac = scipy.linalg.cho_factor(biased_cov)
-#        inv_cov = linalg.inv(biased_cov)
-#        if (nsim>power_k.size+2):
-#            inv_cov = float(nsim-power_k.size-2)*inv_cov/float(nsim-1)
-#        else:
-#            print "warning: biased inverse covariance estimator"
+        if (galaxy > 0):
+            power_k,power_pmean,dummy=mean_power_all("mcorrected",mainpath,ioutput,aexp,growth_a,growth_dplus)
+            biased_cov=np.zeros(np.shape(power_pcov))
+            bias=1.#galaxy_bias(power_k,ioutput)
+            ng=galaxy_density(ioutput,frac)
+            for ik in range(0,power_k.size):
+                for jk in range(0,power_k.size):
+                    biased_cov[ik,jk]=pow(bias,4.)*power_pcov[ik,jk]+2.*pow(bias,2.)*math.sqrt(power_pmean[ik]*power_pmean[jk])/ng+1./(ng*ng)
+            cov_fac = scipy.linalg.cho_factor(biased_cov)
+        else:
+            cov_fac = scipy.linalg.cho_factor(power_pcov)
+
 
         # ------- variations of power spectrum wrt parameters ----- #
         derpar_T=np.zeros((npar,power_k.size))
@@ -158,6 +143,10 @@ def fisher_matrix_cho(powertype = "power", galaxy = 0, list_par = [0,2,3,4],  fi
                 derpar_T[ia]=2.*(Ppda-Pmda)/(3.*dtheta_alpha)+(Pp2da-Pm2da)/(12.*dtheta_alpha)
 
         inv_cov_der =  scipy.linalg.cho_solve(cov_fac,derpar_T.T)
+        if (nsim>power_k.size+2):
+            inv_cov_der = float(nsim-power_k.size-2)*inv_cov_der/float(nsim-1)
+        else:
+            print "warning: biased inverse covariance estimator"
         fisher_iz = np.dot(derpar_T, inv_cov_der)
         fisher+=fisher_iz
 
@@ -185,36 +174,34 @@ def fisher_matrix_kcut(kmin, kmax, powertype = "power", galaxy = 0, list_par = [
         imax=np.where(power_k_nocut==power_k[power_k.size-1])[0]+1
         
         # ------------------- covariance ------------------- #
-        covfile = "tmp/cov_"+str(nsim)+"_"+powertype+"_"+str(ioutput)+"_"+str(galaxy)+".txt"
-        covfile_nosn = "tmp/cov_"+str(nsim)+"_"+powertype+"_"+str(ioutput)+"_"+str(0)+".txt"
-        if (os.path.isfile(covfile) and galaxy<2):
-            biased_cov_nocut=np.loadtxt(covfile,unpack=True)
-            biased_cov = biased_cov_nocut[imin:imax,imin:imax]
+        covfile = "tmp/cov_"+str(nsim)+"_"+powertype+"_"+str(ioutput)+".txt"
+        if (os.path.isfile(covfile)):
+            power_pcov_nocut=np.loadtxt(covfile,unpack=True)
         else:
-            if (os.path.isfile(covfile_nosn) and galaxy==2):
-                power_pcov_nocut=np.loadtxt(covfile_nosn)
-                dummy,power_pmean_nocut,dummy=mean_power(powertype,mainpath,simset,isimmin,isimmax,ioutput,aexp,growth_a,growth_dplus)
-                power_pmean = power_pmean_nocut[idx]
-                power_pcov=power_pcov_nocut[imin:imax,imin:imax]
-            else:
-                power_k,power_pmean,power_psigma,power_pcov=cov_power_kcut(kmin,kmax,powertype,mainpath,simset,isimmin,isimmax,ioutput,aexp,growth_a,growth_dplus)
+            dummy,dummy,dummy,power_pcov_nocut=cov_power(powertype,mainpath,simset,isimmin,isimmax,ioutput,aexp,growth_a,growth_dplus)
             
-            biased_cov=np.zeros(np.shape(power_pcov))
-            if (galaxy > 0):
-                bias=1.#galaxy_bias(power_k,ioutput)
-                ng=galaxy_density(ioutput,frac)
-                for ik in range(0,power_k.size):
-                    for jk in range(0,power_k.size):
-                        biased_cov[ik,jk]=pow(bias,4.)*power_pcov[ik,jk]+2.*pow(bias,2.)*math.sqrt(power_pmean[ik]*power_pmean[jk])/ng+1./(ng*ng)
-            else:
-                biased_cov=power_pcov
+            if (galaxy < 2):
+                fltformat="%-.12e"
+                fout = open(covfile,"w")
+                for ik in range(0, power_k.size):
+                    for jk in range(0, power_k.size):
+                        fout.write(str(fltformat%power_pcov_nocut[ik,jk])+" ")
+                    fout.write("\n")
+                fout.close()
 
-        cov_fac = scipy.linalg.cho_factor(biased_cov)
-        #inv_cov = np.linalg.inv(biased_cov)
-            #if (nsim>power_k.size+2):
-            #inv_cov = float(nsim-power_k.size-2)*inv_cov/float(nsim-1)
-            #else:
-            #print "warning: biased inverse covariance estimator"
+        power_pcov=power_pcov_nocut[imin:imax,imin:imax]
+        if (galaxy > 0):
+            dummy,power_pmean_nocut,dummy=mean_power_all("mcorrected",mainpath,ioutput,aexp,growth_a,growth_dplus)
+            power_pmean=power_pmean_nocut[idx]
+            biased_cov=np.zeros(np.shape(power_pcov))
+            bias=1.#galaxy_bias(power_k,ioutput)
+            ng=galaxy_density(ioutput,frac)
+            for ik in range(0,power_k.size):
+                for jk in range(0,power_k.size):
+                    biased_cov[ik,jk]=pow(bias,4.)*power_pcov[ik,jk]+2.*pow(bias,2.)*math.sqrt(power_pmean[ik]*power_pmean[jk])/ng+1./(ng*ng)
+            cov_fac = scipy.linalg.cho_factor(biased_cov)
+        else:
+            cov_fac = scipy.linalg.cho_factor(power_pcov)
 
         # ------- variations of power spectrum wrt parameters ----- #
         derpar_T=np.zeros((npar,power_k.size))
@@ -233,8 +220,11 @@ def fisher_matrix_kcut(kmin, kmax, powertype = "power", galaxy = 0, list_par = [
                 derpar_T_nocut=2.*(Ppda-Pmda)/(3.*dtheta_alpha)+(Pp2da-Pm2da)/(12.*dtheta_alpha)
                 derpar_T[ia]=derpar_T_nocut[imin:imax]
         
-        #fisher_iz=np.dot(derpar_T,np.dot(inv_cov,derpar_T.T))
         inv_cov_der =  scipy.linalg.cho_solve(cov_fac,derpar_T.T)
+        if (nsim>power_k.size+2):
+            inv_cov_der = float(nsim-power_k.size-2)*inv_cov_der/float(nsim-1)
+        else:
+            print "warning: biased inverse covariance estimator"
         fisher_iz = np.dot(derpar_T, inv_cov_der)
         fisher+=fisher_iz
 
