@@ -43,6 +43,9 @@ def sim_iterator(simset = "", isim = 1, replace = 0, index = 0):
         else:
             true_set = "64_curiephase_1024"
             true_isim = isim - 64
+    elif(simset=="all_cosmo"):
+        true_set = "512_adaphase_512_328-125"
+        true_isim = isim
     elif (simset=="random_256"):
         fname = "random_series.txt"
         
