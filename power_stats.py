@@ -226,7 +226,7 @@ def mean_power_all_cosmo(powertype = "power", mainpath = "", noutput = 1, aexp =
             f.write(str("%-.12e"%power_k[i])+" "+str("%-.12e"%power_pmean[i])+" "+str("%-.12e"%power_psigma[i])+"\n")
         f.close()
 
-return power_k, power_pmean, power_psigma
+    return power_k, power_pmean, power_psigma
 # ---------------------------------------------------------------------------- #
 
 
