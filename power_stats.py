@@ -18,27 +18,29 @@ import random
 
 
 # -------------------------------- MEAN POWER -------------------------------- #
-def mean_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isimmax = 2, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), okprint = False):
+def mean_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isimmax = 2, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), nmodel = 0, okprint = False):
     
     nsim = isimmax-isimmin
     if (simset=="all_256" and nsim==12288):
         power_k, power_pmean, power_psigma = mean_power_all(powertype,mainpath,noutput,aexp,growth_a,growth_dplus,okprint)
     elif (simset=="all_1024" and nsim==96):
-        power_k, power_pmean, power_psigma = mean_power_all1024(powertype,mainpath,noutput,aexp,growth_a,growth_dplus,okprint)
+        power_k, power_pmean, power_psigma = mean_power_all_1024(powertype,mainpath,noutput,aexp,growth_a,growth_dplus,okprint)
     elif (simset=="4096_furphase_512" and nsim==512):
-        power_k, power_pmean, power_psigma = mean_power_all512(powertype,mainpath,noutput,aexp,growth_a,growth_dplus,okprint)
+        power_k, power_pmean, power_psigma = mean_power_all_512(powertype,mainpath,noutput,aexp,growth_a,growth_dplus,okprint)
+    elif (simset=="all_cosmo" and nsim==512):
+        power_k, power_pmean, power_psigma = mean_power_all_cosmo(powertype,mainpath,noutput,aexp,growth_a,growth_dplus,nmodel)
     else:
         true_simset, true_isimmin = sim_iterator(simset, isimmin)
-        power_k, power_p = power_spectrum(powertype,mainpath,true_simset,true_isimmin,noutput,aexp,growth_a,growth_dplus)
+        power_k, power_p = power_spectrum(powertype,mainpath,true_simset,true_isimmin,noutput,aexp,growth_a,growth_dplus,nmodel)
         power_pmean = np.zeros(power_k.size)
         power_psigma = np.zeros(power_k.size)
 
         for isim in xrange(isimmin, isimmax):
             true_simset,true_isim = sim_iterator(simset, isim)
             if (okprint) :
-                current_file = file_path("power", mainpath, true_simset, true_isim, noutput)
+                current_file = file_path("power", mainpath, true_simset, true_isim, noutput, nmodel)
                 print current_file
-            dummy, power_p = power_spectrum(powertype,mainpath,true_simset,true_isim,noutput,aexp,growth_a,growth_dplus,okprint)
+            dummy, power_p = power_spectrum(powertype,mainpath,true_simset,true_isim,noutput,aexp,growth_a,growth_dplus,nmodel,okprint)
             power_pmean += power_p
 
         power_pmean /= float(nsim)
@@ -47,9 +49,9 @@ def mean_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isi
             for isim in xrange(isimmin, isimmax):
                 true_simset,true_isim = sim_iterator(simset, isim)
                 if (okprint) :
-                    current_file = file_path("power", mainpath, true_simset, true_isim, noutput)
+                    current_file = file_path("power", mainpath, true_simset, true_isim, noutput, nmodel)
                     print current_file
-                dummy, power_p = power_spectrum(powertype,mainpath,true_simset,true_isim,noutput,aexp,growth_a,growth_dplus,okprint)
+                dummy, power_p = power_spectrum(powertype,mainpath,true_simset,true_isim,noutput,aexp,growth_a,growth_dplus,nmodel,okprint)
                 power_psigma += (power_p-power_pmean)*(power_p-power_pmean)
             power_psigma /= float(nsim-1)
             power_psigma = np.sqrt(power_psigma)
@@ -187,6 +189,48 @@ def mean_power_all_512(powertype = "power", mainpath = "", noutput = 1, aexp = 0
 # ---------------------------------------------------------------------------- #
 
 
+
+# ------------------------------- MEAN POWER ON ALL 512 COSMO ------------------------ #
+def mean_power_all_cosmo(powertype = "power", mainpath = "", noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), nmodel = 3, okprint = False):
+    
+    fname = "mean_"+powertype+"_cosmo_model"+str(int(nmodel)).zfill(5)+"_"+str("%05d"%noutput)+".txt"
+    simset = "512_adaphase_512_328-125"
+    if(os.path.isfile(fname)):
+        power_k, power_pmean, power_psigma = np.loadtxt(fname,unpack=True)
+    else:
+        nsim = 512
+        power_k, power_p = power_spectrum(powertype,mainpath,simset,1,noutput,aexp,growth_a,growth_dplus,nmodel)
+        power_pmean = np.zeros(power_k.size)
+        power_psigma = np.zeros(power_k.size)
+        
+        for isim in xrange(1,nsim+1):
+            if (okprint) :
+                current_file = file_path("power", mainpath, simset, isim, noutput, nmodel)
+                print current_file
+            dummy, power_p = power_spectrum(powertype,mainpath,simset,isim,noutput,aexp,growth_a,growth_dplus,nmodel,okprint)
+            power_pmean += power_p
+
+        power_pmean /= float(nsim)
+
+        for isim in xrange(1,nsim+1):
+            if (okprint) :
+                current_file = file_path("power", mainpath, simset, isim, noutput, nmodel)
+                print current_file
+            dummy, power_p = power_spectrum(powertype,mainpath,simset,isim,noutput,aexp,growth_a,growth_dplus,nmodel,okprint)
+            power_psigma += (power_p-power_pmean)*(power_p-power_pmean)
+        power_psigma /= float(nsim-1)
+        power_psigma = np.sqrt(power_psigma)
+        
+        f = open(fname, "w")
+        for i in xrange(0, power_k.size):
+            f.write(str("%-.12e"%power_k[i])+" "+str("%-.12e"%power_pmean[i])+" "+str("%-.12e"%power_psigma[i])+"\n")
+        f.close()
+
+return power_k, power_pmean, power_psigma
+# ---------------------------------------------------------------------------- #
+
+
+
 # ------------------------------- MEAN POWER ON ALL 512 REBINNED ------------------------ #
 def mean_power_all_512r256(powertype = "power", mainpath = "", noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), okprint = False):
     
@@ -240,7 +284,7 @@ def mean_power_all_512r256(powertype = "power", mainpath = "", noutput = 1, aexp
 
 
 # --------------------- PDF OF POWER SPECTRA --------------------------- #
-def distrib_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isimmax = 2, noutput = 1, nbin = 50, kref = 0.2, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), okprint = False):
+def distrib_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isimmax = 2, noutput = 1, nbin = 50, kref = 0.2, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), nmodel = 0, okprint = False):
     
     nsim = isimmax - isimmin
 
@@ -249,9 +293,9 @@ def distrib_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, 
     for isim in xrange(1, nsim+1):
         true_simset, true_isim = sim_iterator(simset,isim)
         if (okprint) :
-            current_file = file_path("power", mainpath, true_simset, true_isim, noutput)
+            current_file = file_path("power", mainpath, true_simset, true_isim, noutput, nmodel)
             print current_file
-        power_k, power_p = power_spectrum(powertype,mainpath,true_simset,true_isim,noutput,aexp,growth_a,growth_dplus)
+        power_k, power_p = power_spectrum(powertype,mainpath,true_simset,true_isim,noutput,aexp,growth_a,growth_dplus,nmodel)
         
         for ik in xrange(0,power_k.size):
             if (power_k[ik]-kref < 0.0024):
@@ -280,7 +324,7 @@ def distrib_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, 
 
 
 # ------------------ HIGH MOMENTS OF SPECTRA PDF ---------------------- #
-def high_moments(powertype = "power", mainpath = "", simset = "", isimmin = 1, isimmax = 2, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), unbiased = True, okprint = False):
+def high_moments(powertype = "power", mainpath = "", simset = "", isimmin = 1, isimmax = 2, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), nmodel = 0, unbiased = True, okprint = False):
 
     nsim = isimmax-isimmin
     
@@ -310,7 +354,7 @@ def high_moments(powertype = "power", mainpath = "", simset = "", isimmin = 1, i
                 power_kurt += (power_p-power_pmean)*(power_p-power_pmean)*(power_p-power_pmean)*(power_p-power_pmean)
 
         else:
-            power_k, power_pmean, power_psigma = mean_power(powertype, mainpath, simset, isimmin, isimmax, noutput, aexp, growth_a, growth_dplus, okprint)
+            power_k, power_pmean, power_psigma = mean_power(powertype, mainpath, simset, isimmin, isimmax, noutput, aexp, growth_a, growth_dplus, nmodel, okprint)
     
             power_skew = np.zeros(power_k.size)
             power_kurt = np.zeros(power_k.size)
@@ -318,9 +362,9 @@ def high_moments(powertype = "power", mainpath = "", simset = "", isimmin = 1, i
             for isim in xrange(isimmin, isimmax+1):
                 true_simset, true_isim = sim_iterator(simset,isim)
                 if (okprint) :
-                    current_file = file_path("power", mainpath, true_simset, true_isim, noutput)
+                    current_file = file_path("power", mainpath, true_simset, true_isim, noutput, nmodel)
                     print current_file
-                power_k, power_p = power_spectrum(powertype,mainpath,true_simset,true_isim,noutput,aexp,growth_a,growth_dplus)
+                power_k, power_p = power_spectrum(powertype,mainpath,true_simset,true_isim,noutput,aexp,growth_a,growth_dplus,nmodel)
                 power_skew += (power_p-power_pmean)*(power_p-power_pmean)*(power_p-power_pmean)
                 power_kurt += (power_p-power_pmean)*(power_p-power_pmean)*(power_p-power_pmean)*(power_p-power_pmean)
 
@@ -375,6 +419,8 @@ def mass_corrected_power(mainpath = "", simset = "", nsim = 1, noutput = 1, aexp
         nyquist= (pi / 656.25)*1024.
     elif (simset == "64_curiephase_1024"):
         nyquist= (pi / 656.25)*1024.
+    elif (simset == "512_adaphase_512_328-125"):
+        nyquist= (pi / 328.125)*512.
     idx = (power_k_new < nyquist)
     power_k = power_k_new[idx]
     power_p = power_p_new[idx]
@@ -550,24 +596,28 @@ def correction_power(mainpath = "", noutput = 1, aexp = 1.,growth_a = np.zeros(0
 
 
 # ----------------------- WRAPPER FOR ALL POWER TYPES ------------------------- #
-def power_spectrum(powertype = "power", mainpath = "", simset = "", nsim = 1, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), okprint = False):
+def power_spectrum(powertype = "power", mainpath = "", simset = "", nsim = 1, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), nmodel = 0, okprint = False):
     if (simset=="all_256"):
         if (okprint):
             print "setting simset to 4096_furphase_256 in function power_spectrum"
         simset="4096_furphase_256"
     if (powertype=="power"):
-        power_k, power_p, dummy = read_power(file_path("power", mainpath, simset, nsim, noutput))
+        power_k, power_p, dummy = read_power(file_path("power", mainpath, simset, nsim, noutput, nmodel))
     elif (powertype=="nyquist"):
-        power_k, power_p = nyquist_power(mainpath, simset, nsim, noutput, aexp, growth_a, growth_dplus)
+        power_k, power_p = nyquist_power(mainpath, simset, nsim, noutput, aexp, growth_a, growth_dplus, nmodel)
     elif (powertype=="renormalized"):
-        power_k, power_p = renormalized_power(mainpath, simset, nsim, noutput, growth_a, growth_dplus)
+        power_k, power_p = renormalized_power(mainpath, simset, nsim, noutput, growth_a, growth_dplus, nmodel)
     elif (powertype=="corrected"):
-        power_k, power_p = corrected_power(mainpath, simset, aexp, nsim, noutput, growth_a, growth_dplus)
+        power_k, power_p = corrected_power(mainpath, simset, aexp, nsim, noutput, growth_a, growth_dplus, nmodel)
     elif (powertype=="mcorrected"):
-        power_k, power_p = mass_corrected_power(mainpath, simset, nsim, noutput, aexp, growth_a, growth_dplus)
+        power_k, power_p = mass_corrected_power(mainpath, simset, nsim, noutput, aexp, growth_a, growth_dplus, nmodel)
     elif (powertype=="linear"):
-        power_k_CAMB, power_p_CAMB = np.loadtxt(mainpath+"/data/pk_lcdmw7.dat",unpack=True)
-        power_k_nocut, dummy, dummy = read_power(file_path("power", mainpath, simset, nsim, noutput))
+        if (nmodel==0):
+            model="lcdmw7"
+        else:
+            model="model"+str(int(nmodel)).zfill(5)
+        power_k_CAMB, power_p_CAMB = read_power_camb(mainpath, model)
+        power_k_nocut, dummy, dummy = read_power(file_path("power", mainpath, simset, nsim, noutput, nmodel))
         aexp_end = 1.
         dplus_a = extrapolate([aexp], growth_a, growth_dplus)
         dplus_end = extrapolate([aexp_end], growth_a, growth_dplus)
@@ -582,6 +632,8 @@ def power_spectrum(powertype = "power", mainpath = "", simset = "", nsim = 1, no
             nyquist= (math.pi / 656.25)*1024.
         elif (simset == "64_curiephase_1024"):
             nyquist= (math.pi / 656.25)*1024.
+        elif (simset == "512_adaphase_512_328-125"):
+            nyquist= (math.pi / 328.125)*512.
         else:
             nyquist= (math.pi / 656.25)*256.
         idx = (power_k_nocut < nyquist)
@@ -589,8 +641,12 @@ def power_spectrum(powertype = "power", mainpath = "", simset = "", nsim = 1, no
         power_p = np.interp(power_k, power_k_CAMB, plin)
 
     elif (powertype=="linear_mock"):
-        power_k_CAMB, power_p_CAMB = np.loadtxt(mainpath+"/data/pk_lcdmw7.dat",unpack=True)
-        power_k, dummy, dummy = read_power(file_path("power", mainpath, simset, nsim, noutput))
+        if (nmodel==0):
+            model="lcdmw7"
+        else:
+            model="model"+str(int(nmodel)).zfill(5)
+        power_k_CAMB, power_p_CAMB = read_power_camb(mainpath, model)
+        power_k, dummy, dummy = read_power(file_path("power", mainpath, simset, nsim, noutput, nmodel))
         aexp_end = 1.
         dplus_a = extrapolate([aexp], growth_a, growth_dplus)
         dplus_end = extrapolate([aexp_end], growth_a, growth_dplus)
@@ -598,7 +654,12 @@ def power_spectrum(powertype = "power", mainpath = "", simset = "", nsim = 1, no
                                                      
         plin_interp = np.interp(power_k, power_k_CAMB, plin)
         N_k = np.zeros(power_k.size)
-        L_box = 656.25
+        if (simset=="512_adaphase_512_328-125"):
+            L_box = 328.125
+        elif (simset == "4096_furphase_512"):
+            L_box = 1312.5
+        else:
+            L_box = 656.25
         for j in xrange(0, power_k.size):
             if (j!=power_k.size-1):
                 delta_k = power_k[j+1]-power_k[j]

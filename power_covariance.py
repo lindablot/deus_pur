@@ -19,28 +19,30 @@ from math import sqrt as sqrt
 
 
 # -------------------------------- COVARIANCE POWER -------------------------------- #
-def cov_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isimmax = 2, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), okprint = False):
+def cov_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isimmax = 2, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), nmodel = 0, okprint = False):
     
     nsim = isimmax-isimmin
     
     if (powertype=="linear"):
-        power_k_CAMB, power_p_CAMB = np.loadtxt(mainpath+"/data/pk_lcdmw7.dat",unpack=True)
-        power_k, dummy = power_spectrum("nyquist",mainpath,simset,1,noutput,aexp,growth_a,growth_dplus)
+        if (nmodel==0):
+            model="lcdmw7"
+        else:
+            model="model"+str(int(nmodel)).zfill(5)
+        power_k_CAMB, power_p_CAMB = read_power_camb(mainpath, model)
+        power_k, dummy = power_spectrum("nyquist",mainpath,simset,1,noutput,aexp,growth_a,growth_dplus,nmodel)
         aexp_end = 1.
         dplus_a = extrapolate([aexp], growth_a, growth_dplus)
         dplus_end = extrapolate([aexp_end], growth_a, growth_dplus)
         plin = power_p_CAMB * dplus_a * dplus_a / (dplus_end * dplus_end)
         
         plin_interp = np.interp(power_k, power_k_CAMB, plin)
-        N_k = np.zeros(power_k.size)
         if (simset=="all_512" or simset=="4096_furphase_512"):
             L_box = 1312.5
         else:
             L_box = 656.25
-        for j in xrange(0, power_k.size):
-            if (j!=power_k.size-1):
-                delta_k = power_k[j+1]-power_k[j]
-            N_k[j]=L_box*L_box*L_box*power_k[j]*power_k[j]*delta_k/(2.*math.pi*math.pi)
+        delta_k=np.diff(power_k)
+        delta_k=np.append(delta_k,delta_k[delta_k.size-1])
+        N_k=L_box*L_box*L_box*power_k*power_k*delta_k/(2.*math.pi*math.pi)
         
         power_pmean = plin_interp
         power_psigma = np.sqrt(2./N_k)*(plin_interp)
@@ -78,7 +80,7 @@ def cov_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isim
                 if (okprint) :
                     current_file = file_path("power", mainpath, iset, isim, noutput)
                     print current_file
-                dummy, power_p = power_spectrum(powertype,mainpath,true_simset,true_isim,noutput,aexp,growth_a,growth_dplus,okprint)
+                dummy, power_p = power_spectrum(powertype,mainpath,true_simset,true_isim,noutput,aexp,growth_a,growth_dplus,nmodel,okprint)
                 for ik in xrange(0, power_k.size):
                     for jk in xrange(0, power_k.size):
                         power_pcov[ik,jk] += (power_p[ik]-power_pmean[ik])*(power_p[jk]-power_pmean[jk])
@@ -92,16 +94,45 @@ def cov_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isim
                     f.write(str(fltformat%power_pcov[i,j])+" ")
                 f.write("\n")
             f.close()
+
+    elif (simset=="all_cosmo" and nsim==512):
+        fname = "cov_all_cosmo_model"+str(int(nmodel)).zfill(5)+"_"+powertype+"_"+str("%05d"%noutput)+".txt"
+        power_k, power_pmean, power_psigma = mean_power_all_cosmo(powertype, mainpath, noutput, aexp, growth_a, growth_dplus, nmodel, okprint)
+        if(os.path.isfile(fname)):
+            power_pcov = np.loadtxt(fname,unpack=True)
+        else:
+            power_pcov = np.zeros((power_k.size,power_k.size))
+            
+            for isim in xrange(1, nsim+1):
+                true_simset,true_isim = sim_iterator(simset, isim)
+                if (okprint) :
+                    current_file = file_path("power", mainpath, iset, isim, noutput, nmodel)
+                    print current_file
+                dummy, power_p = power_spectrum(powertype,mainpath,true_simset,true_isim,noutput,aexp,growth_a,growth_dplus,nmodel,okprint)
+                for ik in xrange(0, power_k.size):
+                    for jk in xrange(0, power_k.size):
+                        power_pcov[ik,jk] += (power_p[ik]-power_pmean[ik])*(power_p[jk]-power_pmean[jk])
+
+            power_pcov /= float(nsim-1)
+    
+            fltformat="%-.12e"
+            f = open(fname, "w")
+            for i in xrange(0, power_k.size):
+                for j in xrange(0, power_k.size):
+                    f.write(str(fltformat%power_pcov[i,j])+" ")
+                f.write("\n")
+            f.close()
+
     else:
-        power_k, power_pmean, power_psigma = mean_power(powertype, mainpath, simset, isimmin, isimmax, noutput, aexp, growth_a, growth_dplus, okprint)
+        power_k, power_pmean, power_psigma = mean_power(powertype, mainpath, simset, isimmin, isimmax, noutput, aexp, growth_a, growth_dplus, nmodel, okprint)
         power_pcov = np.zeros((power_k.size,power_k.size))
         
         for isim in xrange(isimmin, isimmax):
             true_simset,true_isim = sim_iterator(simset, isim)
             if (okprint) :
-                current_file = file_path("power", mainpath, true_simset, true_isim, noutput)
+                current_file = file_path("power", mainpath, true_simset, true_isim, noutput, nmodel)
                 print current_file
-            dummy, power_p = power_spectrum(powertype,mainpath,true_simset,true_isim,noutput,aexp,growth_a,growth_dplus,okprint)
+            dummy, power_p = power_spectrum(powertype,mainpath,true_simset,true_isim,noutput,aexp,growth_a,growth_dplus,nmodel,okprint)
             for ik in xrange(0, power_k.size):
                 for jk in xrange(0, power_k.size):
                     power_pcov[ik,jk] += (power_p[ik]-power_pmean[ik])*(power_p[jk]-power_pmean[jk])
@@ -114,10 +145,10 @@ def cov_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isim
 
 
 # -------------------- POWER SPECTRUM COVARIANCE WITH k CUT ------------------------- #
-def cov_power_kcut(kmin, kmax, powertype, mainpath = "", simset = "", isimmin = 1, isimmax = 2, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), sampling=0, okprint = True):
+def cov_power_kcut(kmin, kmax, powertype, mainpath = "", simset = "", isimmin = 1, isimmax = 2, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), nmodel = 0, okprint = True):
     
     nsim = isimmax - isimmin
-    power_k, power_pmean, power_psigma, power_pcov_nocut = cov_power(powertype,mainpath,simset,isimmin,isimmax,noutput,aexp,growth_a,growth_dplus)
+    power_k, power_pmean, power_psigma, power_pcov_nocut = cov_power(powertype,mainpath,simset,isimmin,isimmax,noutput,aexp,growth_a,growth_dplus,nmodel)
     idx=[(power_k > kmin) & (power_k < kmax)]
     power_k_kcut=power_k[idx]
     power_pmean_kcut = power_pmean[idx]
@@ -132,14 +163,11 @@ def cov_power_kcut(kmin, kmax, powertype, mainpath = "", simset = "", isimmin = 
 
 
 # -------------------- CORRELATION COEFFICIENT POWER ------------------------- #
-def corr_coeff(powertype = "power", mainpath = "", simset = "", isimmin = 1, isimmax = 2, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), okprint = False):
+def corr_coeff(powertype = "power", mainpath = "", simset = "", isimmin = 1, isimmax = 2, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), nmodel = 0, okprint = False):
 
-    power_k, power_pmean, power_psigma, power_pcov = cov_power(powertype, mainpath, simset, isimmin, isimmax, noutput, aexp, growth_a, growth_dplus, okprint)
-    
-    corr_coeff = np.zeros((power_k.size,power_k.size))
-    for ik in xrange(0, power_k.size):
-        for jk in xrange(0, power_k.size):
-            corr_coeff[ik,jk] = power_pcov[ik,jk]/(power_psigma[ik]*power_psigma[jk])
+    power_k, power_pmean, power_psigma, power_pcov = cov_power(powertype, mainpath, simset, isimmin, isimmax, noutput, aexp, growth_a, growth_dplus, nmodel, okprint)
+    norm = np.outer(power_psigma,power_psigma)
+    corr_coeff = power_pcov/norm
             
     return corr_coeff
 # ---------------------------------------------------------------------------- #

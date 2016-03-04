@@ -14,11 +14,11 @@ import scipy.interpolate as itl
 
 
 # --------------------------- RENORMALIZED POWER SPECTRUM ----------------------------- #
-def renormalized_power(mainpath = "", simset = "", nsim = 1, noutput = 1, growth_a = np.zeros(0), growth_dplus = np.zeros(0)):
-    power_k, power_p_ini, dummy = read_power(file_path("power", mainpath, simset, nsim, 1))
-    power_k, power_p_end, dummy = read_power(file_path("power", mainpath, simset, nsim, noutput))
-    aexp_ini = read_info(file_path("info", mainpath, simset, nsim, 1))
-    aexp_end = read_info(file_path("info", mainpath, simset, nsim, noutput))
+def renormalized_power(mainpath = "", simset = "", nsim = 1, noutput = 1, growth_a = np.zeros(0), growth_dplus = np.zeros(0), nmodel = 0):
+    power_k, power_p_ini, dummy = read_power(file_path("power", mainpath, simset, nsim, 1, nmodel))
+    power_k, power_p_end, dummy = read_power(file_path("power", mainpath, simset, nsim, noutput, nmodel))
+    aexp_ini = read_info(file_path("info", mainpath, simset, nsim, 1, nmodel))
+    aexp_end = read_info(file_path("info", mainpath, simset, nsim, noutput, nmodel))
     dplus_ini = extrapolate([aexp_ini], growth_a, growth_dplus)
     dplus_end = extrapolate([aexp_end], growth_a, growth_dplus)
     power_p = (power_p_end*dplus_ini*dplus_ini)/(power_p_ini*dplus_end*dplus_end)
@@ -28,10 +28,10 @@ def renormalized_power(mainpath = "", simset = "", nsim = 1, noutput = 1, growth
 
 
 # ----------------------------- POWER SPECTRUM CORRECTED FOR a DIFFERENCES ------------------------------ #
-def corrected_power(mainpath = "", simset = "", aexp = 0., nsim = 1, noutput = 1, growth_a = np.zeros(0), growth_dplus = np.zeros(0)):
-    power_k, power_p_raw, dummy = read_power(file_path("power", mainpath, simset, nsim, noutput))
+def corrected_power(mainpath = "", simset = "", aexp = 0., nsim = 1, noutput = 1, growth_a = np.zeros(0), growth_dplus = np.zeros(0), nmodel = 0):
+    power_k, power_p_raw, dummy = read_power(file_path("power", mainpath, simset, nsim, noutput, nmodel))
     if (aexp != 0.):
-        aexp_raw = read_info(file_path("info", mainpath, simset, nsim, noutput))
+        aexp_raw = read_info(file_path("info", mainpath, simset, nsim, noutput, nmodel))
         dplus_raw = extrapolate([aexp_raw], growth_a, growth_dplus)
         dplus = extrapolate([aexp], growth_a, growth_dplus)
         power_p = (power_p_raw*dplus*dplus)/(dplus_raw*dplus_raw)
@@ -43,11 +43,11 @@ def corrected_power(mainpath = "", simset = "", aexp = 0., nsim = 1, noutput = 1
 
 
 # ----------------------------- POWER SPECTRUM CUT AT NYQUIST FREQUENCY ------------------------------ #
-def nyquist_power(mainpath = "", simset = "", nsim = 1, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0)):
+def nyquist_power(mainpath = "", simset = "", nsim = 1, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), nmodel = 0):
     pi = math.pi
-    power_k, power_p_raw, dummy = read_power(file_path("power", mainpath, simset, nsim, noutput))
+    power_k, power_p_raw, dummy = read_power(file_path("power", mainpath, simset, nsim, noutput, nmodel))
     if (aexp != 0.):
-        aexp_raw = read_info(file_path("info", mainpath, simset, nsim, noutput))
+        aexp_raw = read_info(file_path("info", mainpath, simset, nsim, noutput, nmodel))
         dplus_raw = extrapolate([aexp_raw], growth_a, growth_dplus)
         dplus = extrapolate([aexp], growth_a, growth_dplus)
         power_p = (power_p_raw*dplus*dplus)/(dplus_raw*dplus_raw)
@@ -69,7 +69,9 @@ def nyquist_power(mainpath = "", simset = "", nsim = 1, noutput = 1, aexp = 0., 
         nyquist= (pi / 656.25)*1024.
     elif (simset == "64_curiephase_1024"):
         nyquist= (pi / 656.25)*1024.
-    idx = (power_k < nyquist) 
+    elif (simset == "512_adaphase_512_328-125"):
+        nyquist= (pi / 328.125)*512.
+    idx = (power_k < nyquist)
     power_k_new = power_k[idx]
     power_p_new = power_p[idx]
     return power_k_new, power_p_new
