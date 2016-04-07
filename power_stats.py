@@ -610,7 +610,7 @@ def power_spectrum(powertype = "power", mainpath = "", simset = "", nsim = 1, no
     elif (powertype=="corrected"):
         power_k, power_p = corrected_power(mainpath, simset, aexp, nsim, noutput, growth_a, growth_dplus, nmodel)
     elif (powertype=="mcorrected"):
-        power_k, power_p = mass_corrected_power(mainpath, simset, nsim, noutput, aexp, growth_a, growth_dplus, nmodel)
+        power_k, power_p = mass_corrected_power(mainpath, simset, nsim, noutput, aexp, growth_a, growth_dplus)
     elif (powertype=="linear"):
         if (nmodel==0):
             model="lcdmw7"
