@@ -10,6 +10,71 @@ import scipy.interpolate as itl
 # ---------------------------------------------------------------------------- #
 
 
+
+# ------------------------------- SIMSET CLASS ------------------------------- #
+class DeusPurSet(object):
+    
+    simsets=["4096_furphase_256", "4096_adaphase_256", "4096_otherphase_256", "all_256", "4096_furphase_512", "64_adaphase_1024", "64_curiephase_1024", "all_1024", "512_adaphase_512_328-125","4096_furphase","4096_otherphase"]
+    
+    def __init__(self,name,nmodel=0):
+        
+        if (name in self.simsets):
+            self.name = name
+        else:
+            print "WARNING: Unknown simset "+name+", setting simset name to all_256"
+            self.name="all_256"
+
+        if (name=="4096_furphase_256" or name=="4096_adaphase_256" or name=="4096_otherphase_256" or name=="all_256"):
+            self.npart = 256.
+            self.l_box = 656.25
+            if (name=="all_256"):
+                self.nsimmax=12288
+            else:
+                self.nsimmax=4096
+            self.cosmo=False
+        elif (name=="4096_furphase_512"):
+            self.npart = 512.
+            self.l_box = 1312.5
+            self.nsimmax = 512
+            self.cosmo=False
+        elif (name=="64_adaphase_1024" or name=="64_curiephase_1024" or name=="all_1024"):
+            self.npart = 1024.
+            self.l_box = 656.25
+            if (name=="64_adaphase_1024"):
+                self.nsimmax = 64
+            elif (name=="64_curiephase_1024"):
+                self.nsimmax = 32
+            else:
+                self.nsimmax = 96
+            self.cosmo=False
+        elif (name=="512_adaphase_512_328-125"):
+            self.npart=512.
+            self.l_box=328.125
+            self.nsimmax=512
+            self.nmodel=nmodel
+            self.cosmo=True
+        elif (name=="4096_otherphase" or name=="4096_otherphase"):
+            self.npart=4096.
+            self.l_box=10500.
+            self.nsimmax=1
+            self.cosmo=False
+
+
+        self.nyquist = math.pi/self.l_box*self.npart
+        
+        if (name=="all_256" or name=="all_1024"):
+            self.composite=True
+        else:
+            self.composite=False
+
+    def N_k(self, power_k):
+        delta_k=np.diff(power_k)
+        delta_k=np.append(delta_k,delta_k[delta_k.size-1])
+        return math.pi/24.+ self.l_box**3 *power_k*power_k*delta_k/(2.*math.pi**2)
+# ---------------------------------------------------------------------------- #
+
+
+
 # ------------------------------- EXTRAPOLATE -------------------------------- #
 def extrapolate(value_x, array_x, array_y):
     value_y = 0.

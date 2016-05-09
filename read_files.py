@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# read_files.py - Vincent Reverdy (vince.rev@gmail.com) - 2013
+# read_files.py - Vincent Reverdy (vince.rev@gmail.com) and Linda Blot (linda.blot@obspm.fr) - 2013
 # ---------------------------------- IMPORT ---------------------------------- #
 import math
 import glob
@@ -11,10 +11,10 @@ import numpy as np
 
 
 # -------------------------------- FILE PATH --------------------------------- #
-def file_path(filetype = "", mainpath = "", simset = "", nsim = 1, noutput = 1, nmodel = 0, okprint = False):
+def file_path(filetype = "", mainpath = "", simset = "", nsim = 1, noutput = 1, nmodel = 0, okprint = False, powertype = "gridcic"):
     fullpath = str(mainpath)
     if (filetype == "power"):
-        dataprefix = "/power/powergridcic_"
+        dataprefix = "/power/power"+powertype+"_"
     elif (filetype == "info"):
         dataprefix = "/info/info_"
     elif (filetype == "massfunction"):
@@ -38,7 +38,7 @@ def file_path(filetype = "", mainpath = "", simset = "", nsim = 1, noutput = 1, 
     elif (simset == "512_adaphase_512_328-125"):
         fullpath += simset+"/boxlen328-125_n512_model"+str(int(nmodel)).zfill(5)+"_"+str(int(nsim)).zfill(5)+dataprefix+str(int(noutput)).zfill(5)+".txt"
     else:
-        print "not existing simset"
+        print "WARNING: not existing simset in file_path"
         print simset
         
     if (okprint):

@@ -13,64 +13,120 @@ from read_files import *
 from power_types import *
 from power_stats import *
 from power_covariance import *
-from math import sqrt as sqrt
-#import os.path
+# ---------------------------------------------------------------------------- #
+
+
+
+# --------------------------- COVARIANCE VARIANCE --------------------------- #
+def cov_stats(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., growth_a = np.zeros(0), growth_dplus = np.zeros(0), list_nr = [10,50,100,500,700,1000,3000,5000,6000], okprint=False,store=True):
+    
+    simset = DeusPurSet("all_256")
+    i=0 #index on list_nr
+    
+    folder="tmp/"+str("%05d"%noutput)+"/"
+    command="mkdir -p tmp; mkdir -p "+folder
+    os.system(command)
+    
+    power_k,dummy = power_spectrum(powertype,mainpath,"4096_adaphase_256",1,noutput,aexp,growth_a,growth_dplus)
+    nbin = power_k.size
+    
+    cov_mean = np.zeros((len(list_nr),nbin,nbin))
+    cov_sigma = np.zeros((len(list_nr),nbin,nbin))
+    
+    for nr in list_nr:
+        
+        nsub = 12288/nr
+        cov_sub = np.zeros((nsub,nbin,nbin))
+        nsim = 0
+        totsim = 12288 - int(math.fmod(12288,nr))
+        
+        for isub in xrange(0, nsub):
+            isimmin = isub * nr + 1
+            isimmax = (isub+1)*nr
+            filename=folder+"cov_"+powertype+"_"+str("%05d"%nr)+"_"+str("%05d"%isub)+".txt"
+            if(os.path.isfile(filename)):
+                if (okprint):
+                    print "Reading file: ",filename
+                power_pcov=np.loadtxt(filename, unpack=True)
+            else:
+                dummy,dummy,dummy,power_pcov=cov_power(powertype, mainpath, simset.name, isimmin, isimmax+1, noutput, aexp, growth_a, growth_dplus, okprint)
+                if (store):
+                    if (okprint):
+                        print "Storing file: ",filename
+                    fltformat="%-.12e"
+                    f = open(filename, "w")
+                    for ik in xrange(0, nbin):
+                        for jk in xrange(0, nbin):
+                            f.write(str(fltformat%power_pcov[ik,jk])+" ")
+                        f.write("\n")
+                    f.close()
+            
+            cov_sub[isub]=power_pcov
+    
+        cov_mean[i] = np.mean(cov_sub,axis=0)
+        cov_sigma[i] = np.std(cov_sub,axis=0,ddof=1)
+
+        i+=1
+    return list_nr, cov_mean, cov_sigma
 # ---------------------------------------------------------------------------- #
 
 
 
 # --------------------------- TRACE OF SAMPLE COVARIANCE VARIANCE --------------------------- #
-def cov_variance_trace(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., growth_a = np.zeros(0), growth_dplus = np.zeros(0), list_nr = [10,50,100,500,700,1000,3000,5000,6000], okprint=False):
-
-    simset = "all_256"
+def cov_variance_trace(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., growth_a = np.zeros(0), growth_dplus = np.zeros(0), list_nr = [10,50,100,500,700,1000,3000,5000,6000], okprint=False, store=True):
+    
+    simset = DeusPurSet("all_256")
     trace_sigma2=np.zeros(len(list_nr))
     i=0 #index on list_nr
     
+    folder="tmp/"+str("%05d"%noutput)+"/"
+    command="mkdir -p tmp; mkdir -p "+folder
+    os.system(command)
+    
     power_k,dummy = power_spectrum(powertype,mainpath,"4096_adaphase_256",1,noutput,aexp,growth_a,growth_dplus)
     nbin = power_k.size
-
+    
     for nr in list_nr:
-
+        
         nsub = 12288/nr
         power_pmean = np.zeros((nsub,nbin))
         power_pvar = np.zeros((nsub,nbin))
         nsim = 0
         
-        print nr
-
         for isub in xrange(0, nsub):
             isimmin = isub * nr + 1
             isimmax = (isub+1)*nr
-            filename="tmp/"+str("%05d"%noutput)+"/sigma_"+powertype+"_"+str("%05d"%nr)+"_"+str("%05d"%isub)+".txt"
-            filename_cov="tmp/"+str("%05d"%noutput)+"/cov_"+powertype+"_"+str("%05d"%nr)+"_"+str("%05d"%isub)+".txt"
+            filename=folder+"sigma_"+powertype+"_"+str("%05d"%nr)+"_"+str("%05d"%isub)+".txt"
+            filename_cov=folder+"cov_"+powertype+"_"+str("%05d"%nr)+"_"+str("%05d"%isub)+".txt"
             if(os.path.isfile(filename)):
+                if (okprint):
+                    print "Reading file: ",filename
                 power_psigma=np.loadtxt(filename, unpack=True)
             elif(os.path.isfile(filename_cov)):
+                if (okprint):
+                    print "Reading file: ",filename_cov
                 power_pcov=np.loadtxt(filename_cov, unpack=True)
                 power_psigma=np.sqrt(np.diag(power_pcov))
             else:
-                dummy,dummy,power_psigma=mean_power(powertype, mainpath, simset, isimmin, isimmax+1, noutput, aexp, growth_a, growth_dplus)
-                fltformat="%-.12e"
-                f = open(filename, "w")
-                for ik in xrange(0, nbin):
-                    f.write(str(fltformat%power_psigma[ik])+"\n")
-                f.close()
-
+                dummy,dummy,power_psigma=mean_power(powertype, mainpath, simset.name, isimmin, isimmax+1, noutput, aexp, growth_a, growth_dplus)
+                if (store):
+                    if (okprint):
+                        print "Storing file: ",filename
+                    fltformat="%-.12e"
+                    f = open(filename, "w")
+                    for ik in xrange(0, nbin):
+                        f.write(str(fltformat%power_psigma[ik])+"\n")
+                    f.close()
+    
             power_pvar[isub]=power_psigma**2
+        
 
-        var_mean = np.zeros(nbin)
-        for ik in xrange(0,nbin):
-            var_mean[ik]=np.mean(power_pvar[:,ik])
-
-        sigma2 = np.zeros(nbin)
-        fact = 0.
-        for ik in xrange(0,nbin):
-            for isubset in xrange(0,nsub):
-                sigma2[ik]+=(power_pvar[isubset,ik] - var_mean[ik]) * (power_pvar[isubset,ik] - var_mean[ik])
-            fact+=var_mean[ik]*var_mean[ik]
-            trace_sigma2[i]+=sigma2[ik]
-        trace_sigma2[i]/=(fact*float(nsub-1))
-
+        var_mean=np.mean(power_pvar,axis=0)
+        sigma=np.std(power_pvar,axis=0,ddof=1)
+        sigma2=sigma*sigma
+        fact=np.sum(var_mean*var_mean)
+        trace_sigma2[i]=np.sum(sigma2)/fact
+        
         i+=1
     return list_nr, trace_sigma2
 # ---------------------------------------------------------------------------- #
@@ -78,11 +134,15 @@ def cov_variance_trace(powertype = "power", mainpath = "", noutput = 1 , aexp = 
 
 
 # --------------------------- TRACE OF SAMPLE COVARIANCE VARIANCE WITH k CUT --------------------------- #
-def cov_variance_trace_kcut(kmin=0.03, kmax = 1., powertype = "power", mainpath = "", noutput = 1 , aexp = 1., growth_a = np.zeros(0), growth_dplus = np.zeros(0), list_nr = [10,50,100,500,700,1000,3000,5000,6000], okprint=False):
+def cov_variance_trace_kcut(kmin=0.03, kmax = 1., powertype = "power", mainpath = "", noutput = 1 , aexp = 1., growth_a = np.zeros(0), growth_dplus = np.zeros(0), list_nr = [10,50,100,500,700,1000,3000,5000,6000], okprint=False, store=True):
     
-    simset = "all_256"
+    simset = DeusPurSet("all_256")
     trace_sigma2=np.zeros(len(list_nr))
     i=0 #index on list_nr
+    
+    folder="tmp/"+str("%05d"%noutput)+"/"
+    command="mkdir -p tmp; mkdir -p "+folder
+    os.system(command)
     
     power_k,dummy = power_spectrum(powertype,mainpath,"4096_adaphase_256",1,noutput,aexp,growth_a,growth_dplus)
     index = [(power_k > kmin) & (power_k < kmax)]
@@ -94,117 +154,57 @@ def cov_variance_trace_kcut(kmin=0.03, kmax = 1., powertype = "power", mainpath 
         nsub = 12288/nr
         power_pmean = np.zeros((nsub,nbin))
         power_pvar = np.zeros((nsub,nbin))
-        
-        print nr
+        nsim = 0
         
         for isub in xrange(0, nsub):
             isimmin = isub * nr + 1
             isimmax = (isub+1)*nr
-            filename="tmp/"+str("%05d"%noutput)+"/sigma_"+powertype+"_"+str("%05d"%nr)+"_"+str("%05d"%isub)+".txt"
-            filename_cov="tmp/"+str("%05d"%noutput)+"/cov_"+powertype+"_"+str("%05d"%nr)+"_"+str("%05d"%isub)+".txt"
+            filename=folder+"sigma_"+powertype+"_"+str("%05d"%nr)+"_"+str("%05d"%isub)+".txt"
+            filename_cov=folder+"cov_"+powertype+"_"+str("%05d"%nr)+"_"+str("%05d"%isub)+".txt"
             if(os.path.isfile(filename)):
+                if (okprint):
+                    print "Reading file: ",filename
                 power_psigma=np.loadtxt(filename, unpack=True)
             elif(os.path.isfile(filename_cov)):
+                if (okprint):
+                    print "Reading file: ",filename_cov
                 power_pcov=np.loadtxt(filename_cov, unpack=True)
                 power_psigma=np.sqrt(np.diag(power_pcov))
             else:
-                dummy,dummy,power_psigma=mean_power(powertype, mainpath, simset, isimmin, isimmax+1, noutput, aexp, growth_a, growth_dplus)
-                fltformat="%-.12e"
-                f = open(filename, "w")
-                for ik in xrange(0, power_k.size):
-                    f.write(str(fltformat%power_psigma[ik])+"\n")
-                f.close()
-            
-            power_psigma_kcut = power_psigma[index]
-            power_pvar[isub]=power_psigma_kcut**2
-        
-        var_mean = np.zeros(nbin)
-        for ik in xrange(0,nbin):
-            var_mean[ik]=np.mean(power_pvar[:,ik])
-        
-        
-        sigma2 = np.zeros(nbin)
-        fact = 0.
-        for ik in xrange(0,nbin):
-            for isubset in xrange(0,nsub):
-                sigma2[ik]+=(power_pvar[isubset,ik] - var_mean[ik]) * (power_pvar[isubset,ik] - var_mean[ik])
-            fact+=var_mean[ik]*var_mean[ik]
-            trace_sigma2[i]+=sigma2[ik]
-        trace_sigma2[i]/=(fact*float(nsub-1))
-        
+                dummy,dummy,power_psigma=mean_power(powertype, mainpath, simset.name, isimmin, isimmax+1, noutput, aexp, growth_a, growth_dplus)
+                if (store):
+                    if (okprint):
+                        print "Storing file: ",filename
+                    fltformat="%-.12e"
+                    f = open(filename, "w")
+                    for ik in xrange(0, power_k.size):
+                        f.write(str(fltformat%power_psigma[ik])+"\n")
+                    f.close()
+    
+            power_pvar[isub]=(power_psigma[index])**2
+    
+        var_mean=np.mean(power_pvar,axis=0)
+        sigma=np.std(power_pvar,axis=0,ddof=1)
+        sigma2=sigma*sigma
+        fact=np.sum(var_mean*var_mean)
+        trace_sigma2[i]=np.sum(sigma2)/fact
+    
         i+=1
+
     return list_nr, trace_sigma2
 # ---------------------------------------------------------------------------- #
 
 
 
-# --------------------------- DET OF SAMPLE COVARIANCE VARIANCE --------------------------- #
-def cov_variance_det(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., growth_a = np.zeros(0), growth_dplus = np.zeros(0), list_nr = [10,50,100,500,700,1000,3000,5000,6000], okprint=False):
-    
-    simset = "all_256"
-    det_sigma2=np.zeros(len(list_nr))
-    i=0 #index on list_nr
-    
-    power_k,dummy = power_spectrum(powertype,mainpath,"4096_adaphase_256",1,noutput,aexp,growth_a,growth_dplus)
-    nbin = power_k.size
-    
-    for nr in list_nr:
-        
-        nsub = 12288/nr
-        power_pmean = np.zeros((nsub,nbin))
-        cov_sub = np.zeros((nsub,nbin,nbin))
-        totsim = 12288 - int(math.fmod(12288,nr))
-        
-        print nr,totsim
-        
-        for isub in xrange(0, nsub):
-            isimmin = isub * nr + 1
-            isimmax = (isub+1)*nr
-            filename="tmp/"+str("%05d"%noutput)+"/cov_"+powertype+"_"+str("%05d"%nr)+"_"+str("%05d"%isub)+".txt"
-            if(os.path.isfile(filename)):
-                power_pcov=np.loadtxt(filename, unpack=True)
-            else:
-                dummy,dummy,dummy,power_pcov=cov_power(powertype, mainpath, simset, isimmin, isimmax+1, noutput, aexp, growth_a, growth_dplus)
-                fltformat="%-.12e"
-                f = open(filename, "w")
-                for ik in xrange(0, nbin):
-                    for jk in xrange(0, nbin):
-                        f.write(str(fltformat%power_pcov[ik,jk])+" ")
-                    f.write("\n")
-                f.close()
-                    
-            cov_sub[isub]=power_pcov
-    
-        cov_mean = np.zeros((nbin,nbin))
-        for ik in xrange(0,nbin):
-            for jk in xrange(0,nbin):
-                cov_mean[ik,jk]=np.mean(cov_sub[:,ik,jk])
-                    
-        sigma2 = np.zeros((nbin,nbin))
-        rhs = np.zeros((nbin,nbin))
-        for ik in xrange(0,nbin):
-            for jk in xrange(0,nbin):
-                for isubset in xrange(0,nsub):
-                    sigma2[ik,jk]+=(cov_sub[isubset,ik,jk] - cov_mean[ik,jk]) * (cov_sub[isubset,ik,jk] - cov_mean[ik,jk])
-                rhs[ik,jk]=(cov_mean[ik,ik]*cov_mean[jk,jk]+cov_mean[ik,jk]**2)
-        sigma2/=float(nsub-1)
-        
-        s1,ldet1=np.linalg.slogdet(sigma2)
-        s2,ldet2=np.linalg.slogdet(rhs)
-        det_sigma2[i]=s1/s2*np.exp((ldet1-ldet2)/nbin)
-        
-        i+=1
-    return list_nr, det_sigma2
-# ---------------------------------------------------------------------------- #
-
-
-
 # --------------------------- COVARIANCE VARIANCE --------------------------- #
-def cov_variance(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., growth_a = np.zeros(0), growth_dplus = np.zeros(0), list_nr = [10,50,100,500,700,1000,3000,5000,6000], okprint=False):
+def cov_variance(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., growth_a = np.zeros(0), growth_dplus = np.zeros(0), list_nr = [10,50,100,500,700,1000,3000,5000,6000], okprint=False,store=True):
     
-    simset = "all_256"
-    trace_sigma2=np.zeros(len(list_nr))
+    simset = DeusPurSet("all_256")
     i=0 #index on list_nr
+    
+    folder="tmp/"+str("%05d"%noutput)+"/"
+    command="mkdir -p tmp; mkdir -p "+folder
+    os.system(command)
     
     power_k,dummy = power_spectrum(powertype,mainpath,"4096_adaphase_256",1,noutput,aexp,growth_a,growth_dplus)
     nbin = power_k.size
@@ -214,47 +214,40 @@ def cov_variance(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., gr
     for nr in list_nr:
         
         nsub = 12288/nr
-        power_pmean = np.zeros((nsub,nbin))
         cov_sub = np.zeros((nsub,nbin,nbin))
         nsim = 0
         totsim = 12288 - int(math.fmod(12288,nr))
         
-        print nr,totsim
-        
         for isub in xrange(0, nsub):
             isimmin = isub * nr + 1
             isimmax = (isub+1)*nr
-            filename="tmp/"+str("%05d"%noutput)+"/cov_"+powertype+"_"+str("%05d"%nr)+"_"+str("%05d"%isub)+".txt"
+            filename=folder+"cov_"+powertype+"_"+str("%05d"%nr)+"_"+str("%05d"%isub)+".txt"
             if(os.path.isfile(filename)):
+                if (okprint):
+                    print "Reading file: ",filename
                 power_pcov=np.loadtxt(filename, unpack=True)
             else:
-                dummy,dummy,dummy,power_pcov=cov_power(powertype, mainpath, simset, isimmin, isimmax+1, noutput, aexp, growth_a, growth_dplus)
-                fltformat="%-.12e"
-                f = open(filename, "w")
-                for ik in xrange(0, nbin):
-                    for jk in xrange(0, nbin):
-                        f.write(str(fltformat%power_pcov[ik,jk])+" ")
-                    f.write("\n")
-                f.close()
+                dummy,dummy,dummy,power_pcov=cov_power(powertype, mainpath, simset.name, isimmin, isimmax+1, noutput, aexp, growth_a, growth_dplus, okprint)
+                if (store):
+                    if (okprint):
+                        print "Storing file: ",filename
+                    fltformat="%-.12e"
+                    f = open(filename, "w")
+                    for ik in xrange(0, nbin):
+                        for jk in xrange(0, nbin):
+                            f.write(str(fltformat%power_pcov[ik,jk])+" ")
+                        f.write("\n")
+                    f.close()
             
             cov_sub[isub]=power_pcov
         
-        cov_mean = np.zeros((nbin,nbin))
-        for ik in xrange(0,nbin):
-            for jk in xrange(0,nbin):
-                cov_mean[ik,jk]=np.mean(cov_sub[:,ik,jk])
-    
-        sigma2 = np.zeros((nbin,nbin))
-        fact = 0.
-        for ik in xrange(0,nbin):
-            for jk in xrange(0,nbin):
-                for isubset in xrange(0,nsub):
-                    sigma2[ik,jk]+=(cov_sub[isubset,ik,jk] - cov_mean[ik,jk]) * (cov_sub[isubset,ik,jk] - cov_mean[ik,jk])
-                sigma2[ik,jk]/=(cov_mean[ik,ik]*cov_mean[jk,jk]+cov_mean[ik,jk]**2)
-        sigma2/=float(nsub-1)
-
-        sigma2_all[i]=sigma2
+        cov_mean = np.mean(cov_sub,axis=0)
+        sigma = np.std(cov_sub,axis=0,ddof=1)
+        sigma2 = sigma*sigma
+        fact = np.outer(np.diag(cov_mean),np.diag(cov_mean))+cov_mean*cov_mean
         
+        sigma2_all[i]=sigma2/fact
+
         i+=1
     return list_nr, sigma2_all
 # ---------------------------------------------------------------------------- #
@@ -262,20 +255,20 @@ def cov_variance(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., gr
 
 
 # --------------------------- COVARIANCE VARIANCE WITH k CUT --------------------------- #
-def cov_variance_kcut(kmin=0.03, kmax = 1., powertype = "power", mainpath = "", noutput = 1 , aexp = 1., growth_a = np.zeros(0), growth_dplus = np.zeros(0), list_nr = [10,50,100,500,700,1000,3000,5000,6000], okprint=False):
+def cov_variance_kcut(kmin=0.03, kmax = 1., powertype = "power", mainpath = "", noutput = 1 , aexp = 1., growth_a = np.zeros(0), growth_dplus = np.zeros(0), list_nr = [10,50,100,500,700,1000,3000,5000,6000], okprint=False, store=True):
     
-    simset = "all_256"
+    simset = DeusPurSet("all_256")
     i=0 #index on list_nr
     
+    folder="tmp/"+str("%05d"%noutput)+"/"
+    command="mkdir -p tmp; mkdir -p "+folder
+    os.system(command)
+    
     power_k,dummy = power_spectrum(powertype,mainpath,"4096_adaphase_256",1,noutput,aexp,growth_a,growth_dplus)
-    index = [(power_k > kmin) & (power_k < kmax)]
-    power_k_cut = power_k[index]
+    ikmin = np.searchsorted(power_k,kmin)
+    ikmax = np.searchsorted(power_k,kmax)
+    power_k_cut = power_k[ikmin:ikmax]
     nbin = power_k_cut.size
-
-    aa = np.arange(0,power_k.size)
-    iks = aa[index]
-    ikmin = iks[0]
-    ikmax = iks[iks.size-1]+1
     
     sigma2_all = np.zeros((len(list_nr),nbin,nbin))
     
@@ -292,36 +285,32 @@ def cov_variance_kcut(kmin=0.03, kmax = 1., powertype = "power", mainpath = "", 
         for isub in xrange(0, nsub):
             isimmin = isub * nr + 1
             isimmax = (isub+1)*nr
-            filename="tmp/"+str("%05d"%noutput)+"/cov_"+powertype+"_"+str("%05d"%nr)+"_"+str("%05d"%isub)+".txt"
+            filename=folder+"cov_"+powertype+"_"+str("%05d"%nr)+"_"+str("%05d"%isub)+".txt"
             if(os.path.isfile(filename)):
+                if (okprint):
+                    print "Reading file: ",filename
                 power_pcov=np.loadtxt(filename, unpack=True)
             else:
-                dummy,dummy,dummy,power_pcov=cov_power(powertype, mainpath, simset, isimmin, isimmax+1, noutput, aexp, growth_a, growth_dplus)
-                fltformat="%-.12e"
-                f = open(filename, "w")
-                for ik in xrange(0, nbin):
-                    for jk in xrange(0, nbin):
-                        f.write(str(fltformat%power_pcov[ik,jk])+" ")
-                    f.write("\n")
-                f.close()
+                dummy,dummy,dummy,power_pcov=cov_power(powertype, mainpath, simset.name, isimmin, isimmax+1, noutput, aexp, growth_a, growth_dplus)
+                if (store):
+                    if (okprint):
+                        print "Storing file: ",filename
+                    fltformat="%-.12e"
+                    f = open(filename, "w")
+                    for ik in xrange(0, nbin):
+                        for jk in xrange(0, nbin):
+                            f.write(str(fltformat%power_pcov[ik,jk])+" ")
+                        f.write("\n")
+                    f.close()
             
             cov_sub[isub] = power_pcov[ikmin:ikmax,ikmin:ikmax]
         
-        cov_mean = np.zeros((nbin,nbin))
-        for ik in xrange(0,nbin):
-            for jk in xrange(0,nbin):
-                cov_mean[ik,jk]=np.mean(cov_sub[:,ik,jk])
-    
-        sigma2 = np.zeros((nbin,nbin))
-        fact = 0.
-        for ik in xrange(0,nbin):
-            for jk in xrange(0,nbin):
-                for isubset in xrange(0,nsub):
-                    sigma2[ik,jk]+=(cov_sub[isubset,ik,jk] - cov_mean[ik,jk]) * (cov_sub[isubset,ik,jk] - cov_mean[ik,jk])
-                sigma2[ik,jk]/=(cov_mean[ik,ik]*cov_mean[jk,jk]+cov_mean[ik,jk]**2)
-        sigma2/=float(nsub-1)
-    
-        sigma2_all[i]=sigma2
+        cov_mean = np.mean(cov_sub,axis=0)
+        sigma = np.std(cov_sub,axis=0,ddof=1)
+        sigma2 = sigma*sigma
+        fact = np.outer(np.diag(cov_mean),np.diag(cov_mean))+cov_mean*cov_mean
+        
+        sigma2_all[i]=sigma2/fact
         
         i+=1
     return list_nr, sigma2_all
@@ -330,57 +319,56 @@ def cov_variance_kcut(kmin=0.03, kmax = 1., powertype = "power", mainpath = "", 
 
 
 # --------------------------- PRECISION MATRIX VARIANCE TRACE --------------------------- #
-def inv_cov_variance_trace(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., growth_a = np.zeros(0), growth_dplus = np.zeros(0), list_nr = [300,500,700,1000,3000,5000,6000], okprint=False):
+def inv_cov_variance_trace(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., growth_a = np.zeros(0), growth_dplus = np.zeros(0), list_nr = [300,500,700,1000,3000,5000,6000], okprint=False, store=True):
 
-    simset = "all_256"
+    simset = DeusPurSet("all_256")
     trace_sigma2=np.zeros(len(list_nr))
     i=0
+    
+    folder="tmp/"+str("%05d"%noutput)+"/"
+    command="mkdir -p tmp; mkdir -p "+folder
+    os.system(command)
 
     power_k,dummy = power_spectrum(powertype,mainpath,"4096_adaphase_256",1,noutput,aexp,growth_a,growth_dplus)
-
+    nbin = power_k.size
+    var_all = np.zeros(nbin)
+    var_inv_mean = np.zeros(nbin)
+    
     for nr in list_nr:
         nsub = 12288/nr
-        nbin = power_k.size
         var_inv = np.zeros((nsub,nbin))
         totsim = 12288 - int(math.fmod(12288,nr))
-        
-        print nr,totsim
 
-        var_all = np.zeros(nbin)
-        var_inv_mean = np.zeros(nbin)
         for isub in xrange(0, nsub):
             isimmin = isub * nr + 1
             isimmax = (isub+1)*nr
-            filename="tmp/"+str("%05d"%noutput)+"/cov_"+powertype+"_"+str("%05d"%nr)+"_"+str("%05d"%isub)+".txt"
+            filename=folder+"cov_"+powertype+"_"+str("%05d"%nr)+"_"+str("%05d"%isub)+".txt"
             if(os.path.isfile(filename)):
+                if (okprint):
+                    print "Reading file: ",filename
                 cov=np.loadtxt(filename, unpack=True)
             else:
-                kcov,dummy,dummy,cov=cov_power(powertype, mainpath, simset, isimmin, isimmax+1, noutput, aexp, growth_a, growth_dplus)
-                fltformat="%-.12e"
-                f = open(filename, "w")
-                for ik in xrange(0, nbin):
-                    for jk in xrange(0, nbin):
-                        f.write(str(fltformat%cov[ik,jk])+" ")
-                    f.write("\n")
-                f.close()
+                dummy,dummy,dummy,cov=cov_power(powertype, mainpath, simset.name, isimmin, isimmax+1, noutput, aexp, growth_a, growth_dplus)
+                if (store):
+                    if (okprint):
+                        print "Storing file: ",filename
+                    fltformat="%-.12e"
+                    f = open(filename, "w")
+                    for ik in xrange(0, nbin):
+                        for jk in xrange(0, nbin):
+                            f.write(str(fltformat%cov[ik,jk])+" ")
+                        f.write("\n")
+                    f.close()
 
-            cov_inv=linalg.inv(cov)
+            var_inv[isub]=np.diag(linalg.inv(cov))
             #cov_inv= float(nr-nbin-2)*cov_inv/float(nr-1)
-            
-            for ik in xrange(0,nbin):
-                var_inv[isub,ik] = cov_inv[ik,ik]
-                var_inv_mean[ik] += var_inv[isub,ik]
-        var_inv_mean /= float(nsub)
-        
-        fact=0.
-        sigma2=np.zeros(nbin)
-        for ik in xrange(0,nbin):
-            for isub in xrange(0,nsub):
-                sigma2[ik]+=(var_inv[isub,ik] - var_inv_mean[ik]) * (var_inv[isub,ik] - var_inv_mean[ik])
-            fact += var_inv_mean[ik] * var_inv_mean[ik]
-            trace_sigma2[i]+=sigma2[ik]
 
-        trace_sigma2[i]/=(fact*float(nsub-1))
+        var_inv_mean = np.mean(var_inv,axis=0)
+        sigma = np.std(var_inv,axis=0,ddof=1)
+        sigma2 = sigma*sigma
+        fact=np.sum(var_inv_mean*var_inv_mean)
+        
+        trace_sigma2[i]=np.sum(sigma2)/fact
 
         i+=1
     return list_nr, trace_sigma2
@@ -389,21 +377,21 @@ def inv_cov_variance_trace(powertype = "power", mainpath = "", noutput = 1 , aex
 
 
 # --------------------------- PRECISION MATRIX VARIANCE TRACE WITH k CUT --------------------------- #
-def inv_cov_variance_trace_kcut(kmin = 0.03, kmax = 1., powertype = "power", mainpath = "", noutput = 1 , aexp = 1., growth_a = np.zeros(0), growth_dplus = np.zeros(0), list_nr = [300,500,700,1000,3000,5000,6000], okprint=False):
+def inv_cov_variance_trace_kcut(kmin = 0.03, kmax = 1., powertype = "power", mainpath = "", noutput = 1 , aexp = 1., growth_a = np.zeros(0), growth_dplus = np.zeros(0), list_nr = [300,500,700,1000,3000,5000,6000], okprint=False, store=True):
     
-    simset = "all_256"
+    simset = DeusPurSet("all_256")
     trace_sigma2=np.zeros(len(list_nr))
     i=0
     
-    power_k,dummy = power_spectrum(powertype,mainpath,"4096_adaphase_256",1,noutput,aexp,growth_a,growth_dplus)
-    index = [(power_k < kmax) & (power_k > kmin)]
-    power_k_kcut = power_k[index]
-    nbin = power_k_kcut.size
+    folder="tmp/"+str("%05d"%noutput)+"/"
+    command="mkdir -p tmp; mkdir -p "+folder
+    os.system(command)
     
-    aa = np.arange(0,power_k.size)
-    iks = aa[index]
-    ikmin = iks[0]
-    ikmax = iks[iks.size-1]+1
+    power_k,dummy = power_spectrum(powertype,mainpath,"4096_adaphase_256",1,noutput,aexp,growth_a,growth_dplus)
+    ikmin = np.searchsorted(power_k,kmin)
+    ikmax = np.searchsorted(power_k,kmax)
+    power_k_cut = power_k[ikmin:ikmax]
+    nbin = power_k_cut.size
     
     for nr in list_nr:
         nsub = 12288/nr
@@ -417,38 +405,34 @@ def inv_cov_variance_trace_kcut(kmin = 0.03, kmax = 1., powertype = "power", mai
         for isub in xrange(0, nsub):
             isimmin = isub * nr + 1
             isimmax = (isub+1)*nr
-            filename="tmp/"+str("%05d"%noutput)+"/cov_"+powertype+"_"+str("%05d"%nr)+"_"+str("%05d"%isub)+".txt"
+            filename=folder+"cov_"+powertype+"_"+str("%05d"%nr)+"_"+str("%05d"%isub)+".txt"
             if(os.path.isfile(filename)):
+                if (okprint):
+                    print "Reading file: ",filename
                 cov=np.loadtxt(filename, unpack=True)
-            
             else:
-                dummy,dummy,dummy,cov=cov_power(powertype, mainpath, simset, isimmin, isimmax+1, noutput, aexp, growth_a, growth_dplus)
-                fltformat="%-.12e"
-                f = open(filename, "w")
-                for ik in xrange(0, power_k.size):
-                    for jk in xrange(0, power_k.size):
-                        f.write(str(fltformat%cov[ik,jk])+" ")
-                    f.write("\n")
-                f.close()
+                dummy,dummy,dummy,cov=cov_power(powertype, mainpath, simset.name, isimmin, isimmax+1, noutput, aexp, growth_a, growth_dplus)
+                if (store):
+                    if (okprint):
+                        print "Storing file: ",filename
+                    fltformat="%-.12e"
+                    f = open(filename, "w")
+                    for ik in xrange(0, power_k.size):
+                        for jk in xrange(0, power_k.size):
+                            f.write(str(fltformat%cov[ik,jk])+" ")
+                        f.write("\n")
+                    f.close()
 
             cov_kcut = cov[ikmin:ikmax,ikmin:ikmax]
             cov_inv=linalg.inv(cov_kcut)
             #cov_inv= float(nr-nbin-2)*cov_inv/float(nr-1)
+            var_inv[isub]=np.diag(cov_inv)
             
-            for ik in xrange(0,nbin):
-                var_inv[isub,ik] = cov_inv[ik,ik]
-                var_inv_mean[ik] += var_inv[isub,ik]
-        var_inv_mean /= float(nsub)
-        
-        fact=0.
-        sigma2=np.zeros(nbin)
-        for ik in xrange(0,nbin):
-            for isub in xrange(0,nsub):
-                sigma2[ik]+=(var_inv[isub,ik] - var_inv_mean[ik]) * (var_inv[isub,ik] - var_inv_mean[ik])
-            fact += var_inv_mean[ik] * var_inv_mean[ik]
-            trace_sigma2[i]+=sigma2[ik]
-    
-        trace_sigma2[i]/=(fact*float(nsub-1))
+        var_inv_mean = np.mean(var_inv,axis=0)
+        sigma=np.std(var_inv,axis=0,ddof=1)
+        sigma2=sigma*sigma
+        fact=np.sum(var_inv_mean*var_inv_mean)
+        trace_sigma2[i]=np.sum(sigma2)/fact
 
         i+=1
     return list_nr, trace_sigma2
@@ -457,10 +441,14 @@ def inv_cov_variance_trace_kcut(kmin = 0.03, kmax = 1., powertype = "power", mai
 
 
 # --------------------------- PRECISION VARIANCE --------------------------- #
-def inv_cov_variance(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., growth_a = np.zeros(0), growth_dplus = np.zeros(0), list_nr = [10,50,100,500,700,1000,3000,5000,6000], okprint=False):
+def inv_cov_variance(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., growth_a = np.zeros(0), growth_dplus = np.zeros(0), list_nr = [10,50,100,500,700,1000,3000,5000,6000], okprint=False, store=True):
     
-    simset = "all_256"
+    simset = DeusPurSet("all_256")
     i=0 #index on list_nr
+    
+    folder="tmp/"+str("%05d"%noutput)+"/"
+    command="mkdir -p tmp; mkdir -p "+folder
+    os.system(command)
     
     power_k,dummy = power_spectrum(powertype,mainpath,"4096_adaphase_256",1,noutput,aexp,growth_a,growth_dplus)
     nbin = power_k.size
@@ -473,41 +461,33 @@ def inv_cov_variance(powertype = "power", mainpath = "", noutput = 1 , aexp = 1.
         inv_cov_sub = np.zeros((nsub,nbin,nbin))
         totsim = 12288 - int(math.fmod(12288,nr))
         
-        print nr,totsim
-        
         for isub in xrange(0, nsub):
             isimmin = isub * nr + 1
             isimmax = (isub+1)*nr
-            filename="tmp/"+str("%05d"%noutput)+"/cov_"+powertype+"_"+str("%05d"%nr)+"_"+str("%05d"%isub)+".txt"
+            filename=folder+"cov_"+powertype+"_"+str("%05d"%nr)+"_"+str("%05d"%isub)+".txt"
             if(os.path.isfile(filename)):
+                if (okprint):
+                    print "Reading file: ",filename
                 power_pcov=np.loadtxt(filename, unpack=True)
             else:
-                dummy,dummy,dummy,power_pcov=cov_power(powertype, mainpath, simset, isimmin, isimmax+1, noutput, aexp, growth_a, growth_dplus)
-                fltformat="%-.12e"
-                f = open(filename, "w")
-                for ik in xrange(0, nbin):
-                    for jk in xrange(0, nbin):
-                        f.write(str(fltformat%power_pcov[ik,jk])+" ")
-                    f.write("\n")
-                f.close()
+                dummy,dummy,dummy,power_pcov=cov_power(powertype, mainpath, simset.name, isimmin, isimmax+1, noutput, aexp, growth_a, growth_dplus)
+                if (store):
+                    if (okprint):
+                        print "Storing file: ",filename
+                    fltformat="%-.12e"
+                    f = open(filename, "w")
+                    for ik in xrange(0, nbin):
+                        for jk in xrange(0, nbin):
+                            f.write(str(fltformat%power_pcov[ik,jk])+" ")
+                        f.write("\n")
+                    f.close()
             inv_cov_sub[isub]=linalg.inv(power_pcov)
     
         inv_cov_mean = np.mean(inv_cov_sub,axis=0)
-        #cov_mean = np.zeros((nbin,nbin))
-        #for ik in xrange(0,nbin):
-        #    for jk in xrange(0,nbin):
-        #        cov_mean[ik,jk]=np.mean(cov_sub[:,ik,jk])
-    
-        sigma2 = np.zeros((nbin,nbin))
-        fact = 0.
-        for ik in xrange(0,nbin):
-            for jk in xrange(0,nbin):
-                for isubset in xrange(0,nsub):
-                    sigma2[ik,jk]+=(inv_cov_sub[isubset,ik,jk] - inv_cov_mean[ik,jk]) * (inv_cov_sub[isubset,ik,jk] - inv_cov_mean[ik,jk])
-                sigma2[ik,jk]/=((nr-nbin-2)*inv_cov_mean[ik,ik]*inv_cov_mean[jk,jk]+(nr-nbin)*inv_cov_mean[ik,jk]**2)
-        sigma2/=float(nsub-1)
-    
-        sigma2_all[i]=sigma2
+        sigma = np.std(inv_cov_sub,axis=0,ddof=1)
+        sigma2 = sigma*sigma
+        fact = (nr-nbin-2)*np.outer(np.diag(inv_cov_mean),np.diag(inv_cov_mean))+(nr-nbin)*inv_cov_mean*inv_cov_mean
+        sigma2_all[i]=sigma2/fact
         
         i+=1
     return list_nr, sigma2_all
@@ -516,46 +496,53 @@ def inv_cov_variance(powertype = "power", mainpath = "", noutput = 1 , aexp = 1.
 
 
 # --------------------------- PRECISION MATRIX BIAS --------------------------- #
-def inv_cov_bias(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., growth_a = np.zeros(0), growth_dplus = np.zeros(0), list_nr = [300,500,700,1000,3000,5000,6000], okprint=False):
+def inv_cov_bias(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., growth_a = np.zeros(0), growth_dplus = np.zeros(0), list_nr = [300,500,700,1000,3000,5000,6000], okprint=False, store=True):
 
-    simset = "all_256"
+    simset = DeusPurSet("all_256")
     bias=np.zeros(len(list_nr))
     i=0
+    
+    folder="tmp/"+str("%05d"%noutput)+"/"
+    command="mkdir -p tmp; mkdir -p "+folder
+    os.system(command)
 
-    power_k, power_pmean, power_psigma, power_pcov = cov_power(powertype, mainpath, simset,1,12289,noutput,aexp,growth_a,growth_dplus)
+    power_k, power_pmean, power_psigma, power_pcov = cov_power(powertype, mainpath, simset.name,1,simset.nsimmax+1,noutput,aexp,growth_a,growth_dplus)
     cov_inv_all=linalg.inv(power_pcov)
     trace_all=np.trace(cov_inv_all)
+    nbin = power_k.size
 
     for nr in list_nr:
         nsub = 12288/nr
-        nbin = power_k.size
+        var_inv = np.zeros((nsub,nbin))
         if (okprint):
             totsim = 12288 - int(math.fmod(12288,nr))
             print nr,totsim
 
-        var_inv_mean = np.zeros(nbin)
         for isub in xrange(0, nsub):
             isimmin = isub * nr + 1
             isimmax = (isub+1)*nr
-            filename="tmp/"+str("%05d"%noutput)+"/cov_"+powertype+"_"+str("%05d"%nr)+"_"+str("%05d"%isub)+".txt"
+            filename=folder+"cov_"+powertype+"_"+str("%05d"%nr)+"_"+str("%05d"%isub)+".txt"
             if(os.path.isfile(filename)):
+                if (okprint):
+                    print "Reading file: ",filename
                 cov=np.loadtxt(filename, unpack=True)
             else:
-                kcov,dummy,dummy,cov=cov_power(powertype, mainpath, simset, isimmin, isimmax+1, noutput, aexp, growth_a, growth_dplus)
-                fltformat="%-.12e"
-                f = open(filename, "w")
-                for ik in xrange(0, nbin):
-                    for jk in xrange(0, nbin):
-                        f.write(str(fltformat%cov[ik,jk])+" ")
-                    f.write("\n")
-                f.close()
+                dummy,dummy,dummy,cov=cov_power(powertype, mainpath, simset.name, isimmin, isimmax+1, noutput, aexp, growth_a, growth_dplus)
+                if (store):
+                    if (okprint):
+                        print "Storing file: ",filename
+                    fltformat="%-.12e"
+                    f = open(filename, "w")
+                    for ik in xrange(0, nbin):
+                        for jk in xrange(0, nbin):
+                            f.write(str(fltformat%cov[ik,jk])+" ")
+                        f.write("\n")
+                    f.close()
 
             cov_inv=linalg.inv(cov)
+            var_inv[isub]=np.diag(cov_inv)
 
-            for ik in xrange(0,nbin):
-                var_inv_mean[ik]+=cov_inv[ik,ik]
-        var_inv_mean /= float(nsub)
-
+        var_inv_mean = np.mean(var_inv,axis=0)
         trace=np.sum(var_inv_mean)
 
         bias[i]=trace/trace_all
@@ -566,55 +553,58 @@ def inv_cov_bias(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., gr
 
 
 # --------------------------- PRECISION MATRIX BIAS WITH k CUT --------------------------- #
-def inv_cov_bias_kcut(kmin=0.03,kmax=1.,powertype = "power", mainpath = "", noutput = 1 , aexp = 1., growth_a = np.zeros(0), growth_dplus = np.zeros(0), list_nr = [300,500,700,1000,3000,5000,6000], okprint=False):
+def inv_cov_bias_kcut(kmin=0.03,kmax=1.,powertype = "power", mainpath = "", noutput = 1 , aexp = 1., growth_a = np.zeros(0), growth_dplus = np.zeros(0), list_nr = [300,500,700,1000,3000,5000,6000], okprint=False, store=True):
     
-    simset = "all_256"
+    simset = DeusPurSet("all_256")
     bias=np.zeros(len(list_nr))
     i=0
     
-    power_k, power_pmean, power_psigma, power_pcov = cov_power(powertype, mainpath, simset,1,12289,noutput,aexp,growth_a,growth_dplus)
-    index = [(power_k < kmax) & (power_k > kmin)]
-    power_k_kcut = power_k[index]
-    nbin = power_k_kcut.size
-    
-    aa = np.arange(0,power_k.size)
-    iks = aa[index]
-    ikmin = iks[0]
-    ikmax = iks[iks.size-1]+1
+    folder="tmp/"+str("%05d"%noutput)+"/"
+    command="mkdir -p tmp; mkdir -p "+folder
+    os.system(command)
+
+    power_k, power_pmean, power_psigma, power_pcov = cov_power(powertype, mainpath, simset.name,1,simset.nsimmax+1,noutput,aexp,growth_a,growth_dplus)
+    ikmin = np.searchsorted(power_k,kmin)
+    ikmax = np.searchsorted(power_k,kmax)
+    power_k_cut = power_k[ikmin:ikmax]
+    nbin = power_k_cut.size
     cov_all_kcut = power_pcov[ikmin:ikmax,ikmin:ikmax]
     cov_inv_all=linalg.inv(cov_all_kcut)
     trace_all=np.trace(cov_inv_all)
     
     for nr in list_nr:
         nsub = 12288/nr
+        var_inv = np.zeros((nsub,nbin))
         if (okprint):
             totsim = 12288 - int(math.fmod(12288,nr))
             print nr,totsim
     
-        var_inv_mean = np.zeros(nbin)
         for isub in xrange(0, nsub):
             isimmin = isub * nr + 1
             isimmax = (isub+1)*nr
-            filename="tmp/"+str("%05d"%noutput)+"/cov_"+powertype+"_"+str("%05d"%nr)+"_"+str("%05d"%isub)+".txt"
+            filename=folder+"cov_"+powertype+"_"+str("%05d"%nr)+"_"+str("%05d"%isub)+".txt"
             if(os.path.isfile(filename)):
+                if (okprint):
+                    print "Reading file: ",filename
                 cov=np.loadtxt(filename, unpack=True)
             else:
-                kcov,dummy,dummy,cov=cov_power(powertype, mainpath, simset, isimmin, isimmax+1, noutput, aexp, growth_a, growth_dplus)
-                fltformat="%-.12e"
-                f = open(filename, "w")
-                for ik in xrange(0, nbin):
-                    for jk in xrange(0, nbin):
-                        f.write(str(fltformat%cov[ik,jk])+" ")
-                    f.write("\n")
-                f.close()
+                dummy,dummy,dummy,cov=cov_power(powertype, mainpath, simset.name, isimmin, isimmax+1, noutput, aexp, growth_a, growth_dplus)
+                if (store):
+                    if (okprint):
+                        print "Storing file: ",filename
+                    fltformat="%-.12e"
+                    f = open(filename, "w")
+                    for ik in xrange(0, nbin):
+                        for jk in xrange(0, nbin):
+                            f.write(str(fltformat%cov[ik,jk])+" ")
+                        f.write("\n")
+                    f.close()
         
             cov_kcut=cov[ikmin:ikmax,ikmin:ikmax]
             cov_inv=linalg.inv(cov_kcut)
-            
-            for ik in xrange(0,nbin):
-                var_inv_mean[ik]+=cov_inv[ik,ik]
-        var_inv_mean /= float(nsub)
-    
+            var_inv[isub]=np.diag(cov_inv)
+
+        var_inv_mean = np.mean(var_inv,axis=0)
         trace=np.sum(var_inv_mean)
         
         bias[i]=trace/trace_all

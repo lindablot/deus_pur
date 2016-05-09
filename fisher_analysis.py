@@ -16,46 +16,44 @@ from power_covariance import *
 
 
 # -------------------------------- FISHER -------------------------------- #
-def fisher_matrix(powertype = "power", galaxy = 0, list_par = [0,2,3,4],  fiducial = [0.2573,0.04356,0.963,-1.,0.801,0.], mainpath = "", simset = "", isimmin = 1, isimmax = 2, list_noutput = [1], list_aexp = [0.], growth_a = np.zeros(0), growth_dplus = np.zeros(0), frac=1., okprint = False):
-    
+def fisher_matrix(powertype = "power", galaxy = 0, list_par = [0,2,3,4],  fiducial = [0.2573,0.04356,0.963,-1.,0.801,0.], mainpath = "", simset = "", isimmin = 1, isimmax = 2, list_noutput = [1], list_aexp = [0.], growth_a = np.zeros(0), growth_dplus = np.zeros(0), frac=1., okprint = False, store = False):
+
+    if (type(simset) is str):
+        simset=DeusPurSet(simset)
+
     nsim=isimmax-isimmin
     dalpha = 0.05
     dbeta = 0.05
-    fisher = np.zeros((len(list_par),len(list_par)))
     npar=len(list_par)
+    fisher = np.zeros((npar,npar))
 
     for iz in range(0,len(list_aexp)):
         ioutput=list_noutput[iz]
         aexp=list_aexp[iz]
         
         # ------------------- covariance ------------------- #
-        covfile = "tmp/cov_"+str(nsim)+"_"+powertype+"_"+str(ioutput)+".txt"
+        covfile = "cov_"+powertype+"_"+str("%05d"%ioutput)+"_"
+        if (nsim==simset.nsimmax):
+            covfile = covfile+simset.name+".txt"
+        else:
+            covfile = covfile+simset.name+"_"+str(isimmin)+"_"+str(isimmax)+".txt"
         if (os.path.isfile(covfile)):
             power_pcov=np.loadtxt(covfile,unpack=True)
-            power_k,dummy=power_spectrum(powertype,mainpath,simset,isimmin,ioutput,aexp,growth_a,growth_dplus)
+            power_k,dummy=power_spectrum(powertype,mainpath,simset.name,isimmin,ioutput,aexp,growth_a,growth_dplus)
         else:
-            power_k,dummy,dummy,power_pcov=cov_power(powertype,mainpath,simset,isimmin,isimmax,ioutput,aexp,growth_a,growth_dplus)
-            
-            if (galaxy < 2):
-                fltformat="%-.12e"
-                fout = open(covfile,"w")
-                for ik in range(0, power_k.size):
-                    for jk in range(0, power_k.size):
-                        fout.write(str(fltformat%power_pcov[ik,jk])+" ")
-                    fout.write("\n")
-                fout.close()
+            power_k,dummy,dummy,power_pcov=cov_power(powertype,mainpath,simset.name,isimmin,isimmax,ioutput,aexp,growth_a,growth_dplus,okprint=okprint,store=store)
 
         if (galaxy > 0):
-            power_k,power_pmean,dummy=mean_power_all("mcorrected",mainpath,ioutput,aexp,growth_a,growth_dplus)
-            biased_cov=np.zeros(np.shape(power_pcov))
+            simset256 = DeusPurSet("all_256")
+            power_k,power_pmean,dummy=mean_power("mcorrected",mainpath,simset256.name,1,simset256.nsimmax+1,ioutput,aexp,growth_a,growth_dplus,okprint=okprint,store=store)
             bias=1.#galaxy_bias(power_k,ioutput)
             ng=galaxy_density(ioutput,frac)
-            for ik in range(0,power_k.size):
-                for jk in range(0,power_k.size):
-                    biased_cov[ik,jk]=pow(bias,4.)*power_pcov[ik,jk]+2.*pow(bias,2.)*math.sqrt(power_pmean[ik]*power_pmean[jk])/ng+1./(ng*ng)
+            
+            biased_cov = pow(bias,4.)*power_pcov + 2.*pow(bias,2.)*np.sqrt(np.outer(power_pmean,power_pmean))/ng + 1./pow(ng,2.)
             inv_cov = np.linalg.inv(biased_cov)
         else:
             inv_cov = np.linalg.inv(power_pcov)
+        
         if (nsim>power_k.size+2):
             inv_cov = float(nsim-power_k.size-2)*inv_cov/float(nsim-1)
         else:
@@ -80,47 +78,57 @@ def fisher_matrix(powertype = "power", galaxy = 0, list_par = [0,2,3,4],  fiduci
         fisher_iz=np.dot(derpar_T,np.dot(inv_cov,derpar_T.T))
         fisher+=fisher_iz
 
+    if (store):
+        fname = "fisher_"+powertype+"_"
+        if (galaxy==0):
+            fname += "matter.txt"
+        else:
+            fname += "galaxy.txt"
+        f = open(fname, "w")
+        for i in xrange(0, npar):
+            for j in xrange(0, npar):
+                f.write(str(fltformat%fisher[i,j])+" ")
+            f.write("\n")
+        f.close()
+
+
     return fisher
 
 
 
 # -------------------------------- FISHER -------------------------------- #
-def fisher_matrix_cho(powertype = "power", galaxy = 0, list_par = [0,2,3,4],  fiducial = [0.2573,0.04356,0.963,-1.,0.801,0.], mainpath = "", simset = "", isimmin = 1, isimmax = 2, list_noutput = [1], list_aexp = [0.], growth_a = np.zeros(0), growth_dplus = np.zeros(0), frac=1., okprint = False):
+def fisher_matrix_cho(powertype = "power", galaxy = 0, list_par = [0,2,3,4],  fiducial = [0.2573,0.04356,0.963,-1.,0.801,0.], mainpath = "", simset = "", isimmin = 1, isimmax = 2, list_noutput = [1], list_aexp = [0.], growth_a = np.zeros(0), growth_dplus = np.zeros(0), frac=1., okprint = False, store = False):
     
+    if (type(simset) is str):
+        simset=DeusPurSet(simset)
+
     nsim=isimmax-isimmin
     dalpha = 0.05
     dbeta = 0.05
-    fisher = np.zeros((len(list_par),len(list_par)))
     npar=len(list_par)
+    fisher = np.zeros((npar,npar))
     
     for iz in range(0,len(list_aexp)):
         ioutput=list_noutput[iz]
         aexp=list_aexp[iz]
         
         # ------------------- covariance ------------------- #
-        covfile = "tmp/cov_"+str(nsim)+"_"+powertype+"_"+str(ioutput)+".txt"
+        covfile = "cov_"+powertype+"_"+str("%05d"%ioutput)+"_"
+        if (nsim==simset.nsimmax):
+            covfile = covfile+simset.name+".txt"
+        else:
+            covfile = covfile+simset.name+"_"+str(isimmin)+"_"+str(isimmax)+".txt"
         if (os.path.isfile(covfile)):
             power_pcov=np.loadtxt(covfile,unpack=True)
         else:
-            power_k,dummy,dummy,power_pcov=cov_power(powertype,mainpath,simset,isimmin,isimmax,ioutput,aexp,growth_a,growth_dplus)
-            
-            if (galaxy < 2):
-                fltformat="%-.12e"
-                fout = open(covfile,"w")
-                for ik in range(0, power_k.size):
-                    for jk in range(0, power_k.size):
-                        fout.write(str(fltformat%power_pcov[ik,jk])+" ")
-                    fout.write("\n")
-                fout.close()
+            power_k,dummy,dummy,power_pcov=cov_power(powertype,mainpath,simset.name,isimmin,isimmax,ioutput,aexp,growth_a,growth_dplus,okprint=okprint,store=store)
 
         if (galaxy > 0):
-            power_k,power_pmean,dummy=mean_power_all("mcorrected",mainpath,ioutput,aexp,growth_a,growth_dplus)
-            biased_cov=np.zeros(np.shape(power_pcov))
+            simset256 = DeusPurSet("all_256")
+            power_k,power_pmean,dummy=mean_power("mcorrected",mainpath,simset256.name,1,simset256.nsimmax+1,ioutput,aexp,growth_a,growth_dplus,okprint=okprint,store=store)
             bias=1.#galaxy_bias(power_k,ioutput)
             ng=galaxy_density(ioutput,frac)
-            for ik in range(0,power_k.size):
-                for jk in range(0,power_k.size):
-                    biased_cov[ik,jk]=pow(bias,4.)*power_pcov[ik,jk]+2.*pow(bias,2.)*math.sqrt(power_pmean[ik]*power_pmean[jk])/ng+1./(ng*ng)
+            biased_cov = pow(bias,4.)*power_pcov + 2.*pow(bias,2.)*np.sqrt(np.outer(power_pmean,power_pmean))/ng + 1./pow(ng,2.)
             cov_fac = scipy.linalg.cho_factor(biased_cov)
         else:
             cov_fac = scipy.linalg.cho_factor(power_pcov)
@@ -150,55 +158,63 @@ def fisher_matrix_cho(powertype = "power", galaxy = 0, list_par = [0,2,3,4],  fi
         fisher_iz = np.dot(derpar_T, inv_cov_der)
         fisher+=fisher_iz
 
+    if (store):
+        fname = "fisher_"+powertype+"_"
+        if (galaxy==0):
+            fname += "matter.txt"
+        else:
+            fname += "galaxy.txt"
+        f = open(fname, "w")
+        for i in xrange(0, npar):
+            for j in xrange(0, npar):
+                f.write(str(fltformat%fisher[i,j])+" ")
+            f.write("\n")
+        f.close()
+
     return fisher
 
 
 
 # -------------------------------- FISHER WITH k-CUT -------------------------------- #
-def fisher_matrix_kcut(kmin, kmax, powertype = "power", galaxy = 0, list_par = [0,2,3,4],  fiducial = [0.2573,0.04356,0.963,-1.,0.801,0.], mainpath = "", simset = "", isimmin = 1, isimmax = 2, list_noutput = [1], list_aexp = [0.], growth_a = np.zeros(0), growth_dplus = np.zeros(0), frac=1., okprint = False):
+def fisher_matrix_kcut(kmin, kmax, powertype = "power", galaxy = 0, list_par = [0,2,3,4],  fiducial = [0.2573,0.04356,0.963,-1.,0.801,0.], mainpath = "", simset = "", isimmin = 1, isimmax = 2, list_noutput = [1], list_aexp = [0.], growth_a = np.zeros(0), growth_dplus = np.zeros(0), frac=1., okprint = False, store = False):
+    
+    if (type(simset) is str):
+        simset=DeusPurSet(simset)
     
     nsim=isimmax-isimmin
     dalpha = 0.05
     dbeta = 0.05
-    fisher = np.zeros((len(list_par),len(list_par)))
     npar=len(list_par)
+    fisher = np.zeros((npar,npar))
     
     for iz in range(0,len(list_aexp)):
         ioutput=list_noutput[iz]
         aexp=list_aexp[iz]
         
-        power_k_nocut,dummy=power_spectrum(powertype,mainpath,simset,1,ioutput,aexp,growth_a,growth_dplus,False)
-        idx=[(power_k_nocut > kmin) & (power_k_nocut < kmax)]
-        power_k=power_k_nocut[idx]
-        imin=np.where(power_k_nocut==power_k[0])[0]
-        imax=np.where(power_k_nocut==power_k[power_k.size-1])[0]+1
-        
         # ------------------- covariance ------------------- #
-        covfile = "tmp/cov_"+str(nsim)+"_"+powertype+"_"+str(ioutput)+".txt"
+        covfile = "cov_"+powertype+"_"+str("%05d"%ioutput)+"_"
+        if (nsim==simset.nsimmax):
+            covfile = covfile+simset.name+".txt"
+        else:
+            covfile = covfile+simset.name+"_"+str(isimmin)+"_"+str(isimmax)+".txt"
         if (os.path.isfile(covfile)):
             power_pcov_nocut=np.loadtxt(covfile,unpack=True)
+            power_k_nocut,dummy=power_spectrum(powertype,mainpath,simset.name,1,ioutput,aexp,growth_a,growth_dplus,okprint=okprint)
         else:
-            dummy,dummy,dummy,power_pcov_nocut=cov_power(powertype,mainpath,simset,isimmin,isimmax,ioutput,aexp,growth_a,growth_dplus)
-            
-            if (galaxy < 2):
-                fltformat="%-.12e"
-                fout = open(covfile,"w")
-                for ik in range(0, power_k.size):
-                    for jk in range(0, power_k.size):
-                        fout.write(str(fltformat%power_pcov_nocut[ik,jk])+" ")
-                    fout.write("\n")
-                fout.close()
-
+            power_k_nocut,dummy,dummy,power_pcov_nocut=cov_power(powertype,mainpath,simset.name,isimmin,isimmax,ioutput,aexp,growth_a,growth_dplus,okprint=okprint,store=store)
+        imin = np.searchsorted(power_k_nocut,kmin)
+        imax = np.searchsorted(power_k_nocut,kmax)
+        power_k = power_k_nocut[imin:imax]
         power_pcov=power_pcov_nocut[imin:imax,imin:imax]
+        
         if (galaxy > 0):
-            dummy,power_pmean_nocut,dummy=mean_power_all("mcorrected",mainpath,ioutput,aexp,growth_a,growth_dplus)
-            power_pmean=power_pmean_nocut[idx]
+            simset256 = DeusPurSet("all_256")
+            dummy,power_pmean_nocut,dummy=mean_power("mcorrected",mainpath,simset256.name,1,simset256.nsimmax+1,ioutput,aexp,growth_a,growth_dplus,okprint=okprint,store=store)
+            power_pmean=power_pmean_nocut[imin:imax]
             biased_cov=np.zeros(np.shape(power_pcov))
             bias=1.#galaxy_bias(power_k,ioutput)
             ng=galaxy_density(ioutput,frac)
-            for ik in range(0,power_k.size):
-                for jk in range(0,power_k.size):
-                    biased_cov[ik,jk]=pow(bias,4.)*power_pcov[ik,jk]+2.*pow(bias,2.)*math.sqrt(power_pmean[ik]*power_pmean[jk])/ng+1./(ng*ng)
+            biased_cov = pow(bias,4.)*power_pcov + 2.*pow(bias,2.)*np.sqrt(np.outer(power_pmean,power_pmean))/ng + 1./pow(ng,2.)
             cov_fac = scipy.linalg.cho_factor(biased_cov)
         else:
             cov_fac = scipy.linalg.cho_factor(power_pcov)
@@ -227,13 +243,26 @@ def fisher_matrix_kcut(kmin, kmax, powertype = "power", galaxy = 0, list_par = [
             print "warning: biased inverse covariance estimator"
         fisher_iz = np.dot(derpar_T, inv_cov_der)
         fisher+=fisher_iz
+            
+    if (store):
+        fname = "fisher_"+powertype+"_k"+str(kmin)+"_"+str(kmax)
+        if (galaxy==0):
+            fname += "matter.txt"
+        else:
+            fname += "galaxy.txt"
+        f = open(fname, "w")
+        for i in xrange(0, npar):
+            for j in xrange(0, npar):
+                f.write(str(fltformat%fisher[i,j])+" ")
+            f.write("\n")
+        f.close()
+
 
     return fisher
 
 def galaxy_bias(power_k=np.zeros(0), noutput=1):
     bias=np.zeros(power_k.size)
-    for ik in xrange(0,power_k.size):
-        bias[ik]=1.5
+    bias=np.fill(1.5)
     return bias
 
 

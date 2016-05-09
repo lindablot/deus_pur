@@ -12,132 +12,64 @@ from numpy import linalg
 from read_files import *
 from power_types import *
 from power_stats import *
-from math import sqrt as sqrt
 #import os.path
 # ---------------------------------------------------------------------------- #
 
 
 
 # -------------------------------- COVARIANCE POWER -------------------------------- #
-def cov_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isimmax = 2, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), nmodel = 0, okprint = False):
+def cov_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isimmax = 2, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), nmodel = 0, okprint = False, store = False):
     
+    if (type(simset) is str):
+        simset=DeusPurSet(simset)
     nsim = isimmax-isimmin
     
-    if (powertype=="linear"):
-        if (nmodel==0):
-            model="lcdmw7"
+    fname = "cov_"+powertype+"_"+str("%05d"%noutput)+"_"
+    if (nsim==simset.nsimmax):
+        if(simset.cosmo):
+            fname = fname+"cosmo_model"+str(int(nmodel))+".txt"
         else:
-            model="model"+str(int(nmodel)).zfill(5)
-        power_k_CAMB, power_p_CAMB = read_power_camb(mainpath, model)
-        power_k, dummy = power_spectrum("nyquist",mainpath,simset,1,noutput,aexp,growth_a,growth_dplus,nmodel)
-        aexp_end = 1.
-        dplus_a = extrapolate([aexp], growth_a, growth_dplus)
-        dplus_end = extrapolate([aexp_end], growth_a, growth_dplus)
-        plin = power_p_CAMB * dplus_a * dplus_a / (dplus_end * dplus_end)
-        
-        plin_interp = np.interp(power_k, power_k_CAMB, plin)
-        if (simset=="all_512" or simset=="4096_furphase_512"):
-            L_box = 1312.5
-        else:
-            L_box = 656.25
-        delta_k=np.diff(power_k)
-        delta_k=np.append(delta_k,delta_k[delta_k.size-1])
-        N_k=L_box*L_box*L_box*power_k*power_k*delta_k/(2.*math.pi*math.pi)
-        
-        power_pmean = plin_interp
-        power_psigma = np.sqrt(2./N_k)*(plin_interp)
-        power_pcov = np.diag(power_psigma*power_psigma)
-            
-        if ((simset=="all_256" and nsim==12288) or (simset=="all_1024" and nsim==96)):
-            fname = "cov_"+simset+"_"+powertype+"_"+str("%05d"%noutput)+".txt"
-            fltformat="%-.12e"
-            f = open(fname, "w")
-            for i in xrange(0, power_k.size):
-                for j in xrange(0, power_k.size):
-                    f.write(str(fltformat%power_pcov[i,j])+" ")
-                f.write("\n")
-            f.close()
-
-    elif ((simset=="all_256" and nsim==12288) or (simset=="all_1024" and nsim==96)):
-        fname = "cov_"+simset+"_"+powertype+"_"+str("%05d"%noutput)+".txt"
-        if(os.path.isfile(fname)):
-            power_pcov = np.loadtxt(fname,unpack=True)
-            if (simset=="all_256"):
-                power_k, power_pmean, power_psigma = mean_power_all(powertype, mainpath, noutput, aexp, growth_a, growth_dplus, okprint)
-            elif (simset=="all_1024"):
-                power_k, power_pmean, power_psigma = mean_power_all_1024(powertype, mainpath, noutput, aexp, growth_a, growth_dplus, okprint)
-        
-        else:
-            if (simset=="all_256"):
-                power_k, power_pmean, power_psigma = mean_power_all(powertype, mainpath, noutput, aexp, growth_a, growth_dplus, okprint)
-            else:
-                power_k, power_pmean, power_psigma = mean_power_all_1024(powertype, mainpath, noutput, aexp, growth_a, growth_dplus, okprint)
-                
-            power_pcov = np.zeros((power_k.size,power_k.size))
-                
-            for isim in xrange(1, nsim+1):
-                true_simset,true_isim = sim_iterator(simset, isim)
-                if (okprint) :
-                    current_file = file_path("power", mainpath, iset, isim, noutput)
-                    print current_file
-                dummy, power_p = power_spectrum(powertype,mainpath,true_simset,true_isim,noutput,aexp,growth_a,growth_dplus,nmodel,okprint)
-                for ik in xrange(0, power_k.size):
-                    for jk in xrange(0, power_k.size):
-                        power_pcov[ik,jk] += (power_p[ik]-power_pmean[ik])*(power_p[jk]-power_pmean[jk])
-
-            power_pcov /= float(nsim-1)
-
-            fltformat="%-.12e"
-            f = open(fname, "w")
-            for i in xrange(0, power_k.size):
-                for j in xrange(0, power_k.size):
-                    f.write(str(fltformat%power_pcov[i,j])+" ")
-                f.write("\n")
-            f.close()
-
-    elif (simset=="all_cosmo" and nsim==512):
-        fname = "cov_all_cosmo_model"+str(int(nmodel)).zfill(5)+"_"+powertype+"_"+str("%05d"%noutput)+".txt"
-        power_k, power_pmean, power_psigma = mean_power_all_cosmo(powertype, mainpath, noutput, aexp, growth_a, growth_dplus, nmodel, okprint)
-        if(os.path.isfile(fname)):
-            power_pcov = np.loadtxt(fname,unpack=True)
-        else:
-            power_pcov = np.zeros((power_k.size,power_k.size))
-            
-            for isim in xrange(1, nsim+1):
-                true_simset,true_isim = sim_iterator(simset, isim)
-                if (okprint) :
-                    current_file = file_path("power", mainpath, iset, isim, noutput, nmodel)
-                    print current_file
-                dummy, power_p = power_spectrum(powertype,mainpath,true_simset,true_isim,noutput,aexp,growth_a,growth_dplus,nmodel,okprint)
-                for ik in xrange(0, power_k.size):
-                    for jk in xrange(0, power_k.size):
-                        power_pcov[ik,jk] += (power_p[ik]-power_pmean[ik])*(power_p[jk]-power_pmean[jk])
-
-            power_pcov /= float(nsim-1)
-    
-            fltformat="%-.12e"
-            f = open(fname, "w")
-            for i in xrange(0, power_k.size):
-                for j in xrange(0, power_k.size):
-                    f.write(str(fltformat%power_pcov[i,j])+" ")
-                f.write("\n")
-            f.close()
-
+            fname = fname+simset.name+".txt"
     else:
-        power_k, power_pmean, power_psigma = mean_power(powertype, mainpath, simset, isimmin, isimmax, noutput, aexp, growth_a, growth_dplus, nmodel, okprint)
-        power_pcov = np.zeros((power_k.size,power_k.size))
-        
-        for isim in xrange(isimmin, isimmax):
-            true_simset,true_isim = sim_iterator(simset, isim)
-            if (okprint) :
-                current_file = file_path("power", mainpath, true_simset, true_isim, noutput, nmodel)
-                print current_file
-            dummy, power_p = power_spectrum(powertype,mainpath,true_simset,true_isim,noutput,aexp,growth_a,growth_dplus,nmodel,okprint)
-            for ik in xrange(0, power_k.size):
-                for jk in xrange(0, power_k.size):
-                    power_pcov[ik,jk] += (power_p[ik]-power_pmean[ik])*(power_p[jk]-power_pmean[jk])
+        if(simset.cosmo):
+            fname = fname+"cosmo_model"+str(int(nmodel))+"_"+str(isimmin)+"_"+str(isimmax)+".txt"
+        else:
+            fname = fname+simset.name+"_"+str(isimmin)+"_"+str(isimmax)+".txt"
+    fltformat="%-.12e"
 
-        power_pcov /= float(nsim-1)
+    if (os.path.isfile(fname)):
+        if (okprint):
+            print "Reading power spectrum covariance from file: ",fname
+        power_k, power_pmean, power_psigma = mean_power(powertype,mainpath,simset.name,isimmin,isimmax,noutput,aexp,growth_a,growth_dplus,nmodel,okprint)
+        power_pcov = np.loadtxt(fname,unpack=True)
+    else:
+        if (okprint):
+            print "Computing power spectrum covariance"
+        if (powertype=="linear"):
+            power_k, power_pmean = power_spectrum("linear",mainpath,simset.name,1,noutput,aexp,growth_a,growth_dplus,nmodel,okprint)
+            power_psigma = np.sqrt(2./simset.N_k(power_k))*power_pmean
+            power_pcov = np.diag(power_psigma*power_psigma)
+        else:
+            power_k, power_pmean, power_psigma = mean_power(powertype, mainpath, simset.name, isimmin, isimmax, noutput, aexp, growth_a, growth_dplus, nmodel, okprint)
+            diff_power_p = np.zeros(power_k.size)
+            power_pcov = np.zeros((power_k.size,power_k.size))
+            for isim in xrange(isimmin, isimmax):
+                isim0 = isim - isimmin
+                true_simset,true_isim = sim_iterator(simset.name, isim)
+                if (okprint) :
+                    print true_simset,true_isim
+                dummy, power_p = power_spectrum(powertype,mainpath,true_simset,true_isim,noutput,aexp,growth_a,growth_dplus,nmodel,okprint)
+                diff_power_p = power_p - power_pmean
+                power_pcov += np.outer(diff_power_p,diff_power_p)
+            power_pcov/=float(nsim-1)
+
+        if (store):
+            f = open(fname, "w")
+            for i in xrange(0, power_k.size):
+                for j in xrange(0, power_k.size):
+                    f.write(str(fltformat%power_pcov[i,j])+" ")
+                f.write("\n")
+            f.close()
 
     return power_k, power_pmean, power_psigma, power_pcov
 # ---------------------------------------------------------------------------- #
@@ -145,17 +77,54 @@ def cov_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isim
 
 
 # -------------------- POWER SPECTRUM COVARIANCE WITH k CUT ------------------------- #
-def cov_power_kcut(kmin, kmax, powertype, mainpath = "", simset = "", isimmin = 1, isimmax = 2, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), nmodel = 0, okprint = True):
+def cov_power_kcut(kmin, kmax, powertype, mainpath = "", simset = "", isimmin = 1, isimmax = 2, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), nmodel = 0, okprint = False, store = False):
     
-    nsim = isimmax - isimmin
-    power_k, power_pmean, power_psigma, power_pcov_nocut = cov_power(powertype,mainpath,simset,isimmin,isimmax,noutput,aexp,growth_a,growth_dplus,nmodel)
-    idx=[(power_k > kmin) & (power_k < kmax)]
-    power_k_kcut=power_k[idx]
-    power_pmean_kcut = power_pmean[idx]
-    power_psigma_kcut = power_psigma[idx]
-    imin=np.where(power_k==power_k_kcut[0])[0]
-    imax=np.where(power_k==power_k_kcut[power_k_kcut.size-1])[0]+1
-    power_pcov = power_pcov_nocut[imin:imax,imin:imax]
+    if (type(simset) is str):
+        simset=DeusPurSet(simset)
+    nsim = isimmax-isimmin
+    
+    fname = "cov_kcut_"+powertype+"_"+str("%05d"%noutput)+"_"
+    if (nsim==simset.nsimmax):
+        if(simset.cosmo):
+            fname = fname+"cosmo_model"+str(int(nmodel))+"_"+str(kmin)+"_"+str(kmax)+".txt"
+        else:
+            fname = fname+simset.name+"_"+str(kmin)+"_"+str(kmax)+".txt"
+    else:
+        if(simset.cosmo):
+            fname = fname+"cosmo_model"+str(int(nmodel))+"_"+str(isimmin)+"_"+str(isimmax)+"_"+str(kmin)+"_"+str(kmax)+".txt"
+        else:
+            fname = fname+simset.name+"_"+str(isimmin)+"_"+str(isimmax)+"_"+str(kmin)+"_"+str(kmax)+".txt"
+    fltformat="%-.12e"
+
+    if (os.path.isfile(fname)):
+        if (okprint):
+            print "Reading power spectrum covariance from file: ",fname
+        power_k, power_pmean, power_psigma = mean_power(powertype,mainpath,simset.name,isimmin,isimmax,noutput,aexp,growth_a,growth_dplus,nmodel,okprint)
+        idx=[(power_k > kmin) & (power_k < kmax)]
+        power_k_kcut=power_k[idx]
+        power_pmean_kcut = power_pmean[idx]
+        power_psigma_kcut = power_psigma[idx]
+        power_pcov = np.loadtxt(fname,unpack=True)
+    else:
+        if (okprint):
+            print "Computing power spectrum covariance"
+        nsim = isimmax - isimmin
+        power_k, power_pmean, power_psigma, power_pcov_nocut = cov_power(powertype,mainpath,simset.name,isimmin,isimmax,noutput,aexp,growth_a,growth_dplus,nmodel,okprint)
+        idx=[(power_k > kmin) & (power_k < kmax)]
+        power_k_kcut=power_k[idx]
+        power_pmean_kcut = power_pmean[idx]
+        power_psigma_kcut = power_psigma[idx]
+        imin=np.where(power_k==power_k_kcut[0])[0]
+        imax=np.where(power_k==power_k_kcut[power_k_kcut.size-1])[0]+1
+        power_pcov = power_pcov_nocut[imin:imax,imin:imax]
+
+        if (store):
+            f = open(fname, "w")
+            for i in xrange(0, power_k_cut.size):
+                for j in xrange(0, power_k_cut.size):
+                    f.write(str(fltformat%power_pcov[i,j])+" ")
+                f.write("\n")
+            f.close()
 
     return power_k_kcut, power_pmean_kcut, power_psigma_kcut, power_pcov
 # ---------------------------------------------------------------------------- #
@@ -163,29 +132,78 @@ def cov_power_kcut(kmin, kmax, powertype, mainpath = "", simset = "", isimmin = 
 
 
 # -------------------- CORRELATION COEFFICIENT POWER ------------------------- #
-def corr_coeff(powertype = "power", mainpath = "", simset = "", isimmin = 1, isimmax = 2, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), nmodel = 0, okprint = False):
+def corr_coeff(powertype = "power", mainpath = "", simset = "", isimmin = 1, isimmax = 2, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), nmodel = 0, okprint = False, store = False):
+    
+    if (type(simset) is str):
+        simset=DeusPurSet(simset)
+    nsim = isimmax-isimmin
+    
+    fname = "corr_coeff_"+powertype+"_"+str("%05d"%noutput)+"_"
+    if (nsim==simset.nsimmax):
+        if(simset.cosmo):
+            fname = fname+"cosmo_model"+str(int(nmodel))+".txt"
+        else:
+            fname = fname+simset.name+".txt"
+    else:
+        if(simset.cosmo):
+            fname = fname+"cosmo_model"+str(int(nmodel))+"_"+str(isimmin)+"_"+str(isimmax)+".txt"
+        else:
+            fname = fname+simset.name+"_"+str(isimmin)+"_"+str(isimmax)+".txt"
+    fltformat="%-.12e"
+    if (os.path.isfile(fname)):
+        if (okprint):
+            print "Reading power spectrum correlation coefficient from file: ",fname
+        corr_coeff = np.loadtxt(fname,unpack=True)
+    else:
+        if (okprint):
+            print "Computing power spectrum covariance"
+        power_k, power_pmean, power_psigma, power_pcov = cov_power(powertype, mainpath, simset.name, isimmin, isimmax, noutput, aexp, growth_a, growth_dplus, nmodel, okprint)
+        norm = np.outer(power_psigma,power_psigma)
+        corr_coeff = power_pcov/norm
 
-    power_k, power_pmean, power_psigma, power_pcov = cov_power(powertype, mainpath, simset, isimmin, isimmax, noutput, aexp, growth_a, growth_dplus, nmodel, okprint)
-    norm = np.outer(power_psigma,power_psigma)
-    corr_coeff = power_pcov/norm
-            
+        if (store):
+            f = open(fname, "w")
+            for i in xrange(0, power_k.size):
+                for j in xrange(0, power_k.size):
+                    f.write(str(fltformat%corr_coeff[i,j])+" ")
+                f.write("\n")
+            f.close()
+
     return corr_coeff
 # ---------------------------------------------------------------------------- #
 
 
 
 # ----------------------------- SIGNAL TO NOISE ------------------------------ #
-def signoise(powertype = "nyquist", mainpath = "", simset = "", noutput = 1, nsimmax = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), unbiased = False, okprint = False):
+def signoise(powertype = "nyquist", mainpath = "", simset = "", noutput = 1, nsimmax = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), nmodel = 0, unbiased = False, okprint = False, store = False):
     
-    fname="sig_noise_"+powertype+"_"+simset+"_"+str("%05d"%noutput)+".txt"
-    if(os.path.isfile(fname) and simset=="all_256" and nsimmax==12289):
+    if (type(simset) is str):
+        simset=DeusPurSet(simset)
+    
+    fname = "sig_noise_"+powertype+"_"+str("%05d"%noutput)+"_"
+    if (nsimmax==simset.nsimmax):
+        if(simset.cosmo):
+            fname = fname+"cosmo_model"+str(int(nmodel))+".txt"
+        else:
+            fname = fname+simset.name+".txt"
+    else:
+        if(simset.cosmo):
+            fname = fname+"cosmo_model"+str(int(nmodel))+"_"+str(nsimmax)+".txt"
+        else:
+            fname = fname+simset.name+"_"+str(nsimmax)+".txt"
+    fltformat="%-.12e"
+
+    if(os.path.isfile(fname)):
+        if (okprint):
+            print "Reading signal-to-noise from file: ",fname
         kmax, sig_noise = np.loadtxt(fname,unpack=True)
     else:
+        if (okprint):
+            print "Computing signal-to-noise"
         nmax = nsimmax-1
         step = 1
         
-        power_k, dummy, dummy, power_pcov = cov_power(powertype, mainpath,simset, 1, nsimmax, noutput, aexp, growth_a, growth_dplus)
-        dummy, power_pmean, dummy = mean_power_all("mcorrected",mainpath,noutput,aexp,growth_a,growth_dplus)
+        power_k, power_pmean, dummy, power_pcov = cov_power(powertype, mainpath, simset.name, 1, nsimmax, noutput, aexp, growth_a, growth_dplus, nmodel, okprint)
         
         kmin=power_k[0]
         num_iter=min(power_k.size,nmax-2)
@@ -201,17 +219,14 @@ def signoise(powertype = "nyquist", mainpath = "", simset = "", noutput = 1, nsi
             cov_inv=linalg.inv(power_pcov_kmax)
             if (unbiased):
                 cov_inv= float(nmax-num_iter-2)*cov_inv/float(nmax-1)
-            signoise2=0.
-            for ik in xrange(0,power_kk.size):
-                for jk in xrange(0,power_kk.size):
-                    signoise2+=power_p_new[ik]*cov_inv[ik,jk]*power_p_new[jk]
-            sig_noise[ikmax]=sqrt(signoise2)
+            sig_noise[ikmax]=math.sqrt(np.dot(power_p_new.T,np.dot(cov_inv,power_p_new)))
         
-        fltformat = "%-.12e"
-        f = open(fname, "w")
-        for i in xrange(0, kmax.size):
-            f.write(str(fltformat%kmax[i])+" "+str(fltformat%sig_noise[i])+"\n")
-        f.close()
+
+        if (store):
+            f = open(fname, "w")
+            for i in xrange(0, kmax.size):
+                f.write(str(fltformat%kmax[i])+" "+str(fltformat%sig_noise[i])+"\n")
+            f.close()
 
     return kmax, sig_noise
 # --------------------------------------------------------------------------- #
@@ -220,109 +235,16 @@ def signoise(powertype = "nyquist", mainpath = "", simset = "", noutput = 1, nsi
 
 # ----------------------------- SIGNAL TO NOISE AT A GIVEN K ------------------------------ #
 def signoise_k(powertype = "nyquist", mainpath = "", simset = "", noutput = 1, nsimmax = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), kmax=0.4, unbiased = False, okprint = False):
-
+    if (type(simset) is str):
+        simset=DeusPurSet(simset)
     nmax = nsimmax-1
     
-    power_k, power_p = power_spectrum(mainpath, simset, 1, noutput, aexp, growth_a, growth_dplus)
-    power_k, power_pmean, power_psigma = mean_power(powertype, mainpath, simset, 1, nsimmax, noutput, aexp, growth_a, growth_dplus)
-    
-    num_iter=min(power_k.size,nmax-2)
-    idx=(power_k < kmax)
-    power_p_new=power_p[idx]
-    power_kk,power_pcov=cov_power_kcut(0., kmax, powertype, mainpath, simset, 1, nsimmax, noutput, aexp, growth_a, growth_dplus, 0, okprint)
+    power_k, power_pmean, power_psigma, power_pcov = cov_power_kcut(0., kmax, powertype, mainpath, simset.name, 1, nsimmax, noutput, aexp, growth_a, growth_dplus,okprint)
     cov_inv=linalg.inv(power_pcov)
+    num_iter=min(power_k.size,nmax-2)
     if (unbiased):
         cov_inv= float(nmax-num_iter-2)*cov_inv/float(nmax-1)
-    signoise2=0.
-    for ik in xrange(0,power_kk.size):
-        for jk in xrange(0,power_kk.size):
-            signoise2+=power_p_new[ik]*cov_inv[ik,jk]*power_p_new[jk]
-    sig_noise=sqrt(signoise2)
+    sig_noise=math.sqrt(np.dot(power_pmean.T,np.dot(cov_inv,power_pmean)))
     
     return sig_noise
 # --------------------------------------------------------------------------- #
-
-
-
-# -------------------------------- BACKUP COVARIANCE ------------------------------- #
-def backup_cov(powertype = "nyquist", mainpath = "", simset = "", ioutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), fltformat = "%-.12e", okprint = False):
-    if (simset == "4096_furphase" or simset == "4096_otherphase"):
-        isimmax = 1
-        noutputmax = 31
-    elif (simset == "4096_furphase_512"):
-        isimmax = 512
-        noutputmax = 9
-    elif (simset == "64_adaphase_1024"):
-        isimmax = 64
-        noutputmax = 9
-    elif (simset == "64_curiephase_1024"):
-        isimmax = 32
-        noutputmax = 9
-    elif (simset == "all_256"):
-        isimmax = 12288
-        noutputmax = 9
-    elif (simset == "all_1024"):
-        isimmax = 96
-        noutputmax = 9
-    else:
-        isimmax = 4096
-        noutputmax = 9
-    #for ioutput in xrange(noutputmax, noutputmax+1):
-    power_k, power_pmean, power_psigma, power_pcov = cov_power(powertype, mainpath, simset, 1, isimmax+1, ioutput, aexp, growth_a, growth_dplus, okprint)
-
-    fname = "cov_"+simset+"_"+powertype+"_"+str("%05d"%ioutput)+".txt"
-    f = open(fname, "w")
-    for i in xrange(0, power_k.size):
-        for j in xrange(0, power_k.size):
-            f.write(str(fltformat%power_pcov[i][j])+" ")
-        f.write("\n")
-    f.close()
-    return
-# ---------------------------------------------------------------------------- #
-
-
-
-# ------------- BACKUP CORRELATION COEFFICIENT ------------------------------- #
-def backup_corr(powertype="power", mainpath = "", simset = "", ioutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), fltformat = "%-.12e"):
-    if (simset == "4096_furphase" or simset == "4096_otherphase"):
-        isimmax = 1
-        noutputmax = 31
-        sim_set = simset
-    elif (simset == "4096_furphase_512"):
-        isimmax = 512
-        noutputmax = 9
-        sim_set = simset
-    elif (simset == "64_adaphase_1024"):
-        isimmax = 64
-        noutputmax = 9
-        sim_set = simset
-    elif (simset == "64_curiephase_1024"):
-        isimmax = 32
-        noutputmax = 9
-    elif (simset == "all_256"):
-        isimmax = 12288
-        noutputmax = 9
-    elif (simset == "all_1024"):
-        isimmax = 96
-        noutputmax = 9
-    else:
-        isimmax = 4096
-        noutputmax = 9
-
-    #for ioutput in range(noutputmax-1,noutputmax):
-    fname_cov="cov_"+simset+"_"+powertype+"_"+str("%05d"%ioutput)+".txt"
-    fname_corr="corr_coeff_"+powertype+"_"+simset+"_"+str("%05d"%ioutput)+".txt"
-    if (os.path.isfile(fname_cov)):
-        corr_coeffi = corr_coeff_b(powertype, mainpath, simset, 1, isimmax+1, ioutput, aexp, growth_a, growth_dplus, fname_cov)
-    else:
-        corr_coeffi = corr_coeff(powertype, mainpath, simset, 1, isimmax+1, ioutput, aexp, growth_a, growth_dplus)
-
-    f = open(fname_corr, "w")
-    for i in xrange(0, corr_coeffi.shape[0]):
-        for j in xrange(0, corr_coeffi.shape[0]):
-            #print i, j, corr_coeffi[i][j]
-            f.write(str(fltformat%corr_coeffi[i][j])+" ")
-        f.write("\n")
-    f.close()
-    return
-# ---------------------------------------------------------------------------- #

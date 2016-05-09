@@ -14,66 +14,68 @@ import scipy.interpolate as itl
 
 
 # --------------------------- RENORMALIZED POWER SPECTRUM ----------------------------- #
-def renormalized_power(mainpath = "", simset = "", nsim = 1, noutput = 1, growth_a = np.zeros(0), growth_dplus = np.zeros(0), nmodel = 0):
-    power_k, power_p_ini, dummy = read_power(file_path("power", mainpath, simset, nsim, 1, nmodel))
-    power_k, power_p_end, dummy = read_power(file_path("power", mainpath, simset, nsim, noutput, nmodel))
-    aexp_ini = read_info(file_path("info", mainpath, simset, nsim, 1, nmodel))
-    aexp_end = read_info(file_path("info", mainpath, simset, nsim, noutput, nmodel))
+def renormalized_power(mainpath = "", simset = "", nsim = 1, noutput = 1, growth_a = np.zeros(0), growth_dplus = np.zeros(0), nmodel = 0, okprint = False, store = False):
+    if (type(simset) is str):
+        simset = DeusPurSet(simset)
+    power_k, power_p_ini, dummy = read_power(file_path("power", mainpath, simset.name, nsim, 1, nmodel))
+    power_k, power_p_end, dummy = read_power(file_path("power", mainpath, simset.name, nsim, noutput, nmodel))
+    aexp_ini = read_info(file_path("info", mainpath, simset.name, nsim, 1, nmodel))
+    aexp_end = read_info(file_path("info", mainpath, simset.name, nsim, noutput, nmodel))
     dplus_ini = extrapolate([aexp_ini], growth_a, growth_dplus)
     dplus_end = extrapolate([aexp_end], growth_a, growth_dplus)
     power_p = (power_p_end*dplus_ini*dplus_ini)/(power_p_ini*dplus_end*dplus_end)
+    if (store):
+        fname = file_path("power",mainpath,simset.name,nsim,noutput,nmodel,okprint,"renormalized")
+        if (okprint):
+            print "Writing file: ",fname
+        f=open(fname,"w")
+        for i in xrange(0,power_k.size):
+            f.write(str("%-.12e"%power_k[i])+" "+str("%-.12e"%power_p[i])+"\n")
+        f.close()
     return power_k, power_p
 # ---------------------------------------------------------------------------- #
 
 
 
 # ----------------------------- POWER SPECTRUM CORRECTED FOR a DIFFERENCES ------------------------------ #
-def corrected_power(mainpath = "", simset = "", aexp = 0., nsim = 1, noutput = 1, growth_a = np.zeros(0), growth_dplus = np.zeros(0), nmodel = 0):
-    power_k, power_p_raw, dummy = read_power(file_path("power", mainpath, simset, nsim, noutput, nmodel))
+def corrected_power(mainpath = "", simset = "", nsim = 1, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), nmodel = 0, okprint = False, store = False):
+    if (type(simset) is str):
+        simset = DeusPurSet(simset)
+    power_k, power_p_raw, dummy = read_power(file_path("power", mainpath, simset.name, nsim, noutput, nmodel))
     if (aexp != 0.):
-        aexp_raw = read_info(file_path("info", mainpath, simset, nsim, noutput, nmodel))
+        aexp_raw = read_info(file_path("info", mainpath, simset.name, nsim, noutput, nmodel))
         dplus_raw = extrapolate([aexp_raw], growth_a, growth_dplus)
         dplus = extrapolate([aexp], growth_a, growth_dplus)
         power_p = (power_p_raw*dplus*dplus)/(dplus_raw*dplus_raw)
     else:
         power_p = power_p_raw
+    if (store):
+        fname = file_path("power",mainpath,simset.name,nsim,noutput,nmodel,okprint,"corrected")
+        if (okprint):
+            print "Writing file: ",fname
+        f=open(fname,"w")
+        for i in xrange(0,power_k.size):
+            f.write(str("%-.12e"%power_k[i])+" "+str("%-.12e"%power_p[i])+"\n")
+        f.close()
     return power_k, power_p
 # ---------------------------------------------------------------------------- #
 
 
 
 # ----------------------------- POWER SPECTRUM CUT AT NYQUIST FREQUENCY ------------------------------ #
-def nyquist_power(mainpath = "", simset = "", nsim = 1, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), nmodel = 0):
-    pi = math.pi
-    power_k, power_p_raw, dummy = read_power(file_path("power", mainpath, simset, nsim, noutput, nmodel))
-    if (aexp != 0.):
-        aexp_raw = read_info(file_path("info", mainpath, simset, nsim, noutput, nmodel))
-        dplus_raw = extrapolate([aexp_raw], growth_a, growth_dplus)
-        dplus = extrapolate([aexp], growth_a, growth_dplus)
-        power_p = (power_p_raw*dplus*dplus)/(dplus_raw*dplus_raw)
-    else:
-        power_p = power_p_raw
-    if (simset == "4096_furphase"):
-        nyquist = (pi / 10000.) * 4096.
-    elif (simset == "4096_otherphase"):
-        nyquist= (pi / 10000.)* 4096.
-    elif (simset == "4096_furphase_512"):
-        nyquist= (pi / 1312.5)*512.
-    elif (simset == "4096_furphase_256"):
-        nyquist= (pi / 656.25)*256.
-    elif (simset == "4096_otherphase_256"):
-        nyquist= (pi / 656.25)*256.
-    elif (simset == "4096_adaphase_256"):
-        nyquist= (pi / 656.25)*256.
-    elif (simset == "64_adaphase_1024"):
-        nyquist= (pi / 656.25)*1024.
-    elif (simset == "64_curiephase_1024"):
-        nyquist= (pi / 656.25)*1024.
-    elif (simset == "512_adaphase_512_328-125"):
-        nyquist= (pi / 328.125)*512.
-    idx = (power_k < nyquist)
+def nyquist_power(mainpath = "", simset = "", nsim = 1, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), nmodel = 0, okprint = False, store = False):
+    if (type(simset) is str):
+        simset = DeusPurSet(simset)
+    power_k, power_p = corrected_power(mainpath,simset.name,nsim,noutput,aexp,growth_a,growth_dplus,nmodel)
+    idx = (power_k < simset.nyquist)
     power_k_new = power_k[idx]
     power_p_new = power_p[idx]
+    if (store):
+        fname = file_path("power",mainpath,simset.name,nsim,noutput,nmodel,okprint,"nyquist")
+        f=open(fname,"w")
+        for i in xrange(0,power_k_new.size):
+            f.write(str("%-.12e"%power_k_new[i])+" "+str("%-.12e"%power_p_new[i])+"\n")
+        f.close()
     return power_k_new, power_p_new
 # ---------------------------------------------------------------------------- #
 
@@ -87,7 +89,11 @@ def pkann_power(ipar = 0, dpar = 0.05, fact = 1, powertype = "power", ioutput = 
     par[ipar]+=fact*dpar*abs(par[ipar])
     redshift = list_z[ioutput-1]
 
-    pfile = "pkann_spectra/pkann_"+str(ipar)+"_"+str(dpar)+"_"+str(fact)+"_"+powertype+"_"+str(ioutput)+".txt"
+    folder="pkann_spectra/"
+    command="mkdir -p "+folder
+    os.system(command)
+
+    pfile = folder+"pkann_"+str(ipar)+"_"+str(dpar)+"_"+str(fact)+"_"+powertype+"_"+str(ioutput)+".txt"
     if (os.path.isfile(pfile)):
         power_k,power_pkann = np.loadtxt(pfile,unpack=True)
     else:
@@ -108,11 +114,14 @@ def pkann_power(ipar = 0, dpar = 0.05, fact = 1, powertype = "power", ioutput = 
         os.system(command)
         kpkann,ppkann = np.loadtxt(outfile,skiprows=4,unpack=True)
 
-        if (powertype=="nyquist" or powertype=="mcorrected"):
+        if (powertype=="nyquist" or powertype=="mcorrected" or powertype=="linear"):
             power_k,dummy=nyquist_power(mainpath,"4096_adaphase_256",1,ioutput,aexp,growth_a,growth_dplus)
         else:
             power_k,dummy,dummy=read_power(file_path("power", mainpath, "4096_adaphase_256", 1, ioutput))
-        power_pkann = par[6]*par[6]*np.interp(power_k,kpkann,ppkann)
+        print power_k.size,power_k[power_k.size-1]
+        power_pkann = np.zeros(power_k.size)
+        for i in range(power_k.size):
+            power_pkann[i] = par[6]*par[6]*extrapolate(power_k[i],kpkann,ppkann)
 
         fltformat2="%-.12e"
         fout = open(pfile, "w")
