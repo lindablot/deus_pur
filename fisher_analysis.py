@@ -32,11 +32,7 @@ def fisher_matrix(powertype = "power", galaxy = 0, list_par = [0,2,3,4],  fiduci
         aexp=list_aexp[iz]
         
         # ------------------- covariance ------------------- #
-        covfile = "cov_"+powertype+"_"+str("%05d"%ioutput)+"_"
-        if (nsim==simset.nsimmax):
-            covfile = covfile+simset.name+".txt"
-        else:
-            covfile = covfile+simset.name+"_"+str(isimmin)+"_"+str(isimmax)+".txt"
+        covfile = file_name("cov",powertype,simset,isimmin,isimmax,noutput,nmodel)
         if (os.path.isfile(covfile)):
             power_pcov=np.loadtxt(covfile,unpack=True)
             power_k,dummy=power_spectrum(powertype,mainpath,simset.name,isimmin,ioutput,aexp,growth_a,growth_dplus)
@@ -113,11 +109,7 @@ def fisher_matrix_cho(powertype = "power", galaxy = 0, list_par = [0,2,3,4],  fi
         aexp=list_aexp[iz]
         
         # ------------------- covariance ------------------- #
-        covfile = "cov_"+powertype+"_"+str("%05d"%ioutput)+"_"
-        if (nsim==simset.nsimmax):
-            covfile = covfile+simset.name+".txt"
-        else:
-            covfile = covfile+simset.name+"_"+str(isimmin)+"_"+str(isimmax)+".txt"
+        covfile = file_name("cov",powertype,simset,isimmin,isimmax,noutput,nmodel)
         if (os.path.isfile(covfile)):
             power_pcov=np.loadtxt(covfile,unpack=True)
         else:
@@ -192,11 +184,7 @@ def fisher_matrix_kcut(kmin, kmax, powertype = "power", galaxy = 0, list_par = [
         aexp=list_aexp[iz]
         
         # ------------------- covariance ------------------- #
-        covfile = "cov_"+powertype+"_"+str("%05d"%ioutput)+"_"
-        if (nsim==simset.nsimmax):
-            covfile = covfile+simset.name+".txt"
-        else:
-            covfile = covfile+simset.name+"_"+str(isimmin)+"_"+str(isimmax)+".txt"
+        covfile = file_name("cov",powertype,simset,isimmin,isimmax,noutput,nmodel)
         if (os.path.isfile(covfile)):
             power_pcov_nocut=np.loadtxt(covfile,unpack=True)
             power_k_nocut,dummy=power_spectrum(powertype,mainpath,simset.name,1,ioutput,aexp,growth_a,growth_dplus,okprint=okprint)

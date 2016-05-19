@@ -9,6 +9,7 @@ import numpy as np
 import scipy.interpolate as itl
 from scipy import stats
 from numpy import linalg
+from utilities import *
 from read_files import *
 from power_types import *
 from power_stats import *
@@ -23,18 +24,8 @@ def cov_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isim
     if (type(simset) is str):
         simset=DeusPurSet(simset)
     nsim = isimmax-isimmin
-    
-    fname = "cov_"+powertype+"_"+str("%05d"%noutput)+"_"
-    if (nsim==simset.nsimmax):
-        if(simset.cosmo):
-            fname = fname+"cosmo_model"+str(int(nmodel))+".txt"
-        else:
-            fname = fname+simset.name+".txt"
-    else:
-        if(simset.cosmo):
-            fname = fname+"cosmo_model"+str(int(nmodel))+"_"+str(isimmin)+"_"+str(isimmax)+".txt"
-        else:
-            fname = fname+simset.name+"_"+str(isimmin)+"_"+str(isimmax)+".txt"
+
+    fname = file_name("cov",powertype,simset,isimmin,isimmax,noutput,nmodel)
     fltformat="%-.12e"
 
     if (os.path.isfile(fname)):
@@ -83,17 +74,7 @@ def cov_power_kcut(kmin, kmax, powertype, mainpath = "", simset = "", isimmin = 
         simset=DeusPurSet(simset)
     nsim = isimmax-isimmin
     
-    fname = "cov_kcut_"+powertype+"_"+str("%05d"%noutput)+"_"
-    if (nsim==simset.nsimmax):
-        if(simset.cosmo):
-            fname = fname+"cosmo_model"+str(int(nmodel))+"_"+str(kmin)+"_"+str(kmax)+".txt"
-        else:
-            fname = fname+simset.name+"_"+str(kmin)+"_"+str(kmax)+".txt"
-    else:
-        if(simset.cosmo):
-            fname = fname+"cosmo_model"+str(int(nmodel))+"_"+str(isimmin)+"_"+str(isimmax)+"_"+str(kmin)+"_"+str(kmax)+".txt"
-        else:
-            fname = fname+simset.name+"_"+str(isimmin)+"_"+str(isimmax)+"_"+str(kmin)+"_"+str(kmax)+".txt"
+    fname = file_name("cov",powertype,simset,isimmin,isimmax,noutput,nmodel)
     fltformat="%-.12e"
 
     if (os.path.isfile(fname)):
@@ -137,18 +118,8 @@ def corr_coeff(powertype = "power", mainpath = "", simset = "", isimmin = 1, isi
     if (type(simset) is str):
         simset=DeusPurSet(simset)
     nsim = isimmax-isimmin
-    
-    fname = "corr_coeff_"+powertype+"_"+str("%05d"%noutput)+"_"
-    if (nsim==simset.nsimmax):
-        if(simset.cosmo):
-            fname = fname+"cosmo_model"+str(int(nmodel))+".txt"
-        else:
-            fname = fname+simset.name+".txt"
-    else:
-        if(simset.cosmo):
-            fname = fname+"cosmo_model"+str(int(nmodel))+"_"+str(isimmin)+"_"+str(isimmax)+".txt"
-        else:
-            fname = fname+simset.name+"_"+str(isimmin)+"_"+str(isimmax)+".txt"
+
+    fname = file_name("corr_coeff",powertype,simset,isimmin,isimmax,noutput,nmodel)
     fltformat="%-.12e"
     if (os.path.isfile(fname)):
         if (okprint):
@@ -180,17 +151,7 @@ def signoise(powertype = "nyquist", mainpath = "", simset = "", noutput = 1, nsi
     if (type(simset) is str):
         simset=DeusPurSet(simset)
     
-    fname = "sig_noise_"+powertype+"_"+str("%05d"%noutput)+"_"
-    if (nsimmax==simset.nsimmax):
-        if(simset.cosmo):
-            fname = fname+"cosmo_model"+str(int(nmodel))+".txt"
-        else:
-            fname = fname+simset.name+".txt"
-    else:
-        if(simset.cosmo):
-            fname = fname+"cosmo_model"+str(int(nmodel))+"_"+str(nsimmax)+".txt"
-        else:
-            fname = fname+simset.name+"_"+str(nsimmax)+".txt"
+    fname = file_name("sig_noise",powertype,simset,isimmin,isimmax,noutput,nmodel)
     fltformat="%-.12e"
 
     if(os.path.isfile(fname)):

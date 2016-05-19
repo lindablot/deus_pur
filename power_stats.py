@@ -24,18 +24,7 @@ def mean_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isi
         simset=DeusPurSet(simset)
     nsim = isimmax-isimmin
 
-    fname = "mean_"+powertype+"_"+str("%05d"%noutput)+"_"
-    if (nsim==simset.nsimmax):
-        if(simset.cosmo):
-            fname = fname+"cosmo_model"+str(int(nmodel))+".txt"
-        else:
-            fname = fname+simset.name+".txt"
-    else:
-        if(simset.cosmo):
-            fname = fname+"cosmo_model"+str(int(nmodel))+"_"+str(isimmin)+"_"+str(isimmax)+".txt"
-        else:
-            fname = fname+simset.name+"_"+str(isimmin)+"_"+str(isimmax)+".txt"
-
+    fname = file_name("mean",powertype,simset,isimmin,isimmax,noutput,nmodel)
     if(os.path.isfile(fname)):
         if (okprint):
             print "Reading mean spectrum from file: ", fname
@@ -138,18 +127,7 @@ def distrib_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, 
     nsim = isimmax - isimmin
     power_values = np.zeros(nsim)
 
-    fname = "distrib_"+powertype+"_"+str("%05d"%noutput)+"_k"+str(kref)+"_"
-    if (nsim==simset.nsimmax):
-        if(simset.cosmo):
-            fname = fname+"cosmo_model"+str(int(nmodel))+".txt"
-        else:
-            fname = fname+simset.name+".txt"
-    else:
-        if(simset.cosmo):
-            fname = fname+"cosmo_model"+str(int(nmodel))+"_"+str(isimmin)+"_"+str(isimmax)+".txt"
-        else:
-            fname = fname+simset.name+"_"+str(isimmin)+"_"+str(isimmax)+".txt"
-
+    fname = file_name("distrib_k"+str(kref),powertype,simset,isimmin,isimmax,noutput,nmodel)
     if (os.path.isfile(fname)):
         bincenter, npower_bin = np.loadtxt(fname,unpack=True)
     else:
@@ -190,7 +168,8 @@ def high_moments(powertype = "power", mainpath = "", simset = "", isimmin = 1, i
     else:
         bias="biased"
 
-    fname="high_moments_"+bias+"_"+powertype+"_"+simset.name+"_"+str("%05d"%noutput)+".txt"
+
+    fname = file_name("high_moments_"+bias,powertype,simset,isimmin,isimmax,noutput,nmodel)
     if(os.path.isfile(fname)):
         power_k, power_skew, power_kurt = np.loadtxt(fname,unpack=True)
     else:

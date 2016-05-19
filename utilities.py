@@ -75,20 +75,6 @@ class DeusPurSet(object):
 
 
 
-# ------------------------------- EXTRAPOLATE -------------------------------- #
-def extrapolate(value_x, array_x, array_y):
-    value_y = 0.
-    if (value_x < array_x[0]):
-        value_y = array_y[0]+(value_x-array_x[0])*(array_y[0]-array_y[1])/(array_x[0]-array_x[1])
-    elif (value_x > array_x[-1]):
-        value_y = array_y[-1]+(value_x-array_x[-1])*(array_y[-1]-array_y[-2])/(array_x[-1]-array_x[-2])
-    else:
-        value_y = np.interp(value_x, array_x, array_y)
-    return value_y
-# ---------------------------------------------------------------------------- #
-
-
-
 # ------------------------------ SIMULATION SET ITERATOR FOR 256 AND 1024 --------------------------------- #
 def sim_iterator(simset = "", isim = 1, replace = 0, index = 0):
     if(simset=="all_256"):
@@ -124,7 +110,7 @@ def sim_iterator(simset = "", isim = 1, replace = 0, index = 0):
             for i in xrange(1,series.size):
                 f.write(str("%05d"%series[i])+"\n")
             f.close()
-
+        
         if (isim<4097):
             true_set = "4096_furphase_256"
             true_isim = isim
@@ -134,10 +120,48 @@ def sim_iterator(simset = "", isim = 1, replace = 0, index = 0):
         else:
             true_set = "4096_otherphase_256"
             true_isim = isim - 8192
-    else:
-        true_set = simset
+else:
+    true_set = simset
         true_isim = isim
     return true_set, true_isim
+# ---------------------------------------------------------------------------- #
+
+
+
+# --------------------------- STORED FILE NAME --------------------------- #
+def file_name(prefix="cov",powertype,simset,isimmin,isimmax,ioutput,nmodel=0):
+
+    nsim=isimmax-isimmin
+    if (type(simset) is str):
+        simset=DeusPurSet(simset)
+    
+    fname=prefix+"_"+powertype+"_"+str("%05d"%ioutput)+"_"
+    if (nsim==simset.nsimmax):
+        if(simset.cosmo):
+            fname = fname+"cosmo_model"+str(int(nmodel))+".txt"
+        else:
+            fname = fname+simset.name+".txt"
+    else:
+        if(simset.cosmo):
+            fname = fname+"cosmo_model"+str(int(nmodel))+"_"+str(isimmin)+"_"+str(isimmax)+".txt"
+        else:
+            fname = fname+simset.name+"_"+str(isimmin)+"_"+str(isimmax)+".txt"
+
+    return fname
+# ---------------------------------------------------------------------------- #
+
+
+
+# ------------------------------- EXTRAPOLATE -------------------------------- #
+def extrapolate(value_x, array_x, array_y):
+    value_y = 0.
+    if (value_x < array_x[0]):
+        value_y = array_y[0]+(value_x-array_x[0])*(array_y[0]-array_y[1])/(array_x[0]-array_x[1])
+    elif (value_x > array_x[-1]):
+        value_y = array_y[-1]+(value_x-array_x[-1])*(array_y[-1]-array_y[-2])/(array_x[-1]-array_x[-2])
+    else:
+        value_y = np.interp(value_x, array_x, array_y)
+    return value_y
 # ---------------------------------------------------------------------------- #
 
 
