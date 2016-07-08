@@ -10,44 +10,6 @@ import numpy as np
 
 
 
-# -------------------------------- FILE PATH --------------------------------- #
-def file_path(filetype = "", mainpath = "", simset = "", nsim = 1, noutput = 1, nmodel = 0, okprint = False, powertype = "gridcic"):
-    fullpath = str(mainpath)
-    if (filetype == "power"):
-        dataprefix = "/power/power"+powertype+"_"
-    elif (filetype == "info"):
-        dataprefix = "/info/info_"
-    elif (filetype == "massfunction"):
-        dataprefix = "/massfunction/massfunction_"
-    if (simset == "4096_furphase"):
-        fullpath += simset+dataprefix+str(int(noutput)).zfill(5)+".txt"
-    elif (simset == "4096_otherphase"):
-        fullpath += simset+dataprefix+str(int(noutput)).zfill(5)+".txt"
-    elif (simset == "4096_furphase_512"):
-        fullpath += simset+"/boxlen1312-5_n512_lcdmw7_"+str(int(nsim)).zfill(5)+dataprefix+str(int(noutput)).zfill(5)+".txt"
-    elif (simset == "4096_furphase_256"):
-        fullpath += simset+"/boxlen656-25_n256_lcdmw7_"+str(int(nsim)).zfill(5)+dataprefix+str(int(noutput)).zfill(5)+".txt"
-    elif (simset == "4096_otherphase_256"):
-        fullpath += simset+"/boxlen656-25_n256_lcdmw7_"+str(int(nsim)).zfill(5)+dataprefix+str(int(noutput)).zfill(5)+".txt"
-    elif (simset == "4096_adaphase_256"):
-        fullpath += simset+"/boxlen656-25_n256_lcdmw7_"+str(int(nsim)).zfill(5)+dataprefix+str(int(noutput)).zfill(5)+".txt"
-    elif (simset == "64_adaphase_1024"):
-        fullpath += simset+"/boxlen656-25_n1024_lcdmw7_"+str(int(nsim)).zfill(5)+dataprefix+str(int(noutput)).zfill(5)+".txt"
-    elif (simset == "64_curiephase_1024"):
-        fullpath += simset+"/boxlen656-25_n1024_lcdmw7_"+str(int(nsim)).zfill(5)+dataprefix+str(int(noutput)).zfill(5)+".txt"
-    elif (simset == "512_adaphase_512_328-125"):
-        fullpath += simset+"/boxlen328-125_n512_model"+str(int(nmodel)).zfill(5)+"_"+str(int(nsim)).zfill(5)+dataprefix+str(int(noutput)).zfill(5)+".txt"
-    else:
-        print "WARNING: not existing simset in file_path"
-        print simset
-        
-    if (okprint):
-        print fullpath
-    return fullpath
-# ---------------------------------------------------------------------------- #
-
-
-
 # -------------------------------- READ DATA --------------------------------- #
 def read_data(mainpath = "", model = "lcdmw7", power_k = np.zeros(0), power_p = np.zeros(0), growth_a = np.zeros(0), growth_dplus = np.zeros(0), evolution_a = np.zeros(0), evolution_hh0 = np.zeros(0), evolution_tproperh0 = np.zeros(0)):
     power_k, power_p = np.loadtxt(mainpath+"/data/pk_"+model+".dat", unpack=True)

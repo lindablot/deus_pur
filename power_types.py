@@ -17,21 +17,24 @@ import scipy.interpolate as itl
 def renormalized_power(mainpath = "", simset = "", nsim = 1, noutput = 1, growth_a = np.zeros(0), growth_dplus = np.zeros(0), nmodel = 0, okprint = False, store = False):
     if (type(simset) is str):
         simset = DeusPurSet(simset)
-    power_k, power_p_ini, dummy = read_power(file_path("power", mainpath, simset.name, nsim, 1, nmodel))
-    power_k, power_p_end, dummy = read_power(file_path("power", mainpath, simset.name, nsim, noutput, nmodel))
-    aexp_ini = read_info(file_path("info", mainpath, simset.name, nsim, 1, nmodel))
-    aexp_end = read_info(file_path("info", mainpath, simset.name, nsim, noutput, nmodel))
-    dplus_ini = extrapolate([aexp_ini], growth_a, growth_dplus)
-    dplus_end = extrapolate([aexp_end], growth_a, growth_dplus)
-    power_p = (power_p_end*dplus_ini*dplus_ini)/(power_p_ini*dplus_end*dplus_end)
-    if (store):
-        fname = file_path("power",mainpath,simset.name,nsim,noutput,nmodel,okprint,"renormalized")
-        if (okprint):
-            print "Writing file: ",fname
-        f=open(fname,"w")
-        for i in xrange(0,power_k.size):
-            f.write(str("%-.12e"%power_k[i])+" "+str("%-.12e"%power_p[i])+"\n")
-        f.close()
+    fname = file_path("power",mainpath,simset.name,nsim,noutput,nmodel,okprint,"renormalized")
+    if (os.path.isfile(fname) and not store):
+        power_k, power_p = np.loadtxt(fname,unpack=True)
+    else:
+        power_k, power_p_ini, dummy = read_power(file_path("power", mainpath, simset.name, nsim, 1, nmodel))
+        power_k, power_p_end, dummy = read_power(file_path("power", mainpath, simset.name, nsim, noutput, nmodel))
+        aexp_ini = read_info(file_path("info", mainpath, simset.name, nsim, 1, nmodel))
+        aexp_end = read_info(file_path("info", mainpath, simset.name, nsim, noutput, nmodel))
+        dplus_ini = extrapolate([aexp_ini], growth_a, growth_dplus)
+        dplus_end = extrapolate([aexp_end], growth_a, growth_dplus)
+        power_p = (power_p_end*dplus_ini*dplus_ini)/(power_p_ini*dplus_end*dplus_end)
+        if (store):
+            if (okprint):
+                print "Writing file: ",fname
+            f=open(fname,"w")
+            for i in xrange(0,power_k.size):
+                f.write(str("%-.12e"%power_k[i])+" "+str("%-.12e"%power_p[i])+"\n")
+            f.close()
     return power_k, power_p
 # ---------------------------------------------------------------------------- #
 
@@ -41,22 +44,25 @@ def renormalized_power(mainpath = "", simset = "", nsim = 1, noutput = 1, growth
 def corrected_power(mainpath = "", simset = "", nsim = 1, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), nmodel = 0, okprint = False, store = False):
     if (type(simset) is str):
         simset = DeusPurSet(simset)
-    power_k, power_p_raw, dummy = read_power(file_path("power", mainpath, simset.name, nsim, noutput, nmodel))
-    if (aexp != 0.):
-        aexp_raw = read_info(file_path("info", mainpath, simset.name, nsim, noutput, nmodel))
-        dplus_raw = extrapolate([aexp_raw], growth_a, growth_dplus)
-        dplus = extrapolate([aexp], growth_a, growth_dplus)
-        power_p = (power_p_raw*dplus*dplus)/(dplus_raw*dplus_raw)
+    fname = file_path("power",mainpath,simset.name,nsim,noutput,nmodel,okprint,"corrected")
+    if (os.path.isfile(fname) and not store):
+        power_k, power_p = np.loadtxt(fname,unpack=True)
     else:
-        power_p = power_p_raw
-    if (store):
-        fname = file_path("power",mainpath,simset.name,nsim,noutput,nmodel,okprint,"corrected")
-        if (okprint):
-            print "Writing file: ",fname
-        f=open(fname,"w")
-        for i in xrange(0,power_k.size):
-            f.write(str("%-.12e"%power_k[i])+" "+str("%-.12e"%power_p[i])+"\n")
-        f.close()
+        power_k, power_p_raw, dummy = read_power(file_path("power", mainpath, simset.name, nsim, noutput, nmodel))
+        if (aexp != 0.):
+            aexp_raw = read_info(file_path("info", mainpath, simset.name, nsim, noutput, nmodel))
+            dplus_raw = extrapolate([aexp_raw], growth_a, growth_dplus)
+            dplus = extrapolate([aexp], growth_a, growth_dplus)
+            power_p = (power_p_raw*dplus*dplus)/(dplus_raw*dplus_raw)
+        else:
+            power_p = power_p_raw
+        if (store):
+            if (okprint):
+                print "Writing file: ",fname
+            f=open(fname,"w")
+            for i in xrange(0,power_k.size):
+                f.write(str("%-.12e"%power_k[i])+" "+str("%-.12e"%power_p[i])+"\n")
+            f.close()
     return power_k, power_p
 # ---------------------------------------------------------------------------- #
 
@@ -66,23 +72,28 @@ def corrected_power(mainpath = "", simset = "", nsim = 1, noutput = 1, aexp = 0.
 def nyquist_power(mainpath = "", simset = "", nsim = 1, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), nmodel = 0, okprint = False, store = False):
     if (type(simset) is str):
         simset = DeusPurSet(simset)
-    power_k, power_p = corrected_power(mainpath,simset.name,nsim,noutput,aexp,growth_a,growth_dplus,nmodel)
-    idx = (power_k < simset.nyquist)
-    power_k_new = power_k[idx]
-    power_p_new = power_p[idx]
-    if (store):
-        fname = file_path("power",mainpath,simset.name,nsim,noutput,nmodel,okprint,"nyquist")
-        f=open(fname,"w")
-        for i in xrange(0,power_k_new.size):
-            f.write(str("%-.12e"%power_k_new[i])+" "+str("%-.12e"%power_p_new[i])+"\n")
-        f.close()
+    fname = file_path("power",mainpath,simset.name,nsim,noutput,nmodel,okprint,"nyquist")
+    if (os.path.isfile(fname) and not store):
+        power_k_new, power_p_new = np.loadtxt(fname,unpack=True)
+    else:
+        power_k, power_p = corrected_power(mainpath,simset.name,nsim,noutput,aexp,growth_a,growth_dplus,nmodel)
+        idx = (power_k < simset.nyquist)
+        power_k_new = power_k[idx]
+        power_p_new = power_p[idx]
+        if (store):
+            if (okprint):
+                print "Writing file: ",fname
+            f=open(fname,"w")
+            for i in xrange(0,power_k_new.size):
+                f.write(str("%-.12e"%power_k_new[i])+" "+str("%-.12e"%power_p_new[i])+"\n")
+            f.close()
     return power_k_new, power_p_new
 # ---------------------------------------------------------------------------- #
 
 
 
 #------------------------------- POWER SPECTRUM COMPUTED BY PkANN ------------------ #
-def pkann_power(ipar = 0, dpar = 0.05, fact = 1, powertype = "power", ioutput = 1, mainpath = "", aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0)):
+def pkann_power(ipar = 0, dpar = 0.05, fact = 1, powertype = "power", ioutput = 1, mainpath = "", aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), okprint = False, store = False):
     
     par=np.array([0.2573*0.5184,0.04356*0.5184,0.963,-1.,0.801,0.,1.]) #omega_m h^2, omega_b h^2, n_s, w, sigma_8, m_nu, bias
     list_z = [99., 2., 1.5, 1., 0.7, 0.5, 0.3, 0.01, 0.]
@@ -94,7 +105,7 @@ def pkann_power(ipar = 0, dpar = 0.05, fact = 1, powertype = "power", ioutput = 
     os.system(command)
 
     pfile = folder+"pkann_"+str(ipar)+"_"+str(dpar)+"_"+str(fact)+"_"+powertype+"_"+str(ioutput)+".txt"
-    if (os.path.isfile(pfile)):
+    if (os.path.isfile(pfile) and not store):
         power_k,power_pkann = np.loadtxt(pfile,unpack=True)
     else:
 
@@ -118,7 +129,7 @@ def pkann_power(ipar = 0, dpar = 0.05, fact = 1, powertype = "power", ioutput = 
             power_k,dummy=nyquist_power(mainpath,"4096_adaphase_256",1,ioutput,aexp,growth_a,growth_dplus)
         else:
             power_k,dummy,dummy=read_power(file_path("power", mainpath, "4096_adaphase_256", 1, ioutput))
-        print power_k.size,power_k[power_k.size-1]
+
         power_pkann = np.zeros(power_k.size)
         for i in range(power_k.size):
             power_pkann[i] = par[6]*par[6]*extrapolate(power_k[i],kpkann,ppkann)

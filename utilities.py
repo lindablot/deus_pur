@@ -70,14 +70,30 @@ class DeusPurSet(object):
     def N_k(self, power_k):
         delta_k=np.diff(power_k)
         delta_k=np.append(delta_k,delta_k[delta_k.size-1])
-        return math.pi/24.+ self.l_box**3 *power_k*power_k*delta_k/(2.*math.pi**2)
+        return self.l_box**3/(2.*math.pi**2) * (power_k*power_k*delta_k + delta_k*delta_k*delta_k/12.)
 # ---------------------------------------------------------------------------- #
 
 
 
-# ------------------------------ SIMULATION SET ITERATOR FOR 256 AND 1024 --------------------------------- #
-def sim_iterator(simset = "", isim = 1, replace = 0, index = 0):
-    if(simset=="all_256"):
+# ------------------------------ SIMULATION SET ITERATOR --------------------------------- #
+def sim_iterator(simset = "", isim = 1, random = False, replace = False):
+    
+    if (type(simset) is str):
+        simset=DeusPurSet(simset)
+    
+    if random:
+        fname = "random_series_"+simset.name+".txt"
+        if(os.path.isfile(fname) and not replace):
+            series = np.loadtxt(fname,unpack=True)
+        else:
+            series = np.random.permutation(simset.nsimmax)
+            f = open(fname, "w")
+            for i in xrange(1,series.size):
+                f.write(str("%05d"%series[i])+"\n")
+            f.close()
+        isim = series[isim]
+
+    if(simset.name=="all_256"):
         if (isim<4097):
             true_set = "4096_furphase_256"
             true_isim = isim
@@ -87,49 +103,64 @@ def sim_iterator(simset = "", isim = 1, replace = 0, index = 0):
         else:
             true_set = "4096_otherphase_256"
             true_isim = isim - 8192
-    elif(simset=="all_1024"):
+    elif(simset.name=="all_1024"):
         if (isim<65):
             true_set = "64_adaphase_1024"
             true_isim = isim
         else:
             true_set = "64_curiephase_1024"
             true_isim = isim - 64
-    elif(simset=="all_cosmo"):
+    elif(simset.name=="all_cosmo"):
         true_set = "512_adaphase_512_328-125"
         true_isim = isim
-    elif (simset=="random_256"):
-        fname = "random_series.txt"
-        
-        if(os.path.isfile(fname) and replace==0):
-            series = np.loadtxt(fname,unpack=True)
-            isim = series[index]
-        else:
-            series = np.random.permutation(12288)
-            isim = series[0]
-            f = open(fname, "w")
-            for i in xrange(1,series.size):
-                f.write(str("%05d"%series[i])+"\n")
-            f.close()
-        
-        if (isim<4097):
-            true_set = "4096_furphase_256"
-            true_isim = isim
-        elif (isim<8193):
-            true_set = "4096_adaphase_256"
-            true_isim = isim - 4096
-        else:
-            true_set = "4096_otherphase_256"
-            true_isim = isim - 8192
-else:
-    true_set = simset
+    else:
+        true_set = simset
         true_isim = isim
     return true_set, true_isim
 # ---------------------------------------------------------------------------- #
 
 
 
-# --------------------------- STORED FILE NAME --------------------------- #
-def file_name(prefix="cov",powertype,simset,isimmin,isimmax,ioutput,nmodel=0):
+# -------------------------------- INPUT FILE NAME --------------------------------- #
+def input_file_name(filetype = "", mainpath = "", simset = "", nsim = 1, noutput = 1, nmodel = 0, okprint = False, powertype = "gridcic"):
+    fullpath = str(mainpath)
+    if (filetype == "power"):
+        dataprefix = "/power/power"+powertype+"_"
+    elif (filetype == "info"):
+        dataprefix = "/info/info_"
+    elif (filetype == "massfunction"):
+        dataprefix = "/massfunction/massfunction_"
+    if (simset == "4096_furphase"):
+        fullpath += simset+dataprefix+str(int(noutput)).zfill(5)+".txt"
+    elif (simset == "4096_otherphase"):
+        fullpath += simset+dataprefix+str(int(noutput)).zfill(5)+".txt"
+    elif (simset == "4096_furphase_512"):
+        fullpath += simset+"/boxlen1312-5_n512_lcdmw7_"+str(int(nsim)).zfill(5)+dataprefix+str(int(noutput)).zfill(5)+".txt"
+    elif (simset == "4096_furphase_256"):
+        fullpath += simset+"/boxlen656-25_n256_lcdmw7_"+str(int(nsim)).zfill(5)+dataprefix+str(int(noutput)).zfill(5)+".txt"
+    elif (simset == "4096_otherphase_256"):
+        fullpath += simset+"/boxlen656-25_n256_lcdmw7_"+str(int(nsim)).zfill(5)+dataprefix+str(int(noutput)).zfill(5)+".txt"
+    elif (simset == "4096_adaphase_256"):
+        fullpath += simset+"/boxlen656-25_n256_lcdmw7_"+str(int(nsim)).zfill(5)+dataprefix+str(int(noutput)).zfill(5)+".txt"
+    elif (simset == "64_adaphase_1024"):
+        fullpath += simset+"/boxlen656-25_n1024_lcdmw7_"+str(int(nsim)).zfill(5)+dataprefix+str(int(noutput)).zfill(5)+".txt"
+    elif (simset == "64_curiephase_1024"):
+        fullpath += simset+"/boxlen656-25_n1024_lcdmw7_"+str(int(nsim)).zfill(5)+dataprefix+str(int(noutput)).zfill(5)+".txt"
+    elif (simset == "512_adaphase_512_328-125"):
+        fullpath += simset+"/boxlen328-125_n512_model"+str(int(nmodel)).zfill(5)+"_"+str(int(nsim)).zfill(5)+dataprefix+str(int(noutput)).zfill(5)+".txt"
+    else:
+        print "WARNING: not existing simset in file_path"
+        print simset
+    
+    if (okprint):
+        print fullpath
+    return fullpath
+# ---------------------------------------------------------------------------- #
+
+
+
+# --------------------------- OUTPUT FILE NAME --------------------------- #
+def output_file_name(prefix="cov",powertype="",simset="",isimmin=1,isimmax=1,ioutput=1,nmodel=0):
 
     nsim=isimmax-isimmin
     if (type(simset) is str):
@@ -168,10 +199,9 @@ def extrapolate(value_x, array_x, array_y):
 
 #------------------------------- REBIN Y(k) WITH Dk/k FIXED ------------------ #
 def rebin(k= np.zeros(0),y= np.zeros(0),lim=0.1):
-    delta_k = np.zeros(k.size)
-    for i in xrange(0,k.size-1):
-        delta_k[i] = k[i+1]-k[i]
-    delta_k[delta_k.size-1]=delta_k[delta_k.size-2]
+    
+    delta_k=np.diff(k)
+    delta_k=np.append(delta_k,delta_k[delta_k.size-1])
     
     interval=0.
     j=0
