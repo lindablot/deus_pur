@@ -25,7 +25,7 @@ def cov_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isim
         simset=DeusPurSet(simset)
     nsim = isimmax-isimmin
 
-    fname = file_name("cov",powertype,simset,isimmin,isimmax,noutput,nmodel)
+    fname = output_file_name("cov",powertype,simset,isimmin,isimmax,noutput,nmodel)
     fltformat="%-.12e"
 
     if (os.path.isfile(fname)):
@@ -74,7 +74,7 @@ def cov_power_kcut(kmin, kmax, powertype, mainpath = "", simset = "", isimmin = 
         simset=DeusPurSet(simset)
     nsim = isimmax-isimmin
     
-    fname = file_name("cov",powertype,simset,isimmin,isimmax,noutput,nmodel)
+    fname = output_file_name("cov",powertype,simset,isimmin,isimmax,noutput,nmodel)
     fltformat="%-.12e"
 
     if (os.path.isfile(fname)):
@@ -119,7 +119,7 @@ def corr_coeff(powertype = "power", mainpath = "", simset = "", isimmin = 1, isi
         simset=DeusPurSet(simset)
     nsim = isimmax-isimmin
 
-    fname = file_name("corr_coeff",powertype,simset,isimmin,isimmax,noutput,nmodel)
+    fname = output_file_name("corr_coeff",powertype,simset,isimmin,isimmax,noutput,nmodel)
     fltformat="%-.12e"
     if (os.path.isfile(fname)):
         if (okprint):
@@ -151,7 +151,7 @@ def signoise(powertype = "nyquist", mainpath = "", simset = "", noutput = 1, nsi
     if (type(simset) is str):
         simset=DeusPurSet(simset)
     
-    fname = file_name("sig_noise",powertype,simset,isimmin,isimmax,noutput,nmodel)
+    fname = output_file_name("sig_noise",powertype,simset,isimmin,isimmax,noutput,nmodel)
     fltformat="%-.12e"
 
     if(os.path.isfile(fname)):

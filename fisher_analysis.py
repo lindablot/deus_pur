@@ -20,6 +20,7 @@ def fisher_matrix(powertype = "power", galaxy = 0, list_par = [0,2,3,4],  fiduci
 
     if (type(simset) is str):
         simset=DeusPurSet(simset)
+    fltformat="%-.12e"
 
     nsim=isimmax-isimmin
     dalpha = 0.05
@@ -32,16 +33,16 @@ def fisher_matrix(powertype = "power", galaxy = 0, list_par = [0,2,3,4],  fiduci
         aexp=list_aexp[iz]
         
         # ------------------- covariance ------------------- #
-        covfile = file_name("cov",powertype,simset,isimmin,isimmax,noutput,nmodel)
+        covfile = output_file_name("cov",powertype,simset,isimmin,isimmax,noutput,nmodel)
         if (os.path.isfile(covfile)):
             power_pcov=np.loadtxt(covfile,unpack=True)
             power_k,dummy=power_spectrum(powertype,mainpath,simset.name,isimmin,ioutput,aexp,growth_a,growth_dplus)
         else:
-            power_k,dummy,dummy,power_pcov=cov_power(powertype,mainpath,simset.name,isimmin,isimmax,ioutput,aexp,growth_a,growth_dplus,okprint=okprint,store=store)
+            power_k,dummy,dummy,power_pcov=cov_power(powertype,mainpath,simset.name,isimmin,isimmax,ioutput,aexp,growth_a,growth_dplus,okprint=okprint)
 
         if (galaxy > 0):
             simset256 = DeusPurSet("all_256")
-            power_k,power_pmean,dummy=mean_power("mcorrected",mainpath,simset256.name,1,simset256.nsimmax+1,ioutput,aexp,growth_a,growth_dplus,okprint=okprint,store=store)
+            power_k,power_pmean,dummy=mean_power("mcorrected",mainpath,simset256.name,1,simset256.nsimmax+1,ioutput,aexp,growth_a,growth_dplus,okprint=okprint)
             bias=1.#galaxy_bias(power_k,ioutput)
             ng=galaxy_density(ioutput,frac)
             
@@ -97,6 +98,7 @@ def fisher_matrix_cho(powertype = "power", galaxy = 0, list_par = [0,2,3,4],  fi
     
     if (type(simset) is str):
         simset=DeusPurSet(simset)
+    fltformat="%-.12e"
 
     nsim=isimmax-isimmin
     dalpha = 0.05
@@ -109,15 +111,15 @@ def fisher_matrix_cho(powertype = "power", galaxy = 0, list_par = [0,2,3,4],  fi
         aexp=list_aexp[iz]
         
         # ------------------- covariance ------------------- #
-        covfile = file_name("cov",powertype,simset,isimmin,isimmax,noutput,nmodel)
+        covfile = output_file_name("cov",powertype,simset,isimmin,isimmax,noutput,nmodel)
         if (os.path.isfile(covfile)):
             power_pcov=np.loadtxt(covfile,unpack=True)
         else:
-            power_k,dummy,dummy,power_pcov=cov_power(powertype,mainpath,simset.name,isimmin,isimmax,ioutput,aexp,growth_a,growth_dplus,okprint=okprint,store=store)
+            power_k,dummy,dummy,power_pcov=cov_power(powertype,mainpath,simset.name,isimmin,isimmax,ioutput,aexp,growth_a,growth_dplus,okprint=okprint)
 
         if (galaxy > 0):
             simset256 = DeusPurSet("all_256")
-            power_k,power_pmean,dummy=mean_power("mcorrected",mainpath,simset256.name,1,simset256.nsimmax+1,ioutput,aexp,growth_a,growth_dplus,okprint=okprint,store=store)
+            power_k,power_pmean,dummy=mean_power("mcorrected",mainpath,simset256.name,1,simset256.nsimmax+1,ioutput,aexp,growth_a,growth_dplus,okprint=okprint)
             bias=1.#galaxy_bias(power_k,ioutput)
             ng=galaxy_density(ioutput,frac)
             biased_cov = pow(bias,4.)*power_pcov + 2.*pow(bias,2.)*np.sqrt(np.outer(power_pmean,power_pmean))/ng + 1./pow(ng,2.)
@@ -172,6 +174,7 @@ def fisher_matrix_kcut(kmin, kmax, powertype = "power", galaxy = 0, list_par = [
     
     if (type(simset) is str):
         simset=DeusPurSet(simset)
+    fltformat="%-.12e"
     
     nsim=isimmax-isimmin
     dalpha = 0.05
@@ -184,12 +187,12 @@ def fisher_matrix_kcut(kmin, kmax, powertype = "power", galaxy = 0, list_par = [
         aexp=list_aexp[iz]
         
         # ------------------- covariance ------------------- #
-        covfile = file_name("cov",powertype,simset,isimmin,isimmax,noutput,nmodel)
+        covfile = output_file_name("cov",powertype,simset,isimmin,isimmax,noutput,nmodel)
         if (os.path.isfile(covfile)):
             power_pcov_nocut=np.loadtxt(covfile,unpack=True)
             power_k_nocut,dummy=power_spectrum(powertype,mainpath,simset.name,1,ioutput,aexp,growth_a,growth_dplus,okprint=okprint)
         else:
-            power_k_nocut,dummy,dummy,power_pcov_nocut=cov_power(powertype,mainpath,simset.name,isimmin,isimmax,ioutput,aexp,growth_a,growth_dplus,okprint=okprint,store=store)
+            power_k_nocut,dummy,dummy,power_pcov_nocut=cov_power(powertype,mainpath,simset.name,isimmin,isimmax,ioutput,aexp,growth_a,growth_dplus,okprint=okprint)
         imin = np.searchsorted(power_k_nocut,kmin)
         imax = np.searchsorted(power_k_nocut,kmax)
         power_k = power_k_nocut[imin:imax]
@@ -197,7 +200,7 @@ def fisher_matrix_kcut(kmin, kmax, powertype = "power", galaxy = 0, list_par = [
         
         if (galaxy > 0):
             simset256 = DeusPurSet("all_256")
-            dummy,power_pmean_nocut,dummy=mean_power("mcorrected",mainpath,simset256.name,1,simset256.nsimmax+1,ioutput,aexp,growth_a,growth_dplus,okprint=okprint,store=store)
+            dummy,power_pmean_nocut,dummy=mean_power("mcorrected",mainpath,simset256.name,1,simset256.nsimmax+1,ioutput,aexp,growth_a,growth_dplus,okprint=okprint)
             power_pmean=power_pmean_nocut[imin:imax]
             biased_cov=np.zeros(np.shape(power_pcov))
             bias=1.#galaxy_bias(power_k,ioutput)

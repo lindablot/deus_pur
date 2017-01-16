@@ -24,7 +24,7 @@ def mean_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isi
         simset=DeusPurSet(simset)
     nsim = isimmax-isimmin
 
-    fname = file_name("mean",powertype,simset,isimmin,isimmax,noutput,nmodel)
+    fname = output_file_name("mean",powertype,simset,isimmin,isimmax,noutput,nmodel)
     if(os.path.isfile(fname) and not store):
         if (okprint):
             print "Reading mean spectrum from file: ", fname
@@ -55,7 +55,7 @@ def mean_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isi
 
         if (store):
             true_simset,true_isim = sim_iterator(simset.name, 1)
-            if np.isclose(aexp,read_info(file_path("info",mainpath,true_simset,true_isim,noutput)),atol=1.e-2):
+            if np.isclose(aexp,read_info(input_file_name("info",mainpath,true_simset,true_isim,noutput)),atol=1.e-2):
                 if (okprint):
                     print "Writing file: ",fname
                 f = open(fname, "w")
@@ -64,7 +64,7 @@ def mean_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isi
                 f.close()
             else:
                 print "Not writing file ",fname," because aexp ", aexp," does not correspond to noutput", noutput
-                print "input aexp: ", aexp,", aexp from sim: ",read_info(file_path("info",mainpath,true_simset,true_isim,noutput))
+                print "input aexp: ", aexp,", aexp from sim: ",read_info(input_file_name("info",mainpath,true_simset,true_isim,noutput))
 
     return power_k, power_pmean, power_psigma
 # ---------------------------------------------------------------------------- #
@@ -80,7 +80,7 @@ def distrib_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, 
     nsim = isimmax - isimmin
     power_values = np.zeros(nsim)
 
-    fname = file_name("distrib_k"+str(kref),powertype,simset,isimmin,isimmax,noutput,nmodel)
+    fname = output_file_name("distrib_k"+str(kref),powertype,simset,isimmin,isimmax,noutput,nmodel)
     if (os.path.isfile(fname) and not store):
         bincenter, npower_bin = np.loadtxt(fname,unpack=True)
     else:
@@ -100,7 +100,7 @@ def distrib_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, 
         
         if (store):
             true_simset,true_isim = sim_iterator(simset.name, 1)
-            if np.isclose(aexp,read_info(file_path("info",mainpath,true_simset,true_isim,noutput)),atol=1.e-2):
+            if np.isclose(aexp,read_info(input_file_name("info",mainpath,true_simset,true_isim,noutput)),atol=1.e-2):
                 if (okprint):
                     print "Writing file: ",fname
                 f = open(fname, "w")
@@ -109,7 +109,7 @@ def distrib_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, 
                 f.close()
             else:
                 print "Not writing file ",fname," because aexp ", aexp," does not correspond to noutput", noutput
-                print "input aexp: ", aexp,", aexp from sim: ",read_info(file_path("info",mainpath,true_simset,true_isim,noutput))
+                print "input aexp: ", aexp,", aexp from sim: ",read_info(input_file_name("info",mainpath,true_simset,true_isim,noutput))
 
     return bincenter, npower_bin
 # ---------------------------------------------------------------------------- #
@@ -129,7 +129,7 @@ def high_moments(powertype = "power", mainpath = "", simset = "", isimmin = 1, i
         bias="biased"
 
 
-    fname = file_name("high_moments_"+bias,powertype,simset,isimmin,isimmax,noutput,nmodel)
+    fname = output_file_name("high_moments_"+bias,powertype,simset,isimmin,isimmax,noutput,nmodel)
     if(os.path.isfile(fname) and not store):
         power_k, power_skew, power_kurt = np.loadtxt(fname,unpack=True)
     else:
@@ -160,7 +160,7 @@ def high_moments(powertype = "power", mainpath = "", simset = "", isimmin = 1, i
 
         if (store):
             true_simset,true_isim = sim_iterator(simset.name, 1)
-            if np.isclose(aexp,read_info(file_path("info",mainpath,true_simset,true_isim,noutput)),atol=1.e-2):
+            if np.isclose(aexp,read_info(input_file_name("info",mainpath,true_simset,true_isim,noutput)),atol=1.e-2):
                 if (okprint):
                     print "Writing file: ",fname
                 f=open(fname,"w")
@@ -169,7 +169,7 @@ def high_moments(powertype = "power", mainpath = "", simset = "", isimmin = 1, i
                 f.close()
             else:
                 print "Not writing file ",fname," because aexp ", aexp," does not correspond to noutput", noutput
-                print "input aexp: ", aexp,", aexp from sim: ",read_info(file_path("info",mainpath,true_simset,true_isim,noutput))
+                print "input aexp: ", aexp,", aexp from sim: ",read_info(input_file_name("info",mainpath,true_simset,true_isim,noutput))
     
     return power_k, power_skew, power_kurt
 # ---------------------------------------------------------------------------- #
@@ -184,7 +184,7 @@ def mass_corrected_power(mainpath = "", simset = "", nsim = 1, noutput = 1, aexp
     if (simset.npart!=256):
         print "WARNING: using mass resolution correction outside its applicability"
 
-    fname = file_path("power",mainpath,simset.name,nsim,noutput,0,okprint,"mcorrected")
+    fname = input_file_name("power",mainpath,simset.name,nsim,noutput,0,okprint,"mcorrected")
     if (os.path.isfile(fname) and not store):
         power_k, corrected_p = np.loadtxt(fname,unpack=True)
     else:
@@ -204,7 +204,7 @@ def mass_corrected_power(mainpath = "", simset = "", nsim = 1, noutput = 1, aexp
 
         if (store):
             true_simset,true_isim = sim_iterator(simset.name, 1)
-            if np.isclose(aexp,read_info(file_path("info",mainpath,true_simset,true_isim,noutput)),atol=1.e-2):
+            if np.isclose(aexp,read_info(input_file_name("info",mainpath,true_simset,true_isim,noutput)),atol=1.e-2):
                 if (okprint):
                     print "Writing file: ",fname
                 f=open(fname,"w")
@@ -213,7 +213,7 @@ def mass_corrected_power(mainpath = "", simset = "", nsim = 1, noutput = 1, aexp
                 f.close()
             else:
                 print "Not writing file ",fname," because aexp ", aexp," does not correspond to noutput", noutput
-                print "input aexp: ", aexp,", aexp from sim: ",read_info(file_path("info",mainpath,true_simset,true_isim,noutput))
+                print "input aexp: ", aexp,", aexp from sim: ",read_info(input_file_name("info",mainpath,true_simset,true_isim,noutput))
 
     return power_k, corrected_p
 # ---------------------------------------------------------------------------- #
@@ -346,7 +346,7 @@ def power_spectrum(powertype = "power", mainpath = "", simset = "", nsim = 1, no
         simset=DeusPurSet(simset)
     setname, nsim = sim_iterator(simset.name, nsim)
     if (powertype=="power"):
-        power_k, power_p, dummy = read_power(file_path("power", mainpath, name, nsim, noutput, nmodel))
+        power_k, power_p, dummy = read_power(input_file_name("power", mainpath, name, nsim, noutput, nmodel))
     elif (powertype=="nyquist"):
         power_k, power_p = nyquist_power(mainpath, setname, nsim, noutput, aexp, growth_a, growth_dplus, nmodel, okprint, store)
     elif (powertype=="renormalized"):
@@ -361,7 +361,7 @@ def power_spectrum(powertype = "power", mainpath = "", simset = "", nsim = 1, no
         else:
             model="model"+str(int(nmodel)).zfill(5)
         power_k_CAMB, power_p_CAMB = read_power_camb(mainpath, model)
-        power_k_nocut, dummy, dummy = read_power(file_path("power", mainpath, setname, nsim, noutput, nmodel))
+        power_k_nocut, dummy, dummy = read_power(input_file_name("power", mainpath, setname, nsim, noutput, nmodel))
         aexp_end = 1.
         dplus_a = extrapolate([aexp], growth_a, growth_dplus)
         dplus_end = extrapolate([aexp_end], growth_a, growth_dplus)
@@ -384,7 +384,7 @@ def power_spectrum(powertype = "power", mainpath = "", simset = "", nsim = 1, no
         else:
             model="model"+str(int(nmodel)).zfill(5)
         power_k_CAMB, power_p_CAMB = read_power_camb(mainpath, model)
-        power_k, dummy, dummy = read_power(file_path("power", mainpath, setname, nsim, noutput, nmodel))
+        power_k, dummy, dummy = read_power(input_file_name("power", mainpath, setname, nsim, noutput, nmodel))
         aexp_end = 1.
         dplus_a = extrapolate([aexp], growth_a, growth_dplus)
         dplus_end = extrapolate([aexp_end], growth_a, growth_dplus)
