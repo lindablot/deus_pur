@@ -20,6 +20,8 @@ import random
 # -------------------------------- MEAN POWER (ALTERNATIVE) -------------------------------- #
 def mean_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isimmax = 2, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), nmodel = 0, okprint = False, store = False):
     
+    if (type(simset) is str):
+        simset = DeusPurSet(simset)
     nsim = isimmax-isimmin
 
     fname = output_file_name("mean",powertype,simset,isimmin,isimmax,noutput,nmodel)
@@ -34,12 +36,12 @@ def mean_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isi
             power_k, power_pmean = power_spectrum("linear",mainpath,simset.name,1,noutput,aexp,growth_a,growth_dplus,nmodel,okprint)
             power_psigma = np.sqrt(2./simset.N_k(power_k))*power_pmean
         else:
-            true_simset, true_isimmin = sim_iterator(simset.name, isimmin)
+            true_simset, true_isimmin = sim_iterator(simset, isimmin)
             power_k, dummy = power_spectrum(powertype,mainpath,true_simset,true_isimmin,noutput,aexp,growth_a,growth_dplus,nmodel)
             power_p = np.zeros((nsim,power_k.size))
             for isim in xrange(isimmin, isimmax):
                 isim0=isim-isimmin
-                true_simset,true_isim = sim_iterator(simset.name, isim)
+                true_simset,true_isim = sim_iterator(simset, isim)
                 if (okprint):
                     print true_simset, true_isim
                 dummy, power_p[isim0] = power_spectrum(powertype,mainpath,true_simset,true_isim,noutput,aexp,growth_a,growth_dplus,nmodel,okprint)
@@ -52,7 +54,7 @@ def mean_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isi
                     print "Standard deviation not computed because there is only one simulation"
 
         if (store):
-            true_simset,true_isim = sim_iterator(simset.name, 1)
+            true_simset,true_isim = sim_iterator(simset, 1)
             if np.isclose(aexp,read_info(input_file_name("info",mainpath,true_simset,true_isim,noutput)),atol=1.e-2):
                 if (okprint):
                     print "Writing file: ",fname
@@ -72,6 +74,8 @@ def mean_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isi
 # --------------------- PDF OF POWER SPECTRA --------------------------- #
 def distrib_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isimmax = 2, noutput = 1, nbin = 50, kref = 0.2, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), nmodel = 0, okprint = False, store = False):
     
+    if (type(simset) is str):
+        simset = DeusPurSet(simset)
     nsim = isimmax - isimmin
     power_values = np.zeros(nsim)
 
@@ -80,7 +84,7 @@ def distrib_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, 
         bincenter, npower_bin = np.loadtxt(fname,unpack=True)
     else:
         for isim in xrange(1, nsim+1):
-            true_simset, true_isim = sim_iterator(simset.name,isim)
+            true_simset, true_isim = sim_iterator(simset,isim)
             if (okprint) :
                 print true_simset, true_isim
             power_k, power_p = power_spectrum(powertype,mainpath,true_simset,true_isim,noutput,aexp,growth_a,growth_dplus,nmodel)
@@ -94,7 +98,7 @@ def distrib_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, 
         bincenter = 0.5*(bins[1:]+bins[:-1])
         
         if (store):
-            true_simset,true_isim = sim_iterator(simset.name, 1)
+            true_simset,true_isim = sim_iterator(simset, 1)
             if np.isclose(aexp,read_info(input_file_name("info",mainpath,true_simset,true_isim,noutput)),atol=1.e-2):
                 if (okprint):
                     print "Writing file: ",fname
@@ -114,6 +118,8 @@ def distrib_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, 
 # ------------------ HIGH MOMENTS OF SPECTRA PDF ---------------------- #
 def high_moments(powertype = "power", mainpath = "", simset = "", isimmin = 1, isimmax = 2, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), nmodel = 0, unbiased = True, okprint = False, store = True):
 
+    if (type(simset) is str):
+        simset = DeusPurSet(simset)
     nsim = isimmax-isimmin
     
     if(unbiased):
@@ -131,7 +137,7 @@ def high_moments(powertype = "power", mainpath = "", simset = "", isimmin = 1, i
         power_kurt = np.zeros(power_k.size)
     
         for isim in xrange(isimmin, isimmax+1):
-            true_simset, true_isim = sim_iterator(simset.name,isim)
+            true_simset, true_isim = sim_iterator(simset,isim)
             if (okprint) :
                 print true_simset,true_isim
             power_k, power_p = power_spectrum(powertype,mainpath,true_simset,true_isim,noutput,aexp,growth_a,growth_dplus,nmodel)
@@ -152,7 +158,7 @@ def high_moments(powertype = "power", mainpath = "", simset = "", isimmin = 1, i
             power_kurt -= 3.
 
         if (store):
-            true_simset,true_isim = sim_iterator(simset.name, 1)
+            true_simset,true_isim = sim_iterator(simset, 1)
             if np.isclose(aexp,read_info(input_file_name("info",mainpath,true_simset,true_isim,noutput)),atol=1.e-2):
                 if (okprint):
                     print "Writing file: ",fname
@@ -172,6 +178,8 @@ def high_moments(powertype = "power", mainpath = "", simset = "", isimmin = 1, i
 # ------------------------- SPECTRUM CORRECTED FOR MASS RES EFFECT --------------------------- #
 def mass_corrected_power(mainpath = "", simset = "", nsim = 1, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), corr_type = "var_pres_smooth", okprint=False, store=False):
     
+    if (type(simset) is str):
+        simset = DeusPurSet(simset)
     if (simset.npart!=256):
         print "WARNING: using mass resolution correction outside its applicability"
 
@@ -194,7 +202,7 @@ def mass_corrected_power(mainpath = "", simset = "", nsim = 1, noutput = 1, aexp
             corrected_p = power_p / correction_smooth
 
         if (store):
-            true_simset,true_isim = sim_iterator(simset.name, 1)
+            true_simset,true_isim = sim_iterator(simset, 1)
             if np.isclose(aexp,read_info(input_file_name("info",mainpath,true_simset,true_isim,noutput)),atol=1.e-2):
                 if (okprint):
                     print "Writing file: ",fname
@@ -215,6 +223,8 @@ def mass_corrected_power(mainpath = "", simset = "", nsim = 1, noutput = 1, aexp
 def correction_power(mainpath = "", simset="",
                      noutput = 1, aexp = 1.,growth_a = np.zeros(0),growth_dplus = np.zeros(0), corr_type = "var_pres_smooth",okprint = False, store = False):
     
+    if (type(simset) is str):
+        simset = DeusPurSet(simset)
     fname = "correction_"+corr_type+"_"+str("%05d"%noutput)+".txt"
     if(os.path.isfile(fname) and not store):
         correction = np.loadtxt(fname,unpack=True)
@@ -331,7 +341,9 @@ def correction_power(mainpath = "", simset="",
 
 # ----------------------- WRAPPER FOR ALL POWER TYPES ------------------------- #
 def power_spectrum(powertype = "power", mainpath = "", simset = "", nsim = 1, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), nmodel = 0, okprint = False, store = False):
-
+    
+    if (type(simset) is str):
+        simset = DeusPurSet(simset)
     setname, nsim = sim_iterator(simset, nsim)
 
     if (powertype=="power"):
