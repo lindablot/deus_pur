@@ -334,62 +334,59 @@ def power_spectrum(powertype = "power", mainpath = "", simset = "", nsim = 1, no
 
     setname, nsim = sim_iterator(simset, nsim)
 
-    if (setname=="Minerva" or setname=="COLA"):
-        power_k, dummy, power_p, dummy, dummy, dummy = np.genfromtxt(input_file_name("power", mainpath, simset, nsim, noutput, nmodel, okprint, powertype))
-    else:
-        if (powertype=="power"):
-            power_k, power_p, dummy = read_power(input_file_name("power", mainpath, setname, nsim, noutput, nmodel))
-        elif (powertype=="nyquist"):
-            power_k, power_p = nyquist_power(mainpath, setname, nsim, noutput, aexp, growth_a, growth_dplus, nmodel, okprint, store)
-        elif (powertype=="renormalized"):
-            power_k, power_p = renormalized_power(mainpath, setname, nsim, noutput, growth_a, growth_dplus, nmodel, okprint, store)
-        elif (powertype=="corrected"):
-            power_k, power_p = corrected_power(mainpath, setname, aexp, nsim, noutput, growth_a, growth_dplus, nmodel, okprint, store)
-        elif (powertype=="mcorrected"):
-            power_k, power_p = mass_corrected_power(mainpath, setname, nsim, noutput, aexp, growth_a, growth_dplus, okprint, store)
-        elif (powertype=="linear"):
-            if (nmodel==0):
-                model="lcdmw7"
-            else:
-                model="model"+str(int(nmodel)).zfill(5)
-            power_k_CAMB, power_p_CAMB = read_power_camb(mainpath, model)
-            power_k_nocut, dummy, dummy = read_power(input_file_name("power", mainpath, setname, nsim, noutput, nmodel))
-            aexp_end = 1.
-            dplus_a = extrapolate([aexp], growth_a, growth_dplus)
-            dplus_end = extrapolate([aexp_end], growth_a, growth_dplus)
-            plin = power_p_CAMB * dplus_a * dplus_a / (dplus_end * dplus_end)
-            idx = (power_k_nocut < simset.nyquist)
-            power_k = power_k_nocut[idx]
-            power_p = np.interp(power_k, power_k_CAMB, plin)
-            if (store):
-                if (okprint):
-                    print "Writing file: ",fname
-                f=open(fname,"w")
-                for i in xrange(0,power_k.size):
-                    f.write(str("%-.12e"%power_k[i])+" "+str("%-.12e"%corrected_p[i])+"\n")
-                f.close()
-
-
-        elif (powertype=="linear_mock"):
-            if (nmodel==0):
-                model="lcdmw7"
-            else:
-                model="model"+str(int(nmodel)).zfill(5)
-            power_k_CAMB, power_p_CAMB = read_power_camb(mainpath, model)
-            power_k, dummy, dummy = read_power(input_file_name("power", mainpath, setname, nsim, noutput, nmodel))
-            aexp_end = 1.
-            dplus_a = extrapolate([aexp], growth_a, growth_dplus)
-            dplus_end = extrapolate([aexp_end], growth_a, growth_dplus)
-            plin = power_p_CAMB * dplus_a * dplus_a / (dplus_end * dplus_end)
-                                                         
-            plin_interp = np.interp(power_k, power_k_CAMB, plin)
-            N_k = simset.N_k(power_k)
-            noise = np.sqrt(2./N_k)*(plin_interp)
-            error = np.random.normal(0.,noise,noise.size)
-            power_p = plin_interp + error
+    if (powertype=="power"):
+        power_k, power_p, dummy = read_power(input_file_name("power", mainpath, setname, nsim, noutput, nmodel))
+    elif (powertype=="nyquist"):
+        power_k, power_p = nyquist_power(mainpath, setname, nsim, noutput, aexp, growth_a, growth_dplus, nmodel, okprint, store)
+    elif (powertype=="renormalized"):
+        power_k, power_p = renormalized_power(mainpath, setname, nsim, noutput, growth_a, growth_dplus, nmodel, okprint, store)
+    elif (powertype=="corrected"):
+        power_k, power_p = corrected_power(mainpath, setname, aexp, nsim, noutput, growth_a, growth_dplus, nmodel, okprint, store)
+    elif (powertype=="mcorrected"):
+        power_k, power_p = mass_corrected_power(mainpath, setname, nsim, noutput, aexp, growth_a, growth_dplus, okprint, store)
+    elif (powertype=="linear"):
+        if (nmodel==0):
+            model="lcdmw7"
         else:
-            print "powertype not existent in function power_spectrum"
-            sys.exit()
+            model="model"+str(int(nmodel)).zfill(5)
+        power_k_CAMB, power_p_CAMB = read_power_camb(mainpath, model)
+        power_k_nocut, dummy, dummy = read_power(input_file_name("power", mainpath, setname, nsim, noutput, nmodel))
+        aexp_end = 1.
+        dplus_a = extrapolate([aexp], growth_a, growth_dplus)
+        dplus_end = extrapolate([aexp_end], growth_a, growth_dplus)
+        plin = power_p_CAMB * dplus_a * dplus_a / (dplus_end * dplus_end)
+        idx = (power_k_nocut < simset.nyquist)
+        power_k = power_k_nocut[idx]
+        power_p = np.interp(power_k, power_k_CAMB, plin)
+        if (store):
+            if (okprint):
+                print "Writing file: ",fname
+            f=open(fname,"w")
+            for i in xrange(0,power_k.size):
+                f.write(str("%-.12e"%power_k[i])+" "+str("%-.12e"%corrected_p[i])+"\n")
+            f.close()
+
+
+    elif (powertype=="linear_mock"):
+        if (nmodel==0):
+            model="lcdmw7"
+        else:
+            model="model"+str(int(nmodel)).zfill(5)
+        power_k_CAMB, power_p_CAMB = read_power_camb(mainpath, model)
+        power_k, dummy, dummy = read_power(input_file_name("power", mainpath, setname, nsim, noutput, nmodel))
+        aexp_end = 1.
+        dplus_a = extrapolate([aexp], growth_a, growth_dplus)
+        dplus_end = extrapolate([aexp_end], growth_a, growth_dplus)
+        plin = power_p_CAMB * dplus_a * dplus_a / (dplus_end * dplus_end)
+                                                     
+        plin_interp = np.interp(power_k, power_k_CAMB, plin)
+        N_k = simset.N_k(power_k)
+        noise = np.sqrt(2./N_k)*(plin_interp)
+        error = np.random.normal(0.,noise,noise.size)
+        power_p = plin_interp + error
+    else:
+        print "powertype not existent in function power_spectrum"
+        sys.exit()
 
     return power_k, power_p
 # ---------------------------------------------------------------------------- #

@@ -80,23 +80,6 @@ class DeusPurSet(Simset):
             self.composite=True
         else:
             self.composite=False
-
-class MinervaSet(Simset):
-
-    simsets=["Minerva","COLA"]
-
-    def __init__(self,name):
-
-        if (name in self.simsets):
-            self.name = name
-        else:
-            print "WARNING: Unknown simset "+name
-
-        self.l_box=1500.
-        self.npart=1000.
-        self.nsimmax=100
-
-        self.nyquist = math.pi/self.l_box*self.npart
 # ---------------------------------------------------------------------------- #
 
 
@@ -271,3 +254,22 @@ def rebin(k= np.zeros(0),y= np.zeros(0),lim=0.1):
     rebin_e = error[0:j]
 
     return rebin_k,rebin_y,rebin_e
+# ---------------------------------------------------------------------------- #
+
+
+# ----------------------  REBIN POWER SPECTRUM EXACTLY ---------------------- #
+def rebin_pk(k,pk,nk,nbins):
+    if k.size%nbins!=0:
+        k=k[:(k.size-k.size%nbins)]
+        nk=nk[:(k.size-k.size%nbins)]
+        pk=pk[:(k.size-k.size%nbins)]
+    
+    k_new=k.reshape(-1,nbins)
+    k_new=np.mean(k_new,axis=1)
+    pknk=pk*nk
+    pknk_new=np.sum(pknk.reshape(-1,nbins),axis=1)
+    nksum=np.sum(nk.reshape(-1,nbins),axis=1)
+    pk_new=pknk_new/nksum
+
+    return k_new,pk_new
+# ---------------------------------------------------------------------------- #
