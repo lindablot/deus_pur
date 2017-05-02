@@ -21,8 +21,6 @@ from power_stats import *
 # -------------------------------- COVARIANCE POWER -------------------------------- #
 def cov_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isimmax = 2, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), nmodel = 0, okprint = False, store = False):
     
-    if (type(simset) is str):
-        simset=DeusPurSet(simset)
     nsim = isimmax-isimmin
 
     fname = output_file_name("cov",powertype,simset,isimmin,isimmax,noutput,nmodel)
@@ -70,8 +68,6 @@ def cov_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isim
 # -------------------- POWER SPECTRUM COVARIANCE WITH k CUT ------------------------- #
 def cov_power_kcut(kmin, kmax, powertype, mainpath = "", simset = "", isimmin = 1, isimmax = 2, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), nmodel = 0, okprint = False, store = False):
     
-    if (type(simset) is str):
-        simset=DeusPurSet(simset)
     nsim = isimmax-isimmin
     
     fname = output_file_name("cov",powertype,simset,isimmin,isimmax,noutput,nmodel)
@@ -115,8 +111,6 @@ def cov_power_kcut(kmin, kmax, powertype, mainpath = "", simset = "", isimmin = 
 # -------------------- CORRELATION COEFFICIENT POWER ------------------------- #
 def corr_coeff(powertype = "power", mainpath = "", simset = "", isimmin = 1, isimmax = 2, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), nmodel = 0, okprint = False, store = False):
     
-    if (type(simset) is str):
-        simset=DeusPurSet(simset)
     nsim = isimmax-isimmin
 
     fname = output_file_name("corr_coeff",powertype,simset,isimmin,isimmax,noutput,nmodel)
@@ -147,9 +141,6 @@ def corr_coeff(powertype = "power", mainpath = "", simset = "", isimmin = 1, isi
 
 # ----------------------------- SIGNAL TO NOISE ------------------------------ #
 def signoise(powertype = "nyquist", mainpath = "", simset = "", noutput = 1, nsimmax = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), nmodel = 0, unbiased = False, okprint = False, store = False):
-    
-    if (type(simset) is str):
-        simset=DeusPurSet(simset)
     
     fname = output_file_name("sig_noise",powertype,simset,isimmin,isimmax,noutput,nmodel)
     fltformat="%-.12e"
@@ -196,8 +187,7 @@ def signoise(powertype = "nyquist", mainpath = "", simset = "", noutput = 1, nsi
 
 # ----------------------------- SIGNAL TO NOISE AT A GIVEN K ------------------------------ #
 def signoise_k(powertype = "nyquist", mainpath = "", simset = "", noutput = 1, nsimmax = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), kmax=0.4, unbiased = False, okprint = False):
-    if (type(simset) is str):
-        simset=DeusPurSet(simset)
+
     nmax = nsimmax-1
     
     power_k, power_pmean, power_psigma, power_pcov = cov_power_kcut(0., kmax, powertype, mainpath, simset.name, 1, nsimmax, noutput, aexp, growth_a, growth_dplus,okprint)

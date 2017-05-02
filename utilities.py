@@ -12,7 +12,21 @@ import scipy.interpolate as itl
 
 
 # ------------------------------- SIMSET CLASS ------------------------------- #
-class DeusPurSet(object):
+class Simset(object):
+
+    def __init__(self,name,l_box,npart,nsimmax):
+        self.l_box = l_box
+        self.npart = npart
+        self.nsimmax = nsimmax
+        self.nyquist = math.pi/self.l_box*self.npart
+
+    def N_k(self, power_k):
+        delta_k=np.diff(power_k)
+        delta_k=np.append(delta_k,delta_k[delta_k.size-1])
+        return self.l_box**3/(2.*math.pi**2) * (power_k*power_k*delta_k + delta_k*delta_k*delta_k/12.)
+
+
+class DeusPurSet(Simset):
     
     simsets=["4096_furphase_256", "4096_adaphase_256", "4096_otherphase_256", "all_256", "4096_furphase_512", "64_adaphase_1024", "64_curiephase_1024", "all_1024", "512_adaphase_512_328-125","4096_furphase","4096_otherphase"]
     
@@ -24,36 +38,36 @@ class DeusPurSet(object):
             print "WARNING: Unknown simset "+name+", setting simset name to all_256"
             self.name="all_256"
 
-        if (name=="4096_furphase_256" or name=="4096_adaphase_256" or name=="4096_otherphase_256" or name=="all_256"):
+        if (self.name=="4096_furphase_256" or self.name=="4096_adaphase_256" or self.name=="4096_otherphase_256" or self.name=="all_256"):
             self.npart = 256.
             self.l_box = 656.25
-            if (name=="all_256"):
+            if (self.name=="all_256"):
                 self.nsimmax=12288
             else:
                 self.nsimmax=4096
             self.cosmo=False
-        elif (name=="4096_furphase_512"):
+        elif (self.name=="4096_furphase_512"):
             self.npart = 512.
             self.l_box = 1312.5
             self.nsimmax = 512
             self.cosmo=False
-        elif (name=="64_adaphase_1024" or name=="64_curiephase_1024" or name=="all_1024"):
+        elif (self.name=="64_adaphase_1024" or self.name=="64_curiephase_1024" or self.name=="all_1024"):
             self.npart = 1024.
             self.l_box = 656.25
-            if (name=="64_adaphase_1024"):
+            if (self.name=="64_adaphase_1024"):
                 self.nsimmax = 64
-            elif (name=="64_curiephase_1024"):
+            elif (self.name=="64_curiephase_1024"):
                 self.nsimmax = 32
             else:
                 self.nsimmax = 96
             self.cosmo=False
-        elif (name=="512_adaphase_512_328-125"):
+        elif (self.name=="512_adaphase_512_328-125"):
             self.npart=512.
             self.l_box=328.125
             self.nsimmax=512
             self.nmodel=nmodel
             self.cosmo=True
-        elif (name=="4096_otherphase" or name=="4096_otherphase"):
+        elif (self.name=="4096_otherphase" or self.name=="4096_otherphase"):
             self.npart=4096.
             self.l_box=10500.
             self.nsimmax=1
@@ -67,19 +81,28 @@ class DeusPurSet(object):
         else:
             self.composite=False
 
-    def N_k(self, power_k):
-        delta_k=np.diff(power_k)
-        delta_k=np.append(delta_k,delta_k[delta_k.size-1])
-        return self.l_box**3/(2.*math.pi**2) * (power_k*power_k*delta_k + delta_k*delta_k*delta_k/12.)
+class MinervaSet(Simset):
+
+    simsets=["Minerva","COLA"]
+
+    def __init__(self,name):
+
+        if (name in self.simsets):
+            self.name = name
+        else:
+            print "WARNING: Unknown simset "+name
+
+        self.l_box=1500.
+        self.npart=1000.
+        self.nsimmax=100
+
+        self.nyquist = math.pi/self.l_box*self.npart
 # ---------------------------------------------------------------------------- #
 
 
 
 # ------------------------------ SIMULATION SET ITERATOR --------------------------------- #
 def sim_iterator(simset = "", isim = 1, random = False, replace = False):
-    
-    if (type(simset) is str):
-        simset=DeusPurSet(simset)
     
     if random:
         fname = "random_series_"+simset.name+".txt"
@@ -114,8 +137,9 @@ def sim_iterator(simset = "", isim = 1, random = False, replace = False):
         true_set = "512_adaphase_512_328-125"
         true_isim = isim
     else:
-        true_set = simset
+        true_set = simset.name
         true_isim = isim
+
     return true_set, true_isim
 # ---------------------------------------------------------------------------- #
 
@@ -123,6 +147,7 @@ def sim_iterator(simset = "", isim = 1, random = False, replace = False):
 
 # -------------------------------- INPUT FILE NAME --------------------------------- #
 def input_file_name(filetype = "", mainpath = "", simset = "", nsim = 1, noutput = 1, nmodel = 0, okprint = False, powertype = "gridcic"):
+    
     fullpath = str(mainpath)
     if (filetype == "power"):
         dataprefix = "/power/power"+powertype+"_"
@@ -148,12 +173,15 @@ def input_file_name(filetype = "", mainpath = "", simset = "", nsim = 1, noutput
         fullpath += simset+"/boxlen656-25_n1024_lcdmw7_"+str(int(nsim)).zfill(5)+dataprefix+str(int(noutput)).zfill(5)+".txt"
     elif (simset == "512_adaphase_512_328-125"):
         fullpath += simset+"/boxlen328-125_n512_model"+str(int(nmodel)).zfill(5)+"_"+str(int(nsim)).zfill(5)+dataprefix+str(int(noutput)).zfill(5)+".txt"
+    elif (simset== "Minerva" or "COLA"):
+        fullpath += simset+dataprefix+str(int(nsim)).zfill(3)+"_"+str(int(noutput)).zfill(3)+".txt"
     else:
         print "WARNING: not existing simset in file_path"
         print simset
     
     if (okprint):
         print fullpath
+
     return fullpath
 # ---------------------------------------------------------------------------- #
 
@@ -163,8 +191,6 @@ def input_file_name(filetype = "", mainpath = "", simset = "", nsim = 1, noutput
 def output_file_name(prefix="cov",powertype="",simset="",isimmin=1,isimmax=1,ioutput=1,nmodel=0):
 
     nsim=isimmax-isimmin
-    if (type(simset) is str):
-        simset=DeusPurSet(simset)
     
     fname=prefix+"_"+powertype+"_"+str("%05d"%ioutput)+"_"
     if (nsim==simset.nsimmax):
