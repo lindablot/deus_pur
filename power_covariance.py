@@ -38,7 +38,7 @@ def cov_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isim
             print "Computing power spectrum covariance"
         if (powertype=="linear"):
             power_k, power_pmean = power_spectrum("linear",mainpath,simset,1,noutput,aexp,growth_a,growth_dplus,nmodel,okprint)
-            power_psigma = np.sqrt(2./simset.N_k(power_k))*power_pmean
+            power_psigma = np.sqrt(2./simset.num_modes(power_k))*power_pmean
             power_pcov = np.diag(power_psigma*power_psigma)
         else:
             power_k, power_pmean, power_psigma = mean_power(powertype, mainpath, simset, isimmin, isimmax, noutput, aexp, growth_a, growth_dplus, nmodel, okprint)

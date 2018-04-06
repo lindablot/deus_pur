@@ -1,70 +1,65 @@
 #!/usr/bin/env python
 # power_stats.py - Vincent Reverdy (vince.rev@gmail.com) and Linda Blot (linda.blot@obspm.fr) - 2013
 # ---------------------------------- IMPORT ---------------------------------- #
-import math
-import glob
-import os
-import sys
-import numpy as np
-import scipy.interpolate as itl
-from scipy import stats
 from lmfit import minimize, Parameters
-from utilities import *
-from read_files import *
 from power_types import *
-import random
 # ---------------------------------------------------------------------------- #
 
 
-
 # -------------------------------- MEAN POWER (ALTERNATIVE) -------------------------------- #
-def mean_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isimmax = 2, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), nmodel = 0, okprint = False, store = False):
-    
-    if (type(simset) is str):
-        simset = DeusPurSet(simset)
-    nsim = isimmax-isimmin
+def mean_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isimmin=1, isimmax=2, noutput=1, aexp=0.,
+               growth_a=np.zeros(0), growth_dplus=np.zeros(0), nmodel=0, okprint=False, store=False,
+               rebin=0, outpath=""):
 
-    fname = output_file_name("mean",powertype,simset,isimmin,isimmax,noutput,nmodel)
-    if(os.path.isfile(fname) and not store):
-        if (okprint):
+    nsim = isimmax-isimmin
+    fname = outpath+"/"+output_file_name("mean", powertype, simset, isimmin, isimmax, noutput, nmodel)
+
+    if os.path.isfile(fname) and not store:
+        if okprint:
             print "Reading mean spectrum from file: ", fname
-        power_k, power_pmean, power_psigma = np.loadtxt(fname,unpack=True)
+        power_k, power_pmean, power_psigma = np.loadtxt(fname, unpack=True)
     else:
-        if (okprint):
+        if okprint:
             print "Computing mean and standard deviation of spectra"
-        if (powertype=="linear"):
-            power_k, power_pmean = power_spectrum("linear",mainpath,simset.name,1,noutput,aexp,growth_a,growth_dplus,nmodel,okprint)
-            power_psigma = np.sqrt(2./simset.N_k(power_k))*power_pmean
+        if powertype == "linear":
+            power_k, power_pmean = power_spectrum("linear", mainpath, simset.name, 1, noutput,
+                                                  aexp, growth_a, growth_dplus, nmodel, okprint, False, rebin)
+            power_psigma = np.sqrt(2./simset.num_modes(power_k))*power_pmean
         else:
             true_simset, true_isimmin = sim_iterator(simset, isimmin)
-            power_k, dummy = power_spectrum(powertype,mainpath,true_simset,true_isimmin,noutput,aexp,growth_a,growth_dplus,nmodel)
-            power_p = np.zeros((nsim,power_k.size))
+            power_k, dummy = power_spectrum(powertype, mainpath, true_simset, true_isimmin, noutput,
+                                            aexp, growth_a, growth_dplus, nmodel, okprint, False, rebin)
+            power_p = np.zeros((nsim, power_k.size))
             for isim in xrange(isimmin, isimmax):
-                isim0=isim-isimmin
-                true_simset,true_isim = sim_iterator(simset, isim)
-                if (okprint):
+                isim0 = isim - isimmin
+                true_simset, true_isim = sim_iterator(simset, isim)
+                if okprint:
                     print true_simset, true_isim
-                dummy, power_p[isim0] = power_spectrum(powertype,mainpath,true_simset,true_isim,noutput,aexp,growth_a,growth_dplus,nmodel,okprint)
+                dummy, power_p[isim0] = power_spectrum(powertype, mainpath, true_simset, true_isim, noutput,
+                                                       aexp, growth_a, growth_dplus, nmodel, okprint, False, rebin)
 
-            power_pmean = np.mean(power_p,axis=0)
-            if (nsim > 1):
-                power_psigma = np.std(power_p,axis=0,ddof=1)
+            power_pmean = np.mean(power_p, axis=0)
+            if nsim > 1:
+                power_psigma = np.std(power_p, axis=0, ddof=1)
             else:
-                if (okprint):
+                if okprint:
                     print "Standard deviation not computed because there is only one simulation"
+                power_psigma = np.zeros(power_k.size)
 
-        if (store):
-            true_simset,true_isim = sim_iterator(simset, 1)
-            if np.isclose(aexp,read_info(input_file_name("info",mainpath,true_simset,true_isim,noutput)),atol=1.e-2):
-                if (okprint):
-                    print "Writing file: ",fname
+        if store:
+            true_simset, true_isim = sim_iterator(simset, 1)
+            aexp_info = read_info(input_file_name("info", mainpath, true_simset, true_isim, noutput))
+            if np.isclose(aexp, aexp_info, atol=1.e-2):
+                if okprint:
+                    print "Writing file: ", fname
                 f = open(fname, "w")
                 for i in xrange(0, power_k.size):
-                    f.write(str("%-.12e"%power_k[i])+" "+str("%-.12e"%power_pmean[i])+" "+str("%-.12e"%power_psigma[i])+"\n")
+                    f.write(str("%-.12e" % power_k[i])+" "+str("%-.12e"%power_pmean[i])+" " +
+                            str("%-.12e" % power_psigma[i])+"\n")
                 f.close()
             else:
-                print "Not writing file ",fname," because aexp ", aexp," does not correspond to noutput", noutput
-                print "input aexp: ", aexp,", aexp from sim: ",read_info(input_file_name("info",mainpath,true_simset,true_isim,noutput))
+                print "Not writing file ", fname, " because aexp ", aexp, " does not correspond to noutput", noutput
+                print "input aexp: ", aexp, ", aexp from sim: ", aexp_info
 
     return power_k, power_pmean, power_psigma
 # ---------------------------------------------------------------------------- #
@@ -242,7 +237,7 @@ def correction_power(mainpath = "", simset="",
             dplus_end = extrapolate([aexp_end], growth_a, growth_dplus)
             plin = power_p_CAMB * dplus_a * dplus_a / (dplus_end * dplus_end)
             plin_interp = np.interp(power_k, power_k_CAMB, plin)
-            N_k = simset.N_k(power_k)
+            N_k = simset.num_modes(power_k)
             
             power_k1024, power_pmean1024, power_psigma1024 = mean_power("nyquist",mainpath,simset_1024.name,1,simset_1024.nsimmax+1,noutput,aexp,growth_a,growth_dplus,okprint)
             index = (power_k1024 <= power_k[power_k.size-1])
@@ -338,31 +333,34 @@ def correction_power(mainpath = "", simset="",
 # ---------------------------------------------------------------------------- #
 
 
-
 # ----------------------- WRAPPER FOR ALL POWER TYPES ------------------------- #
-def power_spectrum(powertype = "power", mainpath = "", simset = "", nsim = 1, noutput = 1, aexp = 0., growth_a = np.zeros(0), growth_dplus = np.zeros(0), nmodel = 0, okprint = False, store = False):
-    
-    if (type(simset) is str):
-        simset = DeusPurSet(simset)
-    setname, nsim = sim_iterator(simset, nsim)
+def power_spectrum(powertype="power", mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1,
+                   aexp=0., growth_a=np.zeros(0), growth_dplus=np.zeros(0),
+                   nmodel=0, okprint=False, store=False, rebin=0):
 
-    if (powertype=="power"):
-        power_k, power_p, dummy = read_power(input_file_name("power", mainpath, setname, nsim, noutput, nmodel))
-    elif (powertype=="nyquist"):
-        power_k, power_p = nyquist_power(mainpath, setname, nsim, noutput, aexp, growth_a, growth_dplus, nmodel, okprint, store)
-    elif (powertype=="renormalized"):
-        power_k, power_p = renormalized_power(mainpath, setname, nsim, noutput, growth_a, growth_dplus, nmodel, okprint, store)
-    elif (powertype=="corrected"):
-        power_k, power_p = corrected_power(mainpath, setname, aexp, nsim, noutput, growth_a, growth_dplus, nmodel, okprint, store)
-    elif (powertype=="mcorrected"):
-        power_k, power_p = mass_corrected_power(mainpath, setname, nsim, noutput, aexp, growth_a, growth_dplus, okprint, store)
-    elif (powertype=="linear"):
-        if (nmodel==0):
-            model="lcdmw7"
+    setname, nsim = sim_iterator(simset, nsim)
+    fname = input_file_name("power", mainpath, setname, nsim, noutput, nmodel)
+    if powertype == "power":
+        power_k, power_p, dummy = read_power(fname)
+    elif powertype == "nyquist":
+        power_k, power_p = nyquist_power(mainpath, setname, nsim, noutput,
+                                         aexp, growth_a, growth_dplus, nmodel, okprint, store)
+    elif powertype == "renormalized":
+        power_k, power_p = renormalized_power(mainpath, setname, nsim, noutput,
+                                              growth_a, growth_dplus, nmodel, okprint, store)
+    elif powertype == "corrected":
+        power_k, power_p = corrected_power(mainpath, setname, aexp, nsim, noutput,
+                                           growth_a, growth_dplus, nmodel, okprint, store)
+    elif powertype == "mcorrected":
+        power_k, power_p = mass_corrected_power(mainpath, setname, nsim, noutput,
+                                                aexp, growth_a, growth_dplus, okprint, store)
+    elif powertype == "linear":
+        if nmodel == 0:
+            model = "lcdmw7"
         else:
-            model="model"+str(int(nmodel)).zfill(5)
+            model = "model"+str(int(nmodel)).zfill(5)
         power_k_CAMB, power_p_CAMB = read_power_camb(mainpath, model)
-        power_k_nocut, dummy, dummy = read_power(input_file_name("power", mainpath, setname, nsim, noutput, nmodel))
+        power_k_nocut, dummy, dummy = read_power(fname)
         aexp_end = 1.
         dplus_a = extrapolate([aexp], growth_a, growth_dplus)
         dplus_end = extrapolate([aexp_end], growth_a, growth_dplus)
@@ -370,20 +368,20 @@ def power_spectrum(powertype = "power", mainpath = "", simset = "", nsim = 1, no
         idx = (power_k_nocut < simset.nyquist)
         power_k = power_k_nocut[idx]
         power_p = np.interp(power_k, power_k_CAMB, plin)
-        if (store):
-            if (okprint):
-                print "Writing file: ",fname
-            f=open(fname,"w")
-            for i in xrange(0,power_k.size):
-                f.write(str("%-.12e"%power_k[i])+" "+str("%-.12e"%corrected_p[i])+"\n")
+        if store:
+            linfname = input_file_name("power", mainpath, setname, nsim, noutput, nmodel, okprint, powertype)
+            if okprint:
+                print "Writing file: ", linfname
+            f=open(linfname, "w")
+            for i in xrange(0, power_k.size):
+                f.write(str("%-.12e" % power_k[i])+" "+str("%-.12e" % power_p[i])+"\n")
             f.close()
 
-
-    elif (powertype=="linear_mock"):
-        if (nmodel==0):
-            model="lcdmw7"
+    elif powertype == "linear_mock":
+        if nmodel == 0:
+            model = "lcdmw7"
         else:
-            model="model"+str(int(nmodel)).zfill(5)
+            model = "model"+str(int(nmodel)).zfill(5)
         power_k_CAMB, power_p_CAMB = read_power_camb(mainpath, model)
         power_k, dummy, dummy = read_power(input_file_name("power", mainpath, setname, nsim, noutput, nmodel))
         aexp_end = 1.
@@ -392,13 +390,16 @@ def power_spectrum(powertype = "power", mainpath = "", simset = "", nsim = 1, no
         plin = power_p_CAMB * dplus_a * dplus_a / (dplus_end * dplus_end)
                                                      
         plin_interp = np.interp(power_k, power_k_CAMB, plin)
-        N_k = simset.N_k(power_k)
-        noise = np.sqrt(2./N_k)*(plin_interp)
-        error = np.random.normal(0.,noise,noise.size)
+        nmodes = simset.num_modes(power_k)
+        noise = np.sqrt(2./nmodes)*plin_interp
+        error = np.random.normal(0., noise, noise.size)
         power_p = plin_interp + error
     else:
-        print "powertype not existent in function power_spectrum"
-        sys.exit()
+        raise ValueError("powertype not existent in function power_spectrum")
+
+    if rebin > 0:
+        nmodes = simset.num_modes(power_k)
+        power_k, power_p = rebin_pk(power_k, power_p, nmodes, rebin)
 
     return power_k, power_p
 # ---------------------------------------------------------------------------- #
