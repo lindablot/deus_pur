@@ -26,13 +26,13 @@ def mean_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isi
                                                   aexp, growth_a, growth_dplus, nmodel, okprint, False, rebin)
             power_psigma = np.sqrt(2./simset.num_modes(power_k))*power_pmean
         else:
-            true_simset, true_isimmin = sim_iterator(simset, isimmin)
+            true_simset, true_isimmin = sim_iterator(simset.name, isimmin)
             power_k, dummy = power_spectrum(powertype, mainpath, true_simset, true_isimmin, noutput,
                                             aexp, growth_a, growth_dplus, nmodel, okprint, False, rebin)
             power_p = np.zeros((nsim, power_k.size))
             for isim in xrange(isimmin, isimmax):
                 isim0 = isim - isimmin
-                true_simset, true_isim = sim_iterator(simset, isim)
+                true_simset, true_isim = sim_iterator(simset.name, isim)
                 if okprint:
                     print true_simset, true_isim
                 dummy, power_p[isim0] = power_spectrum(powertype, mainpath, true_simset, true_isim, noutput,
@@ -47,7 +47,7 @@ def mean_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isi
                 power_psigma = np.zeros(power_k.size)
 
         if store:
-            true_simset, true_isim = sim_iterator(simset, 1)
+            true_simset, true_isim = sim_iterator(simset.name, 1)
             aexp_info = read_info(input_file_name("info", mainpath, true_simset, true_isim, noutput))
             if np.isclose(aexp, aexp_info, atol=1.e-2):
                 if okprint:
@@ -77,7 +77,7 @@ def distrib_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), 
         bincenter, npower_bin = np.loadtxt(fname, unpack=True)
     else:
         for isim in xrange(1, nsim+1):
-            true_simset, true_isim = sim_iterator(simset, isim)
+            true_simset, true_isim = sim_iterator(simset.name, isim)
             if okprint:
                 print true_simset, true_isim
             power_k, power_p = power_spectrum(powertype, mainpath, true_simset, true_isim, noutput, aexp, growth_a,
@@ -92,7 +92,7 @@ def distrib_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), 
         bincenter = 0.5*(bins[1:]+bins[:-1])
         
         if store:
-            true_simset, true_isim = sim_iterator(simset, 1)
+            true_simset, true_isim = sim_iterator(simset.name, 1)
             if np.isclose(aexp, read_info(input_file_name("info", mainpath, true_simset, true_isim, noutput)),
                           atol=1.e-2):
                 if okprint:
@@ -132,7 +132,7 @@ def high_moments(powertype="power", mainpath="", simset=DeusPurSet("all_256"), i
         power_kurt = np.zeros(power_k.size)
     
         for isim in xrange(isimmin, isimmax+1):
-            true_simset, true_isim = sim_iterator(simset, isim)
+            true_simset, true_isim = sim_iterator(simset.name, isim)
             if okprint:
                 print true_simset, true_isim
             power_k, power_p = power_spectrum(powertype, mainpath, true_simset, true_isim, noutput,
@@ -154,7 +154,7 @@ def high_moments(powertype="power", mainpath="", simset=DeusPurSet("all_256"), i
             power_kurt -= 3.
 
         if store:
-            true_simset, true_isim = sim_iterator(simset, 1)
+            true_simset, true_isim = sim_iterator(simset.name, 1)
             if np.isclose(aexp, read_info(input_file_name("info", mainpath, true_simset, true_isim, noutput))
                     , atol=1.e-2):
                 if okprint:
@@ -206,7 +206,7 @@ def mass_corrected_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, nout
             corrected_p = power_p / correction_smooth
 
         if store:
-            true_simset, true_isim = sim_iterator(simset, 1)
+            true_simset, true_isim = sim_iterator(simset.name, 1)
             if np.isclose(aexp, read_info(input_file_name("info", mainpath,
                                                           true_simset, true_isim, noutput)), atol=1.e-2):
                 if okprint:
@@ -361,7 +361,7 @@ def power_spectrum(powertype="power", mainpath="", simset=DeusPurSet("all_256"),
                    aexp=0., growth_a=np.zeros(0), growth_dplus=np.zeros(0),
                    nmodel=0, okprint=False, store=False, rebin=0):
 
-    setname, nsim = sim_iterator(simset, nsim)
+    setname, nsim = sim_iterator(simset.name, nsim)
     fname = input_file_name("power", mainpath, setname, nsim, noutput, nmodel)
     if powertype == "power":
         power_k, power_p, dummy = read_power(fname)
