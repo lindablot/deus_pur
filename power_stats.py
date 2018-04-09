@@ -22,20 +22,19 @@ def mean_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isi
         if okprint:
             print "Computing mean and standard deviation of spectra"
         if powertype == "linear":
-            power_k, power_pmean = power_spectrum("linear", mainpath, simset.name, 1, noutput,
+            power_k, power_pmean = power_spectrum("linear", mainpath, simset, 1, noutput,
                                                   aexp, growth_a, growth_dplus, nmodel, okprint, False, rebin)
             power_psigma = np.sqrt(2./simset.num_modes(power_k))*power_pmean
         else:
-            true_simset, true_isimmin = sim_iterator(simset, isimmin)
-            power_k, dummy = power_spectrum(powertype, mainpath, true_simset, true_isimmin, noutput,
+            power_k, dummy = power_spectrum(powertype, mainpath, simset, isimmin, noutput,
                                             aexp, growth_a, growth_dplus, nmodel, okprint, False, rebin)
             power_p = np.zeros((nsim, power_k.size))
             for isim in xrange(isimmin, isimmax):
                 isim0 = isim - isimmin
-                true_simset, true_isim = sim_iterator(simset, isim)
                 if okprint:
+                    true_simset, true_isim = sim_iterator(simset, isim)
                     print true_simset, true_isim
-                dummy, power_p[isim0] = power_spectrum(powertype, mainpath, true_simset, true_isim, noutput,
+                dummy, power_p[isim0] = power_spectrum(powertype, mainpath, simset, isim, noutput,
                                                        aexp, growth_a, growth_dplus, nmodel, okprint, False, rebin)
 
             power_pmean = np.mean(power_p, axis=0)
@@ -47,8 +46,7 @@ def mean_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isi
                 power_psigma = np.zeros(power_k.size)
 
         if store:
-            true_simset, true_isim = sim_iterator(simset, 1)
-            aexp_info = read_info(input_file_name("info", mainpath, true_simset, true_isim, noutput))
+            aexp_info = read_info(input_file_name("info", mainpath, simset, 1, noutput))
             if np.isclose(aexp, aexp_info, atol=1.e-2):
                 if okprint:
                     print "Writing file: ", fname
@@ -77,10 +75,10 @@ def distrib_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), 
         bincenter, npower_bin = np.loadtxt(fname, unpack=True)
     else:
         for isim in xrange(1, nsim+1):
-            true_simset, true_isim = sim_iterator(simset, isim)
             if okprint:
+                true_simset, true_isim = sim_iterator(simset, isim)
                 print true_simset, true_isim
-            power_k, power_p = power_spectrum(powertype, mainpath, true_simset, true_isim, noutput, aexp, growth_a,
+            power_k, power_p = power_spectrum(powertype, mainpath, simset, isim, noutput, aexp, growth_a,
                                               growth_dplus, nmodel)
             if kref > power_k[power_k.size-1] or kref < power_k[0]:
                 raise ValueError("reference k value outside simulation k range in distrib_power")
@@ -92,9 +90,8 @@ def distrib_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), 
         bincenter = 0.5*(bins[1:]+bins[:-1])
         
         if store:
-            true_simset, true_isim = sim_iterator(simset, 1)
-            if np.isclose(aexp, read_info(input_file_name("info", mainpath, true_simset, true_isim, noutput)),
-                          atol=1.e-2):
+            aexp_info = read_info(input_file_name("info", mainpath, simset, 1, noutput))
+            if np.isclose(aexp, aexp_info, atol=1.e-2):
                 if okprint:
                     print "Writing file: ", fname
                 f = open(fname, "w")
@@ -103,8 +100,7 @@ def distrib_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), 
                 f.close()
             else:
                 print "Not writing file ", fname, " because aexp ", aexp, " does not correspond to noutput", noutput
-                print "input aexp: ", aexp, ", aexp from sim: ", \
-                    read_info(input_file_name("info", mainpath, true_simset, true_isim, noutput))
+                print "input aexp: ", aexp, ", aexp from sim: ", aexp_info
 
     return bincenter, npower_bin
 # ---------------------------------------------------------------------------- #
@@ -132,10 +128,10 @@ def high_moments(powertype="power", mainpath="", simset=DeusPurSet("all_256"), i
         power_kurt = np.zeros(power_k.size)
     
         for isim in xrange(isimmin, isimmax+1):
-            true_simset, true_isim = sim_iterator(simset, isim)
             if okprint:
+                true_simset, true_isim = sim_iterator(simset, isim)
                 print true_simset, true_isim
-            power_k, power_p = power_spectrum(powertype, mainpath, true_simset, true_isim, noutput,
+            power_k, power_p = power_spectrum(powertype, mainpath, simset, isim, noutput,
                                               aexp, growth_a, growth_dplus, nmodel)
             power_skew += (power_p-power_pmean)*(power_p-power_pmean)*(power_p-power_pmean)
             power_kurt += (power_p-power_pmean)*(power_p-power_pmean)*(power_p-power_pmean)*(power_p-power_pmean)
@@ -154,9 +150,8 @@ def high_moments(powertype="power", mainpath="", simset=DeusPurSet("all_256"), i
             power_kurt -= 3.
 
         if store:
-            true_simset, true_isim = sim_iterator(simset, 1)
-            if np.isclose(aexp, read_info(input_file_name("info", mainpath, true_simset, true_isim, noutput))
-                    , atol=1.e-2):
+            aexp_info = read_info(input_file_name("info", mainpath, simset, 1, noutput))
+            if np.isclose(aexp, aexp_info, atol=1.e-2):
                 if okprint:
                     print "Writing file: ", fname
                 f = open(fname, "w")
@@ -166,8 +161,7 @@ def high_moments(powertype="power", mainpath="", simset=DeusPurSet("all_256"), i
                 f.close()
             else:
                 print "Not writing file ", fname, " because aexp ", aexp, " does not correspond to noutput", noutput
-                print "input aexp: ", aexp, ", aexp from sim: ", \
-                    read_info(input_file_name("info", mainpath, true_simset, true_isim, noutput))
+                print "input aexp: ", aexp, ", aexp from sim: ", aexp_info
     
     return power_k, power_skew, power_kurt
 # ---------------------------------------------------------------------------- #
@@ -206,9 +200,8 @@ def mass_corrected_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, nout
             corrected_p = power_p / correction_smooth
 
         if store:
-            true_simset, true_isim = sim_iterator(simset, 1)
-            if np.isclose(aexp, read_info(input_file_name("info", mainpath,
-                                                          true_simset, true_isim, noutput)), atol=1.e-2):
+            aexp_info = read_info(input_file_name("info", mainpath, simset, 1, noutput))
+            if np.isclose(aexp, aexp_info, atol=1.e-2):
                 if okprint:
                     print "Writing file: ", fname
                 f = open(fname, "w")
@@ -217,8 +210,7 @@ def mass_corrected_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, nout
                 f.close()
             else:
                 print "Not writing file ", fname, " because aexp ", aexp, " does not correspond to noutput", noutput
-                print "input aexp: ", aexp, ", aexp from sim: ", \
-                    read_info(input_file_name("info", mainpath, true_simset, true_isim, noutput))
+                print "input aexp: ", aexp, ", aexp from sim: ", aexp_info
 
     return power_k, corrected_p
 # ---------------------------------------------------------------------------- #
@@ -366,16 +358,16 @@ def power_spectrum(powertype="power", mainpath="", simset=DeusPurSet("all_256"),
     if powertype == "power":
         power_k, power_p, dummy = read_power(fname)
     elif powertype == "nyquist":
-        power_k, power_p = nyquist_power(mainpath, setname, nsim, noutput,
+        power_k, power_p = nyquist_power(mainpath, DeusPurSet(setname), nsim, noutput,
                                          aexp, growth_a, growth_dplus, nmodel, okprint, store)
     elif powertype == "renormalized":
-        power_k, power_p = renormalized_power(mainpath, setname, nsim, noutput,
+        power_k, power_p = renormalized_power(mainpath, DeusPurSet(setname), nsim, noutput,
                                               growth_a, growth_dplus, nmodel, okprint, store)
     elif powertype == "corrected":
-        power_k, power_p = corrected_power(mainpath, setname, aexp, nsim, noutput,
+        power_k, power_p = corrected_power(mainpath, DeusPurSet(setname), aexp, nsim, noutput,
                                            growth_a, growth_dplus, nmodel, okprint, store)
     elif powertype == "mcorrected":
-        power_k, power_p = mass_corrected_power(mainpath, setname, nsim, noutput,
+        power_k, power_p = mass_corrected_power(mainpath, DeusPurSet(setname), nsim, noutput,
                                                 aexp, growth_a, growth_dplus, okprint=okprint, store=store)
     elif powertype == "linear":
         if nmodel == 0:

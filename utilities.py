@@ -139,26 +139,16 @@ def input_file_name(filetype="", mainpath="", setname="", nsim=1, noutput=1, nmo
     else:
         raise ValueError("filetype not found")
 
-    if setname == "4096_furphase":
-        fullpath += setname + dataprefix + str(int(noutput)).zfill(5) + ".txt"
-    elif setname == "4096_otherphase":
+    setname, nsim = sim_iterator(DeusPurSet(setname), nsim)
+    if setname == "4096_furphase" or setname == "4096_otherphase":
         fullpath += setname + dataprefix + str(int(noutput)).zfill(5) + ".txt"
     elif setname == "4096_furphase_512":
         fullpath += setname + "/boxlen1312-5_n512_lcdmw7_" + str(int(nsim)).zfill(5) + \
                     dataprefix + str(int(noutput)).zfill(5) + ".txt"
-    elif setname == "4096_furphase_256":
+    elif setname == "4096_furphase_256" or setname == "4096_otherphase_256" or setname == "4096_adaphase_256":
         fullpath += setname + "/boxlen656-25_n256_lcdmw7_" + str(int(nsim)).zfill(5) + \
                     dataprefix + str(int(noutput)).zfill(5) + ".txt"
-    elif setname == "4096_otherphase_256":
-        fullpath += setname + "/boxlen656-25_n256_lcdmw7_" + str(int(nsim)).zfill(5) + \
-                    dataprefix + str(int(noutput)).zfill(5) + ".txt"
-    elif setname == "4096_adaphase_256":
-        fullpath += setname + "/boxlen656-25_n256_lcdmw7_" + str(int(nsim)).zfill(5) + \
-                    dataprefix + str(int(noutput)).zfill(5) + ".txt"
-    elif setname == "64_adaphase_1024":
-        fullpath += setname + "/boxlen656-25_n1024_lcdmw7_" + str(int(nsim)).zfill(5) + \
-                    dataprefix + str(int(noutput)).zfill(5) + ".txt"
-    elif setname == "64_curiephase_1024":
+    elif setname == "64_adaphase_1024" or setname == "64_curiephase_1024":
         fullpath += setname + "/boxlen656-25_n1024_lcdmw7_" + str(int(nsim)).zfill(5) + \
                     dataprefix + str(int(noutput)).zfill(5) + ".txt"
     elif setname == "512_adaphase_512_328-125":
