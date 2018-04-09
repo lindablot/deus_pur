@@ -19,7 +19,7 @@ class Simset(object):
     def num_modes(self, power_k):
         delta_k = np.diff(power_k)
         delta_k = np.append(delta_k, delta_k[delta_k.size-1])
-        return self.l_box**3/(2.*math.pi**2) * (power_k*power_k*delta_k + delta_k*delta_k*delta_k/12.)
+        return self.l_box**3 / (2.*math.pi**2) * (power_k*power_k*delta_k + delta_k*delta_k*delta_k/12.)
 
 
 class DeusPurSet(Simset):
