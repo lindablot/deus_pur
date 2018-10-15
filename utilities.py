@@ -9,20 +9,78 @@ import numpy as np
 
 # ------------------------------- SIMSET CLASS ------------------------------- #
 class Simset(object):
+    """
+    Class that represents the simulation set
+    
+    Attributes
+    ---------
+    l_box : double
+        size of the simulation box
+    npart : double
+        cube root of the number of particles
+    nsimmax : int 
+        last simulation number
+    nyquist : double
+        half of the nyquist frequency of the power spectrum grid
+    
+    Methods
+    ------
+    num_modes(k)
+        Compute the number of modes at given k values
+    """
 
     def __init__(self, l_box, npart, nsimmax):
+        """
+        Parameters
+        ----------
+        l_box : double
+            size of the simulation box
+        npart : double
+            cube root of the number of particles
+        nsimmax : int 
+            last simulation number
+        """
+        
         self.l_box = l_box
         self.npart = npart
         self.nsimmax = nsimmax
         self.nyquist = math.pi/self.l_box*self.npart
 
     def num_modes(self, power_k):
+        """Computes the number of modes at given k values
+        
+        Assumes regular linear binning
+        
+        Parameters
+        ----------
+        power_k : numpy array
+            array of k values
+            
+        Returns
+        -------
+        numpy array
+            number of modes at given k values
+        """
+        
         delta_k = np.diff(power_k)
         delta_k = np.append(delta_k, delta_k[delta_k.size-1])
         return self.l_box**3 / (2.*math.pi**2) * (power_k*power_k*delta_k + delta_k*delta_k*delta_k/12.)
 
 
 class DeusPurSet(Simset):
+    """ Derived class from the Simset class used to represent the Deus Pur simulation set
+    
+    Given the set name sets all attributes of the Simset class and adds some useful attributes
+    
+    Attributes
+    ----------
+    name : string
+        simset name
+    cosmo : bool
+        multiple cosmology set
+    composite : bool
+        combination of different simulation sets
+    """
     
     simsets = ["4096_furphase_256", "4096_adaphase_256", "4096_otherphase_256", "all_256", "4096_furphase_512",
                "64_adaphase_1024", "64_curiephase_1024", "all_1024", "512_adaphase_512_328-125",
@@ -83,6 +141,28 @@ class DeusPurSet(Simset):
 
 # ------------------------------ SIMULATION SET ITERATOR --------------------------------- #
 def sim_iterator(simset=DeusPurSet("all_256"), isim=1, random=False, replace=False):
+    """ Tool to iterate through composite simulation sets
+    
+    Given the composite set simulation number returns the original simulation set name and number for file retrieving. The simulations are iterated in order except if the random parameter is set to True, in this case a file with a random order is saved to disk. To replace the random order set the parameter replace to True.
+    
+    Parameters
+    ---------
+    simset : DeusPurSet instance
+        simulation set (default "all_256")
+    isim : int
+        simulation number of the composite set
+    random : bool
+        random order of simulations
+    replace : bool
+        replace the random sequence of simulation numbers
+        
+    Returns
+    -------
+    string
+        set name of the simulation
+    int
+        simulation number in the original set order
+    """
     
     if random:
         fname = "random_series_"+simset.name+".txt"
@@ -127,6 +207,32 @@ def sim_iterator(simset=DeusPurSet("all_256"), isim=1, random=False, replace=Fal
 # -------------------------------- INPUT FILE NAME --------------------------------- #
 def input_file_name(filetype="", mainpath="", setname="", nsim=1, noutput=1, nmodel=0,
                     okprint=False, powertype="gridcic"):
+    """ Input file name generator
+    
+    Parameters
+    ---------
+    filetype : string
+        type of file (options are power, info, massfunction)
+    mainpath : string
+        path to base folder
+    setname : string
+        simulation set name
+    nsim : int
+        simulation number (default is 1)
+    noutput : int
+        snapshot number (default is 1)
+    nmodel : int
+        number of cosmological model (default is 0)
+    okprint : bool
+        verbose mode (default is False)
+    powertype : string
+        type of power spectrum file (default is gridcic)
+        
+    Returns
+    -------
+    string
+        filename
+    """
     
     fullpath = str(mainpath)
 
@@ -167,6 +273,30 @@ def input_file_name(filetype="", mainpath="", setname="", nsim=1, noutput=1, nmo
 # --------------------------- OUTPUT FILE NAME --------------------------- #
 def output_file_name(prefix="cov", powertype="", simset=DeusPurSet("all_256"),
                      isimmin=1, isimmax=1, ioutput=1, nmodel=0):
+    """ Output file name generator
+    
+    Parameters
+    ---------
+    prefix : string
+        prefix indicating the content of the file (default is cov)
+    powertype : string
+        type of power spectrum file (default is empty)
+    simset : DeusPurSet instance
+        simulation set (default is all_256)
+    isimmin :  int 
+        initial number of simulation used (default is 1)
+    isimmax : int
+        final number of simulation used (default is 1)
+    ioutput : int
+        snapshot number (default is 1)
+    nmodel : int
+        cosmological model number (default is 0)
+    
+    Returns
+    ------
+    string
+        file name
+    """
 
     nsim = isimmax-isimmin
     
@@ -188,6 +318,23 @@ def output_file_name(prefix="cov", powertype="", simset=DeusPurSet("all_256"),
 
 # ------------------------------- EXTRAPOLATE -------------------------------- #
 def extrapolate(value_x, array_x, array_y):
+    """ Linearly extrapolate a function at a given value
+    
+    Parameters
+    ----------
+    value_x : double
+        value to which the function is extrapolated
+    array_x : numpy array
+        x values of the function
+    array_y : numpy array
+        y values of the function
+        
+    Returns
+    -------
+    double
+        extrapolated value
+    """
+    
     if value_x < array_x[0]:
         value_y = array_y[0]+(value_x-array_x[0])*(array_y[0]-array_y[1])/(array_x[0]-array_x[1])
     elif value_x > array_x[-1]:
@@ -200,6 +347,26 @@ def extrapolate(value_x, array_x, array_y):
 
 # ------------------------------- REBIN Y(k) WITH Dk/k FIXED ------------------ #
 def rebin(k=np.zeros(0), y=np.zeros(0), lim=0.1):
+    """ Rebin function with fixed dx/x
+    
+    Parameters
+    ---------
+    k : numpy array
+        x values of the function
+    y : numpy array
+        y values of the function
+    lim : double
+        limit
+    
+    Returns
+    ------
+    double
+        rebinned x
+    double
+        rebinned y
+    double
+        rebinned y error
+    """
     
     delta_k = np.diff(k)
     delta_k = np.append(delta_k, delta_k[delta_k.size-1])
@@ -251,6 +418,27 @@ def rebin(k=np.zeros(0), y=np.zeros(0), lim=0.1):
 
 # ----------------------  REBIN POWER SPECTRUM EXACTLY ---------------------- #
 def rebin_pk(k, pk, nk, nbins):
+    """ Rebin the power spectrum exactly using the number of modes
+    
+    Parameters
+    ---------
+    k : numpy array
+        k values of the power spectrum
+    pk : numpy array
+        values of the power spectrum
+    nk : numpy array
+        number of modes at k values
+    nbins : int
+        number of bins to combine
+        
+    Returns
+    ------
+    numpy array
+        rebinned k values
+    numpy array
+        rebinned power spectrum values
+    """
+    
     if k.size % nbins != 0:
         k = k[:(k.size-k.size % nbins)]
         nk = nk[:(k.size-k.size % nbins)]
