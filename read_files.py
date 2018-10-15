@@ -7,6 +7,32 @@ import numpy as np
 
 # -------------------------------- READ DATA --------------------------------- #
 def read_data(mainpath="", model="lcdmw7"):
+    """ Read linear power spectrum and lookup tables for cosmological quantities 
+    
+    Parameters
+    ---------
+    mainpath : str
+        Path to the data folder (default is empty)
+    model : str, optional
+        Cosmological model (default is lcdmw7)
+        
+    Returns
+    -------
+    numpy array
+        k values of linear power spectrum
+    numpy array
+        linear power spectrum
+    numpy array
+        expansion factor values of growth factor
+    numpy array
+        growth factor
+    numpy array
+        expansion factor values of hubble parameter and proper time
+    numpy array
+        hubble parameter
+    numpy array
+        proper time
+    """
     power_k, power_p = np.loadtxt(mainpath+"/data/pk_"+model+".dat", unpack=True)
     growth_a, dummy, growth_dplus, dummy = np.loadtxt(mainpath+"/data/mpgrafic_input_"+model+".dat", unpack=True)
     evolution_a, evolution_hh0, dummy, dummy, evolution_tproperh0 = \
@@ -17,6 +43,22 @@ def read_data(mainpath="", model="lcdmw7"):
 
 # -------------------------------- READ CAMB POWER SPECTRUM ------------------ #
 def read_power_camb(mainpath="", model="lcdmw7"):
+    """ Read linear power spectrum
+    
+    Parameters
+    ---------
+    mainpath : str
+        Path to the data folder (default is empty)
+    model : str, optional
+        Cosmological model (default is lcdmw7)
+        
+    Returns
+    -------
+    numpy array
+        k values of linear power spectrum
+    numpy array
+        linear power spectrum
+    """
     power_k, power_p = np.loadtxt(mainpath+"/data/pk_"+model+".dat", unpack=True)
     return power_k, power_p
 # ---------------------------------------------------------------------------- #
@@ -24,6 +66,22 @@ def read_power_camb(mainpath="", model="lcdmw7"):
 
 # -------------------------------- READ GROWTH FACTOR ------------------------ #
 def read_growth(mainpath="", model="lcdmw7"):
+    """ Read growth factor
+    
+    Parameters
+    ---------
+    mainpath : str
+        Path to the data folder (default is empty)
+    model : str, optional
+        Cosmological model (default is lcdmw7)
+        
+    Returns
+    -------
+    numpy array
+        expansion factor values of growth factor
+    numpy array
+        growth factor
+    """
     growth_a, dummy, growth_dplus, dummy = np.loadtxt(mainpath+"/data/mpgrafic_input_"+model+".dat", unpack=True)
     return growth_a, growth_dplus
 # ---------------------------------------------------------------------------- #
@@ -31,6 +89,22 @@ def read_growth(mainpath="", model="lcdmw7"):
 
 # -------------------------------- READ POWER -------------------------------- #
 def read_power(filename="", refcol=np.zeros(0)):
+    """ Read powergrid output file
+    
+    Parameters
+    ---------
+    filename : str
+        Name of powergrid output file (default is empty)
+        
+    Returns
+    -------
+    numpy array
+        k values of power spectrum
+    numpy array
+        power spectrum values
+    numpy array
+        some strange function of the expansion factor
+    """
     data1, data2, data3 = np.loadtxt(filename, unpack=True)
     if refcol.size > 0:
         column1 = np.array(refcol)
@@ -63,6 +137,18 @@ def read_power(filename="", refcol=np.zeros(0)):
 
 # -------------------------------- READ INFO --------------------------------- #
 def read_info(filename=""):
+    """ Extract exact expansion factor value from the simulation info file
+    
+    Parameters
+    ---------
+    filename : str
+        Name of simulation info file (default is empty)
+        
+    Returns
+    -------
+    double
+        expansion factor
+    """
     aexp = 0
     lines = [line.strip() for line in open(filename)]
     for i in xrange(0, len(lines)):
@@ -77,6 +163,22 @@ def read_info(filename=""):
 
 # ---------------------------- READ MASSFUNCTION ----------------------------- #
 def read_massfunction(filename=""):
+    """ Read halo mass function file
+    
+    Parameters
+    ---------
+    filename
+        Name of mass function file (default is empty)
+    
+    Returns
+    -------
+    numpy array
+        Left edges of mass bins
+    numpy array
+        Right edges of mass bins
+    numpy array
+        Halo counts in mass bins
+    """
     mf_binmin, mf_binmax, mf_count = np.loadtxt(filename, unpack=True)
     return mf_binmin, mf_binmax, mf_count
 # ---------------------------------------------------------------------------- #
