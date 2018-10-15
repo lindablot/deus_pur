@@ -33,6 +33,7 @@ def read_data(mainpath="", model="lcdmw7"):
     numpy array
         proper time
     """
+    
     power_k, power_p = np.loadtxt(mainpath+"/data/pk_"+model+".dat", unpack=True)
     growth_a, dummy, growth_dplus, dummy = np.loadtxt(mainpath+"/data/mpgrafic_input_"+model+".dat", unpack=True)
     evolution_a, evolution_hh0, dummy, dummy, evolution_tproperh0 = \
@@ -59,6 +60,7 @@ def read_power_camb(mainpath="", model="lcdmw7"):
     numpy array
         linear power spectrum
     """
+    
     power_k, power_p = np.loadtxt(mainpath+"/data/pk_"+model+".dat", unpack=True)
     return power_k, power_p
 # ---------------------------------------------------------------------------- #
@@ -82,6 +84,7 @@ def read_growth(mainpath="", model="lcdmw7"):
     numpy array
         growth factor
     """
+    
     growth_a, dummy, growth_dplus, dummy = np.loadtxt(mainpath+"/data/mpgrafic_input_"+model+".dat", unpack=True)
     return growth_a, growth_dplus
 # ---------------------------------------------------------------------------- #
@@ -105,6 +108,7 @@ def read_power(filename="", refcol=np.zeros(0)):
     numpy array
         some strange function of the expansion factor
     """
+    
     data1, data2, data3 = np.loadtxt(filename, unpack=True)
     if refcol.size > 0:
         column1 = np.array(refcol)
@@ -149,6 +153,7 @@ def read_info(filename=""):
     double
         expansion factor
     """
+    
     aexp = 0
     lines = [line.strip() for line in open(filename)]
     for i in xrange(0, len(lines)):
@@ -179,6 +184,7 @@ def read_massfunction(filename=""):
     numpy array
         Halo counts in mass bins
     """
+    
     mf_binmin, mf_binmax, mf_count = np.loadtxt(filename, unpack=True)
     return mf_binmin, mf_binmax, mf_count
 # ---------------------------------------------------------------------------- #
