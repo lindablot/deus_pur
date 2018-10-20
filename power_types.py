@@ -139,3 +139,13 @@ def pkann_power(ipar=0, dpar=0.05, fact=1, powertype="power", ioutput=1, mainpat
 
     return power_k, power_pkann
 # ---------------------------------------------------------------------------- #
+
+
+# --------------- POWER SPECTRUM COMPUTED BY EuclidEmulator ------------------ #
+def euemu_power(z,simset=DeusPurSet("all_256")):
+    import e2py as emu
+    Cosmo = simset.cosmo_par
+    result = emu.get_pnonlin(Cosmo, z)
+    power_k = result['k']
+    power_pemu = result['P_nonlin']
+    return power_k, power_pemu
