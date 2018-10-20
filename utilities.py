@@ -85,6 +85,13 @@ class DeusPurSet(Simset):
         multiple cosmology set
     composite : bool
         combination of different simulation sets
+        
+    Methods
+    -------
+    snap_to_a(nsnap)
+        gives the expansion factor corresponding to the snapshot number
+    snap_to_z(nsnap)
+        gives the redshift corresponding to the snapshot number
     """
     
     simsets = ["4096_furphase_256", "4096_adaphase_256", "4096_otherphase_256", "all_256", "4096_furphase_512",
@@ -157,6 +164,43 @@ class DeusPurSet(Simset):
             self.composite = True
         else:
             self.composite = False
+               
+    def snap_to_a(self, noutput):
+        """Gives the expansion factor corresponding to the snapshot number
+          
+        Parameters
+        ----------
+        noutput : int
+            snapshot number
+          
+        Returns
+        -------
+        double
+            expansion factor corresponding to the snapshot number
+        """
+        if self.name == "4096_furphase_256" or self.name == "4096_adaphase_256" or self.name == "4096_otherphase_256" \
+         or self.name == "all_256":
+            alist=[0.01,0.33,0.4,0.5,0.59,0.66,0.77,0.91,1.]
+        elif self.name == "64_adaphase_1024" or self.name == "64_curiephase_1024" or self.name == "all_1024":
+            alist=[0.05,0.33,0.4,0.5,0.59,0.66,0.77,0.91,1.]
+        elif self.name == "512_adaphase_512_328-125":
+            alist=[0.0097153,0.3333,0.3650,0.4000,0.4167,0.4444,0.4762, 0.5000,0.5263, 0.5556, 0.5882,0.6250, 0.6667,0.7042, 0.7692,0.800,0.8696, 0.9091,0.9524,1.0000]
+        return alist[noutput-1]
+
+    def snap_to_z(self, noutput):
+        """Gives the redshift corresponding to the snapshot number
+          
+        Parameters
+        ----------
+        noutput : int
+            snapshot number
+          
+        Returns
+        -------
+        double
+            redshift corresponding to the snapshot number
+        """
+        return 1./self.snap_to_a(noutput)-1.
 
 # ---------------------------------------------------------------------------- #
 
