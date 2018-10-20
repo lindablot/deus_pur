@@ -22,6 +22,8 @@ class Simset(object):
         last simulation number
     nyquist : double
         half of the nyquist frequency of the power spectrum grid
+    cosmo_par : dictionary with keys om_b, om_m, n_s, h, w_0, sigma_8
+        cosmological parameters Omega_m*h^2, Omega_m*h^2, n_s, h, w_0, sigma_8
     
     Methods
     ------
@@ -29,7 +31,7 @@ class Simset(object):
         Compute the number of modes at given k values
     """
 
-    def __init__(self, l_box, npart, nsimmax):
+    def __init__(self, l_box, npart, nsimmax, cosmo_par):
         """
         Parameters
         ----------
@@ -39,12 +41,15 @@ class Simset(object):
             cube root of the number of particles
         nsimmax : int 
             last simulation number
+        cosmo_par : dictionary with keys om_b, om_m, n_s, h, w_0, sigma_8
+            cosmological parameters Omega_m*h^2, Omega_m*h^2, n_s, h, w_0, sigma_8
         """
         
         self.l_box = l_box
         self.npart = npart
         self.nsimmax = nsimmax
         self.nyquist = math.pi/self.l_box*self.npart
+        self.cosmo_par = cosmo_par
 
     def num_modes(self, power_k):
         """Computes the number of modes at given k values
@@ -63,7 +68,7 @@ class Simset(object):
         """
         
         delta_k = np.diff(power_k)
-        delta_k = np.append(delta_k, delta_k[delta_k.size-1])
+        delta_k = np.append(delta_k, delta_k[-1])
         return self.l_box**3 / (2.*math.pi**2) * (power_k*power_k*delta_k + delta_k*delta_k*delta_k/12.)
 
 
@@ -86,7 +91,17 @@ class DeusPurSet(Simset):
                "64_adaphase_1024", "64_curiephase_1024", "all_1024", "512_adaphase_512_328-125",
                "4096_furphase", "4096_otherphase"]
     
-    def __init__(self, name, nmodel=0):
+    def __init__(self, name, nmodel=0, datapath="/data/deus_pur_cosmo/data/"):
+        """
+        Parameters
+        ----------
+        name: string
+            name of the simulation set
+        nmodel: int, optional
+            number of the cosmological model (default is 0)
+        datapath: string, optional
+            path to the folder that contains the models_parameters.txt file (default is /data/deus_pur_cosmo/data/)
+        """
         
         if name in self.simsets:
             self.name = name
@@ -128,14 +143,21 @@ class DeusPurSet(Simset):
             self.l_box = 10500.
             self.nsimmax = 1
             self.cosmo = False
+        
+        if not self.cosmo or nmodel==0:
+            self.cosmo_par={'om_b': 0.04356*0.5184, 'om_m': 0.2573*0.5184, 'n_s': 0.963, 'h': 0.72, 'w_0': -1., 'sigma_8': 0.801}
+        else:
+            Om_b, Om_m, Om_lr, Om_nu, h, n_s, w, sigma_8 = np.genfromtxt(datapath+"/models_parameters.txt",unpack=True,skip_header=1)
+            self.cosmo_par={'om_b': Om_b[nmodel-1]*h[nmodel-1]**2, 'om_m': Om_m[nmodel-1]*h[nmodel-1]**2, 'n_s': n_s[nmodel-1], 'h': h[nmodel-1], 'w_0': w[nmodel-1], 'sigma_8': sigma_8[nmodel-1]}
 
-        Simset.__init__(self, self.l_box, self.npart, self.nsimmax)
+        Simset.__init__(self, self.l_box, self.npart, self.nsimmax, self.cosmo_par)
         self.nyquist = math.pi/self.l_box*self.npart
         
         if name == "all_256" or name == "all_1024":
             self.composite = True
         else:
             self.composite = False
+
 # ---------------------------------------------------------------------------- #
 
 
