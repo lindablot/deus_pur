@@ -2,12 +2,8 @@
 # wishart_analysis.py - Linda Blot (linda.blot@obspm.fr) - 2014
 # ---------------------------------- IMPORT ---------------------------------- #
 import math
-import glob
 import os
-import sys
 import numpy as np
-import scipy.interpolate as itl
-from scipy import stats
 from numpy import linalg
 from read_files import *
 from power_types import *
@@ -18,16 +14,41 @@ from power_covariance import *
 
 
 # --------------------------- COVARIANCE VARIANCE --------------------------- #
-def cov_stats(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., growth_a = np.zeros(0), growth_dplus = np.zeros(0), list_nr = [10,50,100,500,700,1000,3000,5000,6000], okprint=False,store=True):
+def cov_stats(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., list_nr = [10,50,100,500,700,1000,3000,5000,6000], okprint = False, store = True):
+    """ Mean and standard deviation of covariance estimator using all_256 Deus Pur set.
+        
+    Paramters
+    ---------
+    powertype: string
+        type of power spectrum: power, nyquist, renormalized, corrected, mcorrected, linear or linear_mock (default power)
+    mainpath: string
+        path to base folder (default empty)
+    noutput: int
+        snapshot number (default 1)
+    aexp: float
+        expansion factor (default 0)
+    list_nr: list
+        list of realisation numbers at which to compute covariance stats
+    okprint: bool
+        verbose (default False)
+    store: bool
+        store intermediate file. If True and files exist they will be overwritten (default True)
+        
+    Returns
+    -------
+    1 list and 2 numpy arrays
+        list of realization numbers, mean and standard deviation of covariance
+    """
     
     simset = DeusPurSet("all_256")
     i=0 #index on list_nr
     
-    folder="tmp/"+str("%05d"%noutput)+"/"
-    command="mkdir -p tmp; mkdir -p "+folder
-    os.system(command)
+    if store:
+        folder="tmp/"+str("%05d"%noutput)+"/"
+        command="mkdir -p tmp; mkdir -p "+folder
+        os.system(command)
     
-    power_k,dummy = power_spectrum(powertype,mainpath,"4096_adaphase_256",1,noutput,aexp,growth_a,growth_dplus)
+    power_k,dummy = power_spectrum(powertype,mainpath,simset,1,noutput,aexp)
     nbin = power_k.size
     
     cov_mean = np.zeros((len(list_nr),nbin,nbin))
@@ -49,7 +70,7 @@ def cov_stats(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., growt
                     print "Reading file: ",filename
                 power_pcov=np.loadtxt(filename, unpack=True)
             else:
-                dummy,dummy,dummy,power_pcov=cov_power(powertype, mainpath, simset.name, isimmin, isimmax+1, noutput, aexp, growth_a, growth_dplus, okprint)
+                dummy,dummy,dummy,power_pcov=cov_power(powertype, mainpath, simset, isimmin, isimmax+1, noutput, aexp)
                 if (store):
                     if (okprint):
                         print "Storing file: ",filename
@@ -73,17 +94,42 @@ def cov_stats(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., growt
 
 
 # --------------------------- TRACE OF SAMPLE COVARIANCE VARIANCE --------------------------- #
-def cov_variance_trace(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., growth_a = np.zeros(0), growth_dplus = np.zeros(0), list_nr = [10,50,100,500,700,1000,3000,5000,6000], okprint=False, store=True):
+def cov_variance_trace(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., list_nr = [10,50,100,500,700,1000,3000,5000,6000], okprint = False, store = True):
+    """ Trace of the relative variance of the covariance estimator using all_256 Deus Pur set.
+        
+    Paramters
+    ---------
+    powertype: string
+        type of power spectrum: power, nyquist, renormalized, corrected, mcorrected, linear or linear_mock (default power)
+    mainpath: string
+        path to base folder (default empty)
+    noutput: int
+        snapshot number (default 1)
+    aexp: float
+        expansion factor (default 0)
+    list_nr: list
+        list of realisation numbers at which to compute covariance stats
+    okprint: bool
+        verbose (default False)
+    store: bool
+        store intermediate file. If True and files exist they will be overwritten (default True)
+        
+    Returns
+    -------
+    1 list and 1 numpy array
+        list of realization numbers, trace of relative covariance variance
+    """
     
     simset = DeusPurSet("all_256")
     trace_sigma2=np.zeros(len(list_nr))
     i=0 #index on list_nr
     
-    folder="tmp/"+str("%05d"%noutput)+"/"
-    command="mkdir -p tmp; mkdir -p "+folder
-    os.system(command)
+    if store:
+        folder="tmp/"+str("%05d"%noutput)+"/"
+        command="mkdir -p tmp; mkdir -p "+folder
+        os.system(command)
     
-    power_k,dummy = power_spectrum(powertype,mainpath,"4096_adaphase_256",1,noutput,aexp,growth_a,growth_dplus)
+    power_k,dummy = power_spectrum(powertype,mainpath,simset,1,noutput,aexp)
     nbin = power_k.size
     
     for nr in list_nr:
@@ -108,7 +154,7 @@ def cov_variance_trace(powertype = "power", mainpath = "", noutput = 1 , aexp = 
                 power_pcov=np.loadtxt(filename_cov, unpack=True)
                 power_psigma=np.sqrt(np.diag(power_pcov))
             else:
-                dummy,dummy,power_psigma=mean_power(powertype, mainpath, simset.name, isimmin, isimmax+1, noutput, aexp, growth_a, growth_dplus)
+                dummy,dummy,power_psigma=mean_power(powertype, mainpath, simset, isimmin, isimmax+1, noutput, aexp)
                 if (store):
                     if (okprint):
                         print "Storing file: ",filename
@@ -134,7 +180,35 @@ def cov_variance_trace(powertype = "power", mainpath = "", noutput = 1 , aexp = 
 
 
 # --------------------------- TRACE OF SAMPLE COVARIANCE VARIANCE WITH k CUT --------------------------- #
-def cov_variance_trace_kcut(kmin=0.03, kmax = 1., powertype = "power", mainpath = "", noutput = 1 , aexp = 1., growth_a = np.zeros(0), growth_dplus = np.zeros(0), list_nr = [10,50,100,500,700,1000,3000,5000,6000], okprint=False, store=True):
+def cov_variance_trace_kcut(kmin=0.03, kmax = 1., powertype = "power", mainpath = "", noutput = 1 , aexp = 1., list_nr = [10,50,100,500,700,1000,3000,5000,6000], okprint=False, store=True):
+    """ Trace of the relative variance of the covariance estimator using all_256 Deus Pur set cut at given k_min and k_max.
+        
+    Paramters
+    ---------
+    kmin: float
+        minimum k (default 0.03 h/Mpc)
+    kmax: float
+        maximum k (default 1 h/Mpc)
+    powertype: string
+        type of power spectrum: power, nyquist, renormalized, corrected, mcorrected, linear or linear_mock (default power)
+    mainpath: string
+        path to base folder (default empty)
+    noutput: int
+        snapshot number (default 1)
+    aexp: float
+        expansion factor (default 0)
+    list_nr: list
+        list of realisation numbers at which to compute covariance stats
+    okprint: bool
+        verbose (default False)
+    store: bool
+        store intermediate file. If True and files exist they will be overwritten (default True)
+        
+    Returns
+    -------
+    1 list and 1 numpy array
+        list of realization numbers and trace of relative covariance variance
+    """
     
     simset = DeusPurSet("all_256")
     trace_sigma2=np.zeros(len(list_nr))
@@ -144,7 +218,7 @@ def cov_variance_trace_kcut(kmin=0.03, kmax = 1., powertype = "power", mainpath 
     command="mkdir -p tmp; mkdir -p "+folder
     os.system(command)
     
-    power_k,dummy = power_spectrum(powertype,mainpath,"4096_adaphase_256",1,noutput,aexp,growth_a,growth_dplus)
+    power_k,dummy = power_spectrum(powertype,mainpath,simset,1,noutput,aexp)
     index = [(power_k > kmin) & (power_k < kmax)]
     power_k_cut = power_k[index]
     nbin = power_k_cut.size
@@ -171,7 +245,7 @@ def cov_variance_trace_kcut(kmin=0.03, kmax = 1., powertype = "power", mainpath 
                 power_pcov=np.loadtxt(filename_cov, unpack=True)
                 power_psigma=np.sqrt(np.diag(power_pcov))
             else:
-                dummy,dummy,power_psigma=mean_power(powertype, mainpath, simset.name, isimmin, isimmax+1, noutput, aexp, growth_a, growth_dplus)
+                dummy,dummy,power_psigma=mean_power(powertype, mainpath, simset, isimmin, isimmax+1, noutput, aexp)
                 if (store):
                     if (okprint):
                         print "Storing file: ",filename
@@ -197,7 +271,31 @@ def cov_variance_trace_kcut(kmin=0.03, kmax = 1., powertype = "power", mainpath 
 
 
 # --------------------------- COVARIANCE VARIANCE --------------------------- #
-def cov_variance(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., growth_a = np.zeros(0), growth_dplus = np.zeros(0), list_nr = [10,50,100,500,700,1000,3000,5000,6000], okprint=False,store=True):
+def cov_variance(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., list_nr = [10,50,100,500,700,1000,3000,5000,6000], okprint=False, store=True):
+    """ Relative variance of the covariance estimator using all_256 Deus Pur set.
+        
+    Paramters
+    ---------
+    powertype: string
+        type of power spectrum: power, nyquist, renormalized, corrected, mcorrected, linear or linear_mock (default power)
+    mainpath: string
+        path to base folder (default empty)
+    noutput: int
+        snapshot number (default 1)
+    aexp: float
+        expansion factor (default 0)
+    list_nr: list
+        list of realisation numbers at which to compute covariance stats
+    okprint: bool
+        verbose (default False)
+    store: bool
+        store intermediate file. If True and files exist they will be overwritten (default True)
+        
+    Returns
+    -------
+    1 list and 1 numpy array
+        list of realization numbers and relative covariance variance
+    """
     
     simset = DeusPurSet("all_256")
     i=0 #index on list_nr
@@ -206,7 +304,7 @@ def cov_variance(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., gr
     command="mkdir -p tmp; mkdir -p "+folder
     os.system(command)
     
-    power_k,dummy = power_spectrum(powertype,mainpath,"4096_adaphase_256",1,noutput,aexp,growth_a,growth_dplus)
+    power_k,dummy = power_spectrum(powertype,mainpath,simset,1,noutput,aexp)
     nbin = power_k.size
     
     sigma2_all = np.zeros((len(list_nr),nbin,nbin))
@@ -227,7 +325,7 @@ def cov_variance(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., gr
                     print "Reading file: ",filename
                 power_pcov=np.loadtxt(filename, unpack=True)
             else:
-                dummy,dummy,dummy,power_pcov=cov_power(powertype, mainpath, simset.name, isimmin, isimmax+1, noutput, aexp, growth_a, growth_dplus, okprint)
+                dummy,dummy,dummy,power_pcov=cov_power(powertype, mainpath, simset, isimmin, isimmax+1, noutput, aexp)
                 if (store):
                     if (okprint):
                         print "Storing file: ",filename
@@ -255,7 +353,35 @@ def cov_variance(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., gr
 
 
 # --------------------------- COVARIANCE VARIANCE WITH k CUT --------------------------- #
-def cov_variance_kcut(kmin=0.03, kmax = 1., powertype = "power", mainpath = "", noutput = 1 , aexp = 1., growth_a = np.zeros(0), growth_dplus = np.zeros(0), list_nr = [10,50,100,500,700,1000,3000,5000,6000], okprint=False, store=True):
+def cov_variance_kcut(kmin=0.03, kmax = 1., powertype = "power", mainpath = "", noutput = 1 , aexp = 1., list_nr = [10,50,100,500,700,1000,3000,5000,6000], okprint=False, store=True):
+    """ Relative variance of the covariance estimator using all_256 Deus Pur set cut at given k_min and k_max.
+        
+    Paramters
+    ---------
+    kmin: float
+        minimum k (default 0.03 h/Mpc)
+    kmax: float
+        maximum k (default 1 h/Mpc)
+    powertype: string
+        type of power spectrum: power, nyquist, renormalized, corrected, mcorrected, linear or linear_mock (default power)
+    mainpath: string
+        path to base folder (default empty)
+    noutput: int
+        snapshot number (default 1)
+    aexp: float
+        expansion factor (default 0)
+    list_nr: list
+        list of realisation numbers at which to compute covariance stats
+    okprint: bool
+        verbose (default False)
+    store: bool
+        store intermediate file. If True and files exist they will be overwritten (default True)
+        
+    Returns
+    -------
+    1 list and 1 numpy array
+        list of realization numbers and relative covariance variance
+    """
     
     simset = DeusPurSet("all_256")
     i=0 #index on list_nr
@@ -264,7 +390,7 @@ def cov_variance_kcut(kmin=0.03, kmax = 1., powertype = "power", mainpath = "", 
     command="mkdir -p tmp; mkdir -p "+folder
     os.system(command)
     
-    power_k,dummy = power_spectrum(powertype,mainpath,"4096_adaphase_256",1,noutput,aexp,growth_a,growth_dplus)
+    power_k,dummy = power_spectrum(powertype,mainpath,simset,1,noutput,aexp)
     ikmin = np.searchsorted(power_k,kmin)
     ikmax = np.searchsorted(power_k,kmax)
     power_k_cut = power_k[ikmin:ikmax]
@@ -291,7 +417,7 @@ def cov_variance_kcut(kmin=0.03, kmax = 1., powertype = "power", mainpath = "", 
                     print "Reading file: ",filename
                 power_pcov=np.loadtxt(filename, unpack=True)
             else:
-                dummy,dummy,dummy,power_pcov=cov_power(powertype, mainpath, simset.name, isimmin, isimmax+1, noutput, aexp, growth_a, growth_dplus)
+                dummy,dummy,dummy,power_pcov=cov_power(powertype, mainpath, simset, isimmin, isimmax+1, noutput, aexp)
                 if (store):
                     if (okprint):
                         print "Storing file: ",filename
@@ -319,7 +445,31 @@ def cov_variance_kcut(kmin=0.03, kmax = 1., powertype = "power", mainpath = "", 
 
 
 # --------------------------- PRECISION MATRIX VARIANCE TRACE --------------------------- #
-def inv_cov_variance_trace(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., growth_a = np.zeros(0), growth_dplus = np.zeros(0), list_nr = [300,500,700,1000,3000,5000,6000], okprint=False, store=True):
+def inv_cov_variance_trace(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., list_nr = [300,500,700,1000,3000,5000,6000], okprint=False, store=True):
+    """ Trace of the relative variance of the inverse of the covariance estimator using all_256 Deus Pur set.
+        
+    Paramters
+    ---------
+    powertype: string
+        type of power spectrum: power, nyquist, renormalized, corrected, mcorrected, linear or linear_mock (default power)
+    mainpath: string
+        path to base folder (default empty)
+    noutput: int
+        snapshot number (default 1)
+    aexp: float
+        expansion factor (default 0)
+    list_nr: list
+        list of realisation numbers at which to compute inverse covariance stats
+    okprint: bool
+        verbose (default False)
+    store: bool
+        store intermediate file. If True and files exist they will be overwritten (default True)
+        
+    Returns
+    -------
+    1 list and 1 numpy array
+        list of realization numbers, trace of inverse covariance relative variance
+    """
 
     simset = DeusPurSet("all_256")
     trace_sigma2=np.zeros(len(list_nr))
@@ -329,7 +479,7 @@ def inv_cov_variance_trace(powertype = "power", mainpath = "", noutput = 1 , aex
     command="mkdir -p tmp; mkdir -p "+folder
     os.system(command)
 
-    power_k,dummy = power_spectrum(powertype,mainpath,"4096_adaphase_256",1,noutput,aexp,growth_a,growth_dplus)
+    power_k,dummy = power_spectrum(powertype,mainpath,simset,1,noutput,aexp)
     nbin = power_k.size
     var_all = np.zeros(nbin)
     var_inv_mean = np.zeros(nbin)
@@ -348,7 +498,7 @@ def inv_cov_variance_trace(powertype = "power", mainpath = "", noutput = 1 , aex
                     print "Reading file: ",filename
                 cov=np.loadtxt(filename, unpack=True)
             else:
-                dummy,dummy,dummy,cov=cov_power(powertype, mainpath, simset.name, isimmin, isimmax+1, noutput, aexp, growth_a, growth_dplus)
+                dummy,dummy,dummy,cov=cov_power(powertype, mainpath, simset, isimmin, isimmax+1, noutput, aexp)
                 if (store):
                     if (okprint):
                         print "Storing file: ",filename
@@ -361,7 +511,6 @@ def inv_cov_variance_trace(powertype = "power", mainpath = "", noutput = 1 , aex
                     f.close()
 
             var_inv[isub]=np.diag(linalg.inv(cov))
-            #cov_inv= float(nr-nbin-2)*cov_inv/float(nr-1)
 
         var_inv_mean = np.mean(var_inv,axis=0)
         sigma = np.std(var_inv,axis=0,ddof=1)
@@ -377,7 +526,35 @@ def inv_cov_variance_trace(powertype = "power", mainpath = "", noutput = 1 , aex
 
 
 # --------------------------- PRECISION MATRIX VARIANCE TRACE WITH k CUT --------------------------- #
-def inv_cov_variance_trace_kcut(kmin = 0.03, kmax = 1., powertype = "power", mainpath = "", noutput = 1 , aexp = 1., growth_a = np.zeros(0), growth_dplus = np.zeros(0), list_nr = [300,500,700,1000,3000,5000,6000], okprint=False, store=True):
+def inv_cov_variance_trace_kcut(kmin = 0.03, kmax = 1., powertype = "power", mainpath = "", noutput = 1 , aexp = 1., list_nr = [300,500,700,1000,3000,5000,6000], okprint=False, store=True):
+    """ Trace of the relative variance of the inverse of the covariance estimator using all_256 Deus Pur set cut at given k_min and k_max.
+        
+    Paramters
+    ---------
+    kmin: float
+        minimum k (default 0.03 h/Mpc)
+    kmax: float
+        maximum k (default 1 h/Mpc)
+    powertype: string
+        type of power spectrum: power, nyquist, renormalized, corrected, mcorrected, linear or linear_mock (default power)
+    mainpath: string
+        path to base folder (default empty)
+    noutput: int
+        snapshot number (default 1)
+    aexp: float
+        expansion factor (default 0)
+    list_nr: list
+        list of realisation numbers at which to compute inverse covariance stats
+    okprint: bool
+        verbose (default False)
+    store: bool
+        store intermediate file. If True and files exist they will be overwritten (default True)
+        
+    Returns
+    -------
+    1 list and 1 numpy array
+        list of realization numbers and trace of inverse covariance relative variance
+    """
     
     simset = DeusPurSet("all_256")
     trace_sigma2=np.zeros(len(list_nr))
@@ -387,7 +564,7 @@ def inv_cov_variance_trace_kcut(kmin = 0.03, kmax = 1., powertype = "power", mai
     command="mkdir -p tmp; mkdir -p "+folder
     os.system(command)
     
-    power_k,dummy = power_spectrum(powertype,mainpath,"4096_adaphase_256",1,noutput,aexp,growth_a,growth_dplus)
+    power_k,dummy = power_spectrum(powertype,mainpath,simset,1,noutput,aexp)
     ikmin = np.searchsorted(power_k,kmin)
     ikmax = np.searchsorted(power_k,kmax)
     power_k_cut = power_k[ikmin:ikmax]
@@ -411,7 +588,7 @@ def inv_cov_variance_trace_kcut(kmin = 0.03, kmax = 1., powertype = "power", mai
                     print "Reading file: ",filename
                 cov=np.loadtxt(filename, unpack=True)
             else:
-                dummy,dummy,dummy,cov=cov_power(powertype, mainpath, simset.name, isimmin, isimmax+1, noutput, aexp, growth_a, growth_dplus)
+                dummy,dummy,dummy,cov=cov_power(powertype, mainpath, simset, isimmin, isimmax+1, noutput, aexp)
                 if (store):
                     if (okprint):
                         print "Storing file: ",filename
@@ -441,7 +618,31 @@ def inv_cov_variance_trace_kcut(kmin = 0.03, kmax = 1., powertype = "power", mai
 
 
 # --------------------------- PRECISION VARIANCE --------------------------- #
-def inv_cov_variance(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., growth_a = np.zeros(0), growth_dplus = np.zeros(0), list_nr = [10,50,100,500,700,1000,3000,5000,6000], okprint=False, store=True):
+def inv_cov_variance(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., list_nr = [10,50,100,500,700,1000,3000,5000,6000], okprint=False, store=True):
+    """ Relative variance of the inverse of the covariance estimator using all_256 Deus Pur set.
+        
+    Paramters
+    ---------
+    powertype: string
+        type of power spectrum: power, nyquist, renormalized, corrected, mcorrected, linear or linear_mock (default power)
+    mainpath: string
+        path to base folder (default empty)
+    noutput: int
+        snapshot number (default 1)
+    aexp: float
+        expansion factor (default 0)
+    list_nr: list
+        list of realisation numbers at which to compute covariance stats
+    okprint: bool
+        verbose (default False)
+    store: bool
+        store intermediate file. If True and files exist they will be overwritten (default True)
+        
+    Returns
+    -------
+    1 list and 1 numpy array
+        list of realization numbers and inverse covariance relative variance
+    """
     
     simset = DeusPurSet("all_256")
     i=0 #index on list_nr
@@ -450,7 +651,7 @@ def inv_cov_variance(powertype = "power", mainpath = "", noutput = 1 , aexp = 1.
     command="mkdir -p tmp; mkdir -p "+folder
     os.system(command)
     
-    power_k,dummy = power_spectrum(powertype,mainpath,"4096_adaphase_256",1,noutput,aexp,growth_a,growth_dplus)
+    power_k,dummy = power_spectrum(powertype,mainpath,simset,1,noutput,aexp)
     nbin = power_k.size
     
     sigma2_all = np.zeros((len(list_nr),nbin,nbin))
@@ -470,7 +671,7 @@ def inv_cov_variance(powertype = "power", mainpath = "", noutput = 1 , aexp = 1.
                     print "Reading file: ",filename
                 power_pcov=np.loadtxt(filename, unpack=True)
             else:
-                dummy,dummy,dummy,power_pcov=cov_power(powertype, mainpath, simset.name, isimmin, isimmax+1, noutput, aexp, growth_a, growth_dplus)
+                dummy,dummy,dummy,power_pcov=cov_power(powertype, mainpath, simset, isimmin, isimmax+1, noutput, aexp)
                 if (store):
                     if (okprint):
                         print "Storing file: ",filename
@@ -496,7 +697,31 @@ def inv_cov_variance(powertype = "power", mainpath = "", noutput = 1 , aexp = 1.
 
 
 # --------------------------- PRECISION MATRIX BIAS --------------------------- #
-def inv_cov_bias(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., growth_a = np.zeros(0), growth_dplus = np.zeros(0), list_nr = [300,500,700,1000,3000,5000,6000], okprint=False, store=True):
+def inv_cov_bias(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., list_nr = [300,500,700,1000,3000,5000,6000], okprint=False, store=True):
+    """ Relative bias of the inverse of the covariance estimator using all_256 Deus Pur set.
+        
+    Paramters
+    ---------
+    powertype: string
+        type of power spectrum: power, nyquist, renormalized, corrected, mcorrected, linear or linear_mock (default power)
+    mainpath: string
+        path to base folder (default empty)
+    noutput: int
+        snapshot number (default 1)
+    aexp: float
+        expansion factor (default 0)
+    list_nr: list
+        list of realisation numbers at which to compute inverse covariance stats
+    okprint: bool
+        verbose (default False)
+    store: bool
+        store intermediate file. If True and files exist they will be overwritten (default True)
+        
+    Returns
+    -------
+    1 list and 1 numpy array
+        list of realization numbers and inverse covariance relative bias
+    """
 
     simset = DeusPurSet("all_256")
     bias=np.zeros(len(list_nr))
@@ -506,7 +731,7 @@ def inv_cov_bias(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., gr
     command="mkdir -p tmp; mkdir -p "+folder
     os.system(command)
 
-    power_k, power_pmean, power_psigma, power_pcov = cov_power(powertype, mainpath, simset.name,1,simset.nsimmax+1,noutput,aexp,growth_a,growth_dplus)
+    power_k, power_pmean, power_psigma, power_pcov = cov_power(powertype, mainpath, simset,1,simset.nsimmax+1,noutput,aexp)
     cov_inv_all=linalg.inv(power_pcov)
     trace_all=np.trace(cov_inv_all)
     nbin = power_k.size
@@ -527,7 +752,7 @@ def inv_cov_bias(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., gr
                     print "Reading file: ",filename
                 cov=np.loadtxt(filename, unpack=True)
             else:
-                dummy,dummy,dummy,cov=cov_power(powertype, mainpath, simset.name, isimmin, isimmax+1, noutput, aexp, growth_a, growth_dplus)
+                dummy,dummy,dummy,cov=cov_power(powertype, mainpath, simset, isimmin, isimmax+1, noutput, aexp)
                 if (store):
                     if (okprint):
                         print "Storing file: ",filename
@@ -553,7 +778,35 @@ def inv_cov_bias(powertype = "power", mainpath = "", noutput = 1 , aexp = 1., gr
 
 
 # --------------------------- PRECISION MATRIX BIAS WITH k CUT --------------------------- #
-def inv_cov_bias_kcut(kmin=0.03,kmax=1.,powertype = "power", mainpath = "", noutput = 1 , aexp = 1., growth_a = np.zeros(0), growth_dplus = np.zeros(0), list_nr = [300,500,700,1000,3000,5000,6000], okprint=False, store=True):
+def inv_cov_bias_kcut(kmin=0.03,kmax=1.,powertype = "power", mainpath = "", noutput = 1 , aexp = 1., list_nr = [300,500,700,1000,3000,5000,6000], okprint=False, store=True):
+    """ Relative bias of the inverse of the covariance estimator using all_256 Deus Pur set cut at given k_min and k_max.
+        
+    Paramters
+    ---------
+    kmin: float
+        minimum k (default 0.03 h/Mpc)
+    kmax: float
+        maximum k (default 1 h/Mpc)
+    powertype: string
+        type of power spectrum: power, nyquist, renormalized, corrected, mcorrected, linear or linear_mock (default power)
+    mainpath: string
+        path to base folder (default empty)
+    noutput: int
+        snapshot number (default 1)
+    aexp: float
+        expansion factor (default 0)
+    list_nr: list
+        list of realisation numbers at which to compute inverse covariance stats
+    okprint: bool
+        verbose (default False)
+    store: bool
+        store intermediate file. If True and files exist they will be overwritten (default True)
+        
+    Returns
+    -------
+    1 list and 1 numpy array
+        list of realization numbers and inverse covariance relative bias
+    """
     
     simset = DeusPurSet("all_256")
     bias=np.zeros(len(list_nr))
@@ -563,7 +816,7 @@ def inv_cov_bias_kcut(kmin=0.03,kmax=1.,powertype = "power", mainpath = "", nout
     command="mkdir -p tmp; mkdir -p "+folder
     os.system(command)
 
-    power_k, power_pmean, power_psigma, power_pcov = cov_power(powertype, mainpath, simset.name,1,simset.nsimmax+1,noutput,aexp,growth_a,growth_dplus)
+    power_k, power_pmean, power_psigma, power_pcov = cov_power(powertype, mainpath, simset,1,simset.nsimmax+1,noutput,aexp)
     ikmin = np.searchsorted(power_k,kmin)
     ikmax = np.searchsorted(power_k,kmax)
     power_k_cut = power_k[ikmin:ikmax]
@@ -588,7 +841,7 @@ def inv_cov_bias_kcut(kmin=0.03,kmax=1.,powertype = "power", mainpath = "", nout
                     print "Reading file: ",filename
                 cov=np.loadtxt(filename, unpack=True)
             else:
-                dummy,dummy,dummy,cov=cov_power(powertype, mainpath, simset.name, isimmin, isimmax+1, noutput, aexp, growth_a, growth_dplus)
+                dummy,dummy,dummy,cov=cov_power(powertype, mainpath, simset, isimmin, isimmax+1, noutput, aexp)
                 if (store):
                     if (okprint):
                         print "Storing file: ",filename
@@ -615,7 +868,28 @@ def inv_cov_bias_kcut(kmin=0.03,kmax=1.,powertype = "power", mainpath = "", nout
 
 
 # ------------------ STEIN ESTIMATOR --------------------- #
-def stein_estimator(cov=np.zeros((0,0)),precision=np.zeros((0,0)),nsim=1,nbin=1,biased_precision=True):
+def stein_estimator(cov, precision, nsim=1, nbin=1, biased_precision=True):
+    """ Stein estimator
+        
+    Parameters
+    ----------
+    cov: numpy array
+        covariance
+    precision: numpy array
+        inverse covariance
+    nsim: int
+        number of simulations (default 1)
+    nbin: int
+        number of bins (default 1)
+    biased_precision: bool
+        use Hartlap correction for inverse covariance (default True)
+        
+    Returns
+    ------
+    numpy array
+        Stein estimator
+    """
+    
     if (biased_precision):
         stein = (nsim-nbin-2.)/(nsim-1.)*precision + (nbin*(nbin+1)-2.)/((nsim-1.)*np.trace(cov))*np.eye(nbin)
     else:

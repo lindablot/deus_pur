@@ -22,8 +22,8 @@ class Simset(object):
         last simulation number
     nyquist : double
         half of the nyquist frequency of the power spectrum grid
-    cosmo_par : dictionary with keys om_b, om_m, n_s, h, w_0, sigma_8
-        cosmological parameters Omega_m*h^2, Omega_m*h^2, n_s, h, w_0, sigma_8
+    cosmo_par : dictionary with keys om_b, om_m, n_s, h, w_0, sigma_8, m_nu
+        cosmological parameters Omega_m*h^2, Omega_m*h^2, n_s, h, w_0, sigma_8, m_nu
     
     Methods
     ------
@@ -41,8 +41,8 @@ class Simset(object):
             cube root of the number of particles
         nsimmax : int 
             last simulation number
-        cosmo_par : dictionary with keys om_b, om_m, n_s, h, w_0, sigma_8
-            cosmological parameters Omega_m*h^2, Omega_m*h^2, n_s, h, w_0, sigma_8
+        cosmo_par : dictionary with keys om_b, om_m, n_s, h, w_0, sigma_8, m_nu
+            cosmological parameters Omega_m*h^2, Omega_m*h^2, n_s, h, w_0, sigma_8, m_nu
         """
         
         self.l_box = l_box
@@ -152,10 +152,10 @@ class DeusPurSet(Simset):
             self.cosmo = False
         
         if not self.cosmo or nmodel==0:
-            self.cosmo_par={'om_b': 0.04356*0.5184, 'om_m': 0.2573*0.5184, 'n_s': 0.963, 'h': 0.72, 'w_0': -1., 'sigma_8': 0.801}
+            self.cosmo_par={'om_b': 0.04356*0.5184, 'om_m': 0.2573*0.5184, 'n_s': 0.963, 'h': 0.72, 'w_0': -1., 'sigma_8': 0.801, 'm_nu': 0.}
         else:
             Om_b, Om_m, Om_lr, Om_nu, h, n_s, w, sigma_8 = np.genfromtxt(datapath+"/models_parameters.txt",unpack=True,skip_header=1)
-            self.cosmo_par={'om_b': Om_b[nmodel-1]*h[nmodel-1]**2, 'om_m': Om_m[nmodel-1]*h[nmodel-1]**2, 'n_s': n_s[nmodel-1], 'h': h[nmodel-1], 'w_0': w[nmodel-1], 'sigma_8': sigma_8[nmodel-1]}
+            self.cosmo_par={'om_b': Om_b[nmodel-1]*h[nmodel-1]**2, 'om_m': Om_m[nmodel-1]*h[nmodel-1]**2, 'n_s': n_s[nmodel-1], 'h': h[nmodel-1], 'w_0': w[nmodel-1], 'sigma_8': sigma_8[nmodel-1], 'm_nu': 0.}
 
         Simset.__init__(self, self.l_box, self.npart, self.nsimmax, self.cosmo_par)
         self.nyquist = math.pi/self.l_box*self.npart
@@ -178,6 +178,7 @@ class DeusPurSet(Simset):
         double
             expansion factor corresponding to the snapshot number
         """
+        
         if self.name == "4096_furphase_256" or self.name == "4096_adaphase_256" or self.name == "4096_otherphase_256" \
          or self.name == "all_256":
             alist=[0.01,0.33,0.4,0.5,0.59,0.66,0.77,0.91,1.]
@@ -200,6 +201,7 @@ class DeusPurSet(Simset):
         double
             redshift corresponding to the snapshot number
         """
+        
         return 1./self.snap_to_a(noutput)-1.
 
 # ---------------------------------------------------------------------------- #
@@ -213,8 +215,8 @@ def sim_iterator(simset=DeusPurSet("all_256"), isim=1, random=False, replace=Fal
     
     Parameters
     ---------
-    simset : DeusPurSet instance
-        simulation set (default "all_256")
+    simset : Simset instance
+        simulation set (default DeusPurSet("all_256"))
     isim : int
         simulation number of the composite set
     random : bool

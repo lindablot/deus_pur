@@ -6,13 +6,13 @@ import numpy as np
 
 
 # -------------------------------- READ DATA --------------------------------- #
-def read_data(mainpath="", model="lcdmw7"):
+def read_cosmo_data(mainpath="", model="lcdmw7"):
     """ Read linear power spectrum and lookup tables for cosmological quantities 
     
     Parameters
     ---------
     mainpath : str
-        Path to the data folder (default is empty)
+        path to base folder (default is empty)
     model : str, optional
         Cosmological model (default is lcdmw7)
         
@@ -49,7 +49,7 @@ def read_power_camb(mainpath="", model="lcdmw7"):
     Parameters
     ---------
     mainpath : str
-        Path to the data folder (default is empty)
+        Path to base folder (default is empty)
     model : str, optional
         Cosmological model (default is lcdmw7)
         
@@ -73,7 +73,7 @@ def read_growth(mainpath="", model="lcdmw7"):
     Parameters
     ---------
     mainpath : str
-        Path to the data folder (default is empty)
+        Path to base folder (default is empty)
     model : str, optional
         Cosmological model (default is lcdmw7)
         
@@ -91,7 +91,7 @@ def read_growth(mainpath="", model="lcdmw7"):
 
 
 # -------------------------------- READ POWER -------------------------------- #
-def read_power(filename="", refcol=np.zeros(0)):
+def read_power_powergrid(filename="", refcol=np.zeros(0)):
     """ Read powergrid output file
     
     Parameters
@@ -140,7 +140,7 @@ def read_power(filename="", refcol=np.zeros(0)):
 
 
 # -------------------------------- READ INFO --------------------------------- #
-def read_info(filename=""):
+def read_aexp_info(filename=""):
     """ Extract exact expansion factor value from the simulation info file
     
     Parameters

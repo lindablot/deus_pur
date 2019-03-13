@@ -9,15 +9,43 @@ from utilities import *
 # --------------------------- RENORMALIZED POWER SPECTRUM ----------------------------- #
 def renormalized_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1, growth_a=np.zeros(0),
                        growth_dplus=np.zeros(0), nmodel=0, okprint=False, store=False):
+    """ Power spectrum renormalised to initial power spectrum using growth function. If file exists it will be read from file
+    
+    Parameters
+    ----------
+    mainpath: string
+        path to base folder
+    simset: Simset instance
+        simulation set (default DeusPurSet("all_256"))
+    nsim: int
+        simulation number (default 1)
+    noutput: int
+        snapshot number (default 1)
+    growth_a: numpy array
+        expansion factor for growth function (default 0)
+    growth_dplus: numpy array
+        growth function at expansion factors growth_a (default 0)
+    nmodel: int
+        number of cosmological model (default 0)
+    okprint: bool
+        verbose (default False)
+    store: bool
+        store file. If True and file exists it will be overwritten (default False)
+        
+    Returns
+    -------
+    2 numpy arrays
+        k and P(k)
+    """
 
     fname = input_file_name("power", mainpath, simset.name, nsim, noutput, nmodel, okprint, "renormalized")
     if os.path.isfile(fname) and not store:
         power_k, power_p = np.loadtxt(fname, unpack=True)
     else:
-        power_k, power_p_ini, dummy = read_power(input_file_name("power", mainpath, simset.name, nsim, 1, nmodel))
-        power_k, power_p_end, dummy = read_power(input_file_name("power", mainpath, simset.name, nsim, noutput, nmodel))
-        aexp_ini = read_info(input_file_name("info", mainpath, simset.name, nsim, 1, nmodel))
-        aexp_end = read_info(input_file_name("info", mainpath, simset.name, nsim, noutput, nmodel))
+        power_k, power_p_ini, dummy = read_power_powergrid(input_file_name("power", mainpath, simset.name, nsim, 1, nmodel))
+        power_k, power_p_end, dummy = read_power_powergrid(input_file_name("power", mainpath, simset.name, nsim, noutput, nmodel))
+        aexp_ini = read_aexp_info(input_file_name("info", mainpath, simset.name, nsim, 1, nmodel))
+        aexp_end = read_aexp_info(input_file_name("info", mainpath, simset.name, nsim, noutput, nmodel))
         dplus_ini = extrapolate([aexp_ini], growth_a, growth_dplus)
         dplus_end = extrapolate([aexp_end], growth_a, growth_dplus)
         power_p = (power_p_end * dplus_ini * dplus_ini) / (power_p_ini * dplus_end * dplus_end)
@@ -35,14 +63,44 @@ def renormalized_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutpu
 # ----------------------------- POWER SPECTRUM CORRECTED FOR a DIFFERENCES ------------------------------ #
 def corrected_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1, aexp=0., growth_a=np.zeros(0),
                     growth_dplus=np.zeros(0), nmodel=0, okprint=False, store=False):
+    """ Power spectrum rescaled to given aexp using growth function. If file exists it will be read from file
+    
+    Parameters
+    ----------
+    mainpath: string
+        path to base folder
+    simset: Simset instance
+        simulation set (default DeusPurSet("all_256"))
+    nsim: int
+        simulation number (default 1)
+    noutput: int
+        snapshot number (default 1)
+    aexp: float
+        expansion factor (default 0)
+    growth_a: numpy array
+        expansion factor (default 0)
+    growth_dplus: numpy array
+        growth function at expansion factors growth_a (default 0)
+    nmodel: int
+        number of cosmological model (default 0)
+    okprint: bool
+        verbose (default False)
+    store: bool
+        store file. If True and file exists it will be overwritten (default False)
+        
+    Returns
+    -------
+    2 numpy arrays
+        k and P(k)
+    """
 
     fname = input_file_name("power", mainpath, simset.name, nsim, noutput, nmodel, okprint, "corrected")
     if os.path.isfile(fname) and not store:
         power_k, power_p = np.loadtxt(fname, unpack=True)
     else:
-        power_k, power_p_raw, dummy = read_power(input_file_name("power", mainpath, simset.name, nsim, noutput, nmodel))
+        power_k, power_p_raw, dummy = read_power_powergrid(input_file_name("power", mainpath, simset.name, nsim, noutput, nmodel))
         if aexp != 0.:
-            aexp_raw = read_info(input_file_name("info", mainpath, simset.name, nsim, noutput, nmodel))
+            aexp_raw = read_aexp_info(input_file_name("info", mainpath, simset.name, nsim, noutput, nmodel))
             dplus_raw = extrapolate([aexp_raw], growth_a, growth_dplus)
             dplus = extrapolate([aexp], growth_a, growth_dplus)
             power_p = (power_p_raw * dplus * dplus) / (dplus_raw * dplus_raw)
@@ -62,6 +120,36 @@ def corrected_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1
 # ----------------------------- POWER SPECTRUM CUT AT NYQUIST FREQUENCY ------------------------------ #
 def nyquist_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1, aexp=0., growth_a=np.zeros(0),
                   growth_dplus=np.zeros(0), nmodel=0, okprint=False, store=False):
+    """ Power spectrum rescaled to given aexp using growth function and cut at half the nyquist frequency. If file exists it will be read from file
+        
+    Parameters
+    ----------
+    mainpath: string
+        path to base folder
+    simset: Simset instance
+        simulation set (default DeusPurSet("all_256"))
+    nsim: int
+        simulation number (default 1)
+    noutput: int
+        snapshot number (default 1)
+    aexp: float
+        expansion factor (default 0)
+    growth_a: numpy array
+        expansion factorfor grwoth function (default 0)
+    growth_dplus: numpy array
+        growth function at expansion factors growth_a (default 0)
+    nmodel: int
+        number of cosmological model (default 0)
+    okprint: bool
+        verbose (default False)
+    store: bool
+        store file. If True and file exists it will be overwritten (default False)
+        
+    Returns
+    -------
+    2 numpy arrays
+        k and P(k)
+    """
 
     fname = input_file_name("power", mainpath, simset.name, nsim, noutput, nmodel, okprint, "nyquist")
     if os.path.isfile(fname) and not store:
@@ -83,14 +171,27 @@ def nyquist_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1, 
 
 
 # ------------------------------- POWER SPECTRUM COMPUTED BY PkANN ------------------ #
-def pkann_power(ipar=0, dpar=0.05, fact=1, powertype="power", ioutput=1, mainpath="",
-                aexp=0., growth_a=np.zeros(0), growth_dplus=np.zeros(0), okprint=False, store=False):
-
-    # omega_m h^2, omega_b h^2, n_s, w, sigma_8, m_nu, bias
-    par = np.array([0.2573*0.5184, 0.04356*0.5184, 0.963, -1., 0.801, 0., 1.])
-    list_z = [99., 2., 1.5, 1., 0.7, 0.5, 0.3, 0.01, 0.]
-    par[ipar] += fact * dpar * abs(par[ipar])
-    redshift = list_z[ioutput-1]
+def pkann_power(par, redshift, power_k=np.zeros(0), okprint=False, store=False):
+    """ Power spectrum computed by PkANN emulator
+    
+    Parameters
+    ----------
+    par: list
+        cosmological parameters omega_m h^2, omega_b h^2, n_s, w, sigma_8, m_nu, bias
+    redshift: float
+        redshift
+    power_k: numpy array
+        array of k values where the power spectrum will be interpolated (optional)
+    okprint: bool
+        verbose (default False)
+    store: bool
+        store file. If True and file exists it will be overwritten (default False)
+        
+    Returns
+    -------
+    2 numpy arrays
+        k and P(k)
+    """
 
     folder = "pkann_spectra/"
     command = "mkdir -p " + folder
@@ -121,31 +222,48 @@ def pkann_power(ipar=0, dpar=0.05, fact=1, powertype="power", ioutput=1, mainpat
         os.system(command)
         kpkann, ppkann = np.loadtxt(outfile, skiprows=4, unpack=True)
 
-        if powertype == "nyquist" or powertype == "mcorrected" or powertype == "linear":
-            power_k, dummy = nyquist_power(mainpath, DeusPurSet("4096_adaphase_256"), 1, ioutput,
-                                           aexp, growth_a, growth_dplus)
+        if power_k.size > 0:
+            power_pkann = par[6]*par[6]*np.interp(power_k,kpkann,ppkann)
         else:
-            power_k, dummy, dummy = read_power(input_file_name("power", mainpath, "4096_adaphase_256", 1, ioutput))
+            power_k = kpkann
+            power_pkann = par[6]*par[6]*ppkann
 
-        power_pkann = np.zeros(power_k.size)
-        for i in range(power_k.size):
-            power_pkann[i] = par[6]*par[6]*extrapolate(power_k[i], kpkann, ppkann)
-
-        fltformat2 = "%-.12e"
-        fout = open(pfile, "w")
-        for i in xrange(0, power_k.size):
-            fout.write(str(fltformat2 % power_k[i])+" "+str(fltformat2 % power_pkann[i])+"\n")
-        fout.close()
+        if store:
+            fltformat2 = "%-.12e"
+            fout = open(pfile, "w")
+            for i in xrange(0, power_k.size):
+                fout.write(str(fltformat2 % power_k[i])+" "+str(fltformat2 % power_pkann[i])+"\n")
+            fout.close()
 
     return power_k, power_pkann
 # ---------------------------------------------------------------------------- #
 
 
 # --------------- POWER SPECTRUM COMPUTED BY EuclidEmulator ------------------ #
-def euemu_power(z,simset=DeusPurSet("all_256")):
+def euemu_power(par, redshift, power_k=np.zeros(0)):
+    """ Power spectrum computed by Euclid emulator
+    
+    Parameters
+    ----------
+    par: dictionary with keys om_b, om_m, n_s, h, w_0, sigma_8
+        cosmological parameters Omega_b*h^2, Omega_m*h^2, n_s, h, w_0, sigma_8
+    redshift: float
+        redshift
+    power_k: numpy array
+        array of k values where the power spectrum will be interpolated (optional)
+    
+    Returns
+    -------
+    2 numpy arrays
+        k and P(k)
+    """
+    
     import e2py as emu
-    Cosmo = simset.cosmo_par
-    result = emu.get_pnonlin(Cosmo, z)
-    power_k = result['k']
+    result = emu.get_pnonlin(par, redshift)
+    power_kemu = result['k']
     power_pemu = result['P_nonlin']
-    return power_k, power_pemu
+    if power_k.size>0:
+        power_p = np.interp(power_k,power_kemu,power_pemu)
+        return power_k, power_p
+    else:
+        return power_kemu, power_pemu

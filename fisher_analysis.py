@@ -16,7 +16,48 @@ from power_covariance import *
 
 
 # -------------------------------- FISHER -------------------------------- #
-def fisher_matrix(powertype = "power", galaxy = 0, list_par = [0,2,3,4],  fiducial = [0.2573,0.04356,0.963,-1.,0.801,0.], mainpath = "", simset = "", isimmin = 1, isimmax = 2, list_noutput = [1], list_aexp = [0.], growth_a = np.zeros(0), growth_dplus = np.zeros(0), frac=1., okprint = False, store = False):
+def fisher_matrix(powertype = "power", galaxy = False, list_par = [0,2,3,4],  fiducial = [0.2573,0.04356,0.963,-1.,0.801,0.], mainpath = "", simset = "", isimmin = 1, isimmax = 2, list_noutput = [1], frac=1., okprint = False, store = False):
+    """ Fisher matrix. Cosmological parameters are:
+    0: Omega_m * h^2
+    1: Omega_b h^2
+    2: n_s
+    3: w
+    4: sigma_8
+    5: m_nu
+    6-6+nz: bias for each of nz redshifts
+    
+    Parameters
+    ----------
+    powertype: string
+        type of power spectrum: power, nyquist, renormalized, corrected, mcorrected, linear or linear_mock (default power)
+    galaxy: bool
+        matter or galaxy power spectrum
+    list_par: list of int
+        list of cosmological parameters to vary (default Omega_m, n_s, w, sigma_8)
+    fiducial: list of float
+        fiducial parameter values (default WMAP7)
+    mainpath: string
+        path to base folder (default empty)
+    simset: string or Simset instance
+        simulation set
+    isimmin: int
+        minimum simulation number
+    isimmax: int
+        maximum simulation number
+    list_noutput: list of int
+        list of snapshot numbers to use
+    frac: float
+        fraction of total galaxies observed by Euclid
+    okprint: bool
+        verbose (default False)
+    store: bool
+        store file. If True and file exists it will be overwritten (default False)
+    
+    Returns
+    -------
+    numpy array
+        Fisher matrix
+    """
 
     if (type(simset) is str):
         simset=DeusPurSet(simset)
@@ -27,23 +68,24 @@ def fisher_matrix(powertype = "power", galaxy = 0, list_par = [0,2,3,4],  fiduci
     dbeta = 0.05
     npar=len(list_par)
     fisher = np.zeros((npar,npar))
-
-    for iz in range(0,len(list_aexp)):
+        
+    for iz in range(0,len(list_noutput)):
         ioutput=list_noutput[iz]
-        aexp=list_aexp[iz]
+        aexp=simset.snap_to_a(ioutput)
+        redshift=1./aexp-1.
         
         # ------------------- covariance ------------------- #
         covfile = output_file_name("cov",powertype,simset,isimmin,isimmax,noutput,nmodel)
         if (os.path.isfile(covfile)):
             power_pcov=np.loadtxt(covfile,unpack=True)
-            power_k,dummy=power_spectrum(powertype,mainpath,simset.name,isimmin,ioutput,aexp,growth_a,growth_dplus)
+            power_k,dummy=power_spectrum(powertype,mainpath,simset.name,isimmin,ioutput,aexp)
         else:
-            power_k,dummy,dummy,power_pcov=cov_power(powertype,mainpath,simset.name,isimmin,isimmax,ioutput,aexp,growth_a,growth_dplus,okprint=okprint)
+            power_k,dummy,dummy,power_pcov=cov_power(powertype,mainpath,simset.name,isimmin,isimmax,ioutput,aexp,okprint=okprint)
 
-        if (galaxy > 0):
+        if galaxy:
             simset256 = DeusPurSet("all_256")
-            power_k,power_pmean,dummy=mean_power("mcorrected",mainpath,simset256.name,1,simset256.nsimmax+1,ioutput,aexp,growth_a,growth_dplus,okprint=okprint)
-            bias=1.#galaxy_bias(power_k,ioutput)
+            power_k,power_pmean,dummy=mean_power("mcorrected",mainpath,simset256.name,1,simset256.nsimmax+1,ioutput,aexp,okprint=okprint)
+            bias=1.#galaxy_bias(power_k,redshift)
             ng=galaxy_density(ioutput,frac)
             
             biased_cov = pow(bias,4.)*power_pcov + 2.*pow(bias,2.)*np.sqrt(np.outer(power_pmean,power_pmean))/ng + 1./pow(ng,2.)
@@ -65,10 +107,10 @@ def fisher_matrix(powertype = "power", galaxy = 0, list_par = [0,2,3,4],  fiduci
             else:
                 if (ialpha==6+iz):
                     ialpha=6
-                dummy,Ppda=pkann_power(ialpha,dalpha,1,powertype,ioutput,mainpath,aexp,growth_a,growth_dplus)
-                dummy,Pmda=pkann_power(ialpha,dalpha,-1,powertype,ioutput,mainpath,aexp,growth_a,growth_dplus)
-                dummy,Pp2da=pkann_power(ialpha,dalpha,2,powertype,ioutput,mainpath,aexp,growth_a,growth_dplus)
-                dummy,Pm2da=pkann_power(ialpha,dalpha,-2,powertype,ioutput,mainpath,aexp,growth_a,growth_dplus)
+                dummy,Ppda=pkann_power(par_list(ialpha,dalpha,1),redshift,power_k)
+                dummy,Pmda=pkann_power(par_list(ialpha,dalpha,-1),redshift,power_k)
+                dummy,Pp2da=pkann_power(par_list(ialpha,dalpha,2),redshift,power_k)
+                dummy,Pm2da=pkann_power(par_list(ialpha,dalpha,-2),redshift,power_k)
                 dtheta_alpha=dalpha*abs(fiducial[ialpha])
                 derpar_T[ia]=2.*(Ppda-Pmda)/(3.*dtheta_alpha)+(Pp2da-Pm2da)/(12.*dtheta_alpha)
 
@@ -77,7 +119,7 @@ def fisher_matrix(powertype = "power", galaxy = 0, list_par = [0,2,3,4],  fiduci
 
     if (store):
         fname = "fisher_"+powertype+"_"
-        if (galaxy==0):
+        if not galaxy:
             fname += "matter.txt"
         else:
             fname += "galaxy.txt"
@@ -94,7 +136,48 @@ def fisher_matrix(powertype = "power", galaxy = 0, list_par = [0,2,3,4],  fiduci
 
 
 # -------------------------------- FISHER -------------------------------- #
-def fisher_matrix_cho(powertype = "power", galaxy = 0, list_par = [0,2,3,4],  fiducial = [0.2573,0.04356,0.963,-1.,0.801,0.], mainpath = "", simset = "", isimmin = 1, isimmax = 2, list_noutput = [1], list_aexp = [0.], growth_a = np.zeros(0), growth_dplus = np.zeros(0), frac=1., okprint = False, store = False):
+def fisher_matrix_cho(powertype = "power", galaxy = False, list_par = [0,2,3,4],  fiducial = [0.2573,0.04356,0.963,-1.,0.801,0.], mainpath = "", simset = "", isimmin = 1, isimmax = 2, list_noutput = [1], frac=1., okprint = False, store = False):
+    """ Fisher matrix computed using Cholewsky decomposition. Cosmological parameters are:
+    0: Omega_m * h^2
+    1: Omega_b h^2
+    2: n_s
+    3: w
+    4: sigma_8
+    5: m_nu
+    6-6+nz: bias for each of nz redshifts
+    
+    Parameters
+    ----------
+    powertype: string
+        type of power spectrum: power, nyquist, renormalized, corrected, mcorrected, linear or linear_mock (default power)
+    galaxy: bool
+        matter or galaxy power spectrum
+    list_par: list of int
+        list of cosmological parameters to vary (default Omega_m, n_s, w, sigma_8)
+    fiducial: list of float
+        fiducial parameter values (default WMAP7)
+    mainpath: string
+        path to base folder (default empty)
+    simset: string or Simset instance
+        simulation set
+    isimmin: int
+        minimum simulation number
+    isimmax: int
+        maximum simulation number
+    list_noutput: list of int
+        list of snapshot numbers to use
+    frac: float
+        fraction of total galaxies observed by Euclid
+    okprint: bool
+        verbose (default False)
+    store: bool
+        store file. If True and file exists it will be overwritten (default False)
+    
+    Returns
+    -------
+    numpy array
+        Fisher matrix
+    """
     
     if (type(simset) is str):
         simset=DeusPurSet(simset)
@@ -106,21 +189,23 @@ def fisher_matrix_cho(powertype = "power", galaxy = 0, list_par = [0,2,3,4],  fi
     npar=len(list_par)
     fisher = np.zeros((npar,npar))
     
-    for iz in range(0,len(list_aexp)):
+    for iz in range(0,len(list_noutput)):
         ioutput=list_noutput[iz]
-        aexp=list_aexp[iz]
+        aexp=simset.snap_to_a(ioutput)
+        redshift=1./aexp-1.
         
         # ------------------- covariance ------------------- #
         covfile = output_file_name("cov",powertype,simset,isimmin,isimmax,noutput,nmodel)
         if (os.path.isfile(covfile)):
             power_pcov=np.loadtxt(covfile,unpack=True)
+            power_k,dummy=power_spectrum(powertype,mainpath,simset.name,isimmin,ioutput,aexp)
         else:
-            power_k,dummy,dummy,power_pcov=cov_power(powertype,mainpath,simset.name,isimmin,isimmax,ioutput,aexp,growth_a,growth_dplus,okprint=okprint)
+            power_k,dummy,dummy,power_pcov=cov_power(powertype,mainpath,simset.name,isimmin,isimmax,ioutput,aexp,okprint=okprint)
 
-        if (galaxy > 0):
+        if galaxy:
             simset256 = DeusPurSet("all_256")
-            power_k,power_pmean,dummy=mean_power("mcorrected",mainpath,simset256.name,1,simset256.nsimmax+1,ioutput,aexp,growth_a,growth_dplus,okprint=okprint)
-            bias=1.#galaxy_bias(power_k,ioutput)
+            power_k,power_pmean,dummy=mean_power("mcorrected",mainpath,simset256.name,1,simset256.nsimmax+1,ioutput,aexp,okprint=okprint)
+            bias=1.#galaxy_bias(power_k,redshift)
             ng=galaxy_density(ioutput,frac)
             biased_cov = pow(bias,4.)*power_pcov + 2.*pow(bias,2.)*np.sqrt(np.outer(power_pmean,power_pmean))/ng + 1./pow(ng,2.)
             cov_fac = scipy.linalg.cho_factor(biased_cov)
@@ -137,10 +222,10 @@ def fisher_matrix_cho(powertype = "power", galaxy = 0, list_par = [0,2,3,4],  fi
             else:
                 if (ialpha==6+iz):
                     ialpha=6
-                dummy,Ppda=pkann_power(ialpha,dalpha,1,powertype,ioutput,mainpath,aexp,growth_a,growth_dplus)
-                dummy,Pmda=pkann_power(ialpha,dalpha,-1,powertype,ioutput,mainpath,aexp,growth_a,growth_dplus)
-                dummy,Pp2da=pkann_power(ialpha,dalpha,2,powertype,ioutput,mainpath,aexp,growth_a,growth_dplus)
-                dummy,Pm2da=pkann_power(ialpha,dalpha,-2,powertype,ioutput,mainpath,aexp,growth_a,growth_dplus)
+                dummy,Ppda=pkann_power(par_list(ialpha,dalpha,1),redshift,power_k)
+                dummy,Pmda=pkann_power(par_list(ialpha,dalpha,-1),redshift,power_k)
+                dummy,Pp2da=pkann_power(par_list(ialpha,dalpha,2),redshift,power_k)
+                dummy,Pm2da=pkann_power(par_list(ialpha,dalpha,-2),redshift,power_k)
                 dtheta_alpha=dalpha*abs(fiducial[ialpha])
                 derpar_T[ia]=2.*(Ppda-Pmda)/(3.*dtheta_alpha)+(Pp2da-Pm2da)/(12.*dtheta_alpha)
 
@@ -154,7 +239,7 @@ def fisher_matrix_cho(powertype = "power", galaxy = 0, list_par = [0,2,3,4],  fi
 
     if (store):
         fname = "fisher_"+powertype+"_"
-        if (galaxy==0):
+        if not galaxy:
             fname += "matter.txt"
         else:
             fname += "galaxy.txt"
@@ -170,7 +255,52 @@ def fisher_matrix_cho(powertype = "power", galaxy = 0, list_par = [0,2,3,4],  fi
 
 
 # -------------------------------- FISHER WITH k-CUT -------------------------------- #
-def fisher_matrix_kcut(kmin, kmax, powertype = "power", galaxy = 0, list_par = [0,2,3,4],  fiducial = [0.2573,0.04356,0.963,-1.,0.801,0.], mainpath = "", simset = "", isimmin = 1, isimmax = 2, list_noutput = [1], list_aexp = [0.], growth_a = np.zeros(0), growth_dplus = np.zeros(0), frac=1., okprint = False, store = False):
+def fisher_matrix_kcut(kmin, kmax, powertype = "power", galaxy = False, list_par = [0,2,3,4],  fiducial = [0.2573,0.04356,0.963,-1.,0.801,0.], mainpath = "", simset = "", isimmin = 1, isimmax = 2, list_noutput = [1], frac=1., okprint = False, store = False):
+    """ Fisher matrix computed using Cholewsky decomposition with k cut between kmin and kmax. Cosmological parameters are:
+    0: Omega_m * h^2
+    1: Omega_b h^2
+    2: n_s
+    3: w
+    4: sigma_8
+    5: m_nu
+    6-6+nz: bias for each of nz redshifts
+    
+    Parameters
+    ----------
+    kmin: float
+        minimum k
+    kmax: float
+        maximum k
+    powertype: string
+        type of power spectrum: power, nyquist, renormalized, corrected, mcorrected, linear or linear_mock (default power)
+    galaxy: bool
+        matter or galaxy power spectrum
+    list_par: list of int
+        list of cosmological parameters to vary (default Omega_m, n_s, w, sigma_8)
+    fiducial: list of float
+        fiducial parameter values (default WMAP7)
+    mainpath: string
+        path to base folder (default empty)
+    simset: string or Simset instance
+        simulation set
+    isimmin: int
+        minimum simulation number
+    isimmax: int
+        maximum simulation number
+    list_noutput: list of int
+        list of snapshot numbers to use
+    frac: float
+        fraction of total galaxies observed by Euclid
+    okprint: bool
+        verbose (default False)
+    store: bool
+        store file. If True and file exists it will be overwritten (default False)
+    
+    Returns
+    -------
+    numpy array
+        Fisher matrix
+    """
     
     if (type(simset) is str):
         simset=DeusPurSet(simset)
@@ -182,28 +312,29 @@ def fisher_matrix_kcut(kmin, kmax, powertype = "power", galaxy = 0, list_par = [
     npar=len(list_par)
     fisher = np.zeros((npar,npar))
     
-    for iz in range(0,len(list_aexp)):
+    for iz in range(0,len(list_noutput)):
         ioutput=list_noutput[iz]
-        aexp=list_aexp[iz]
+        aexp=simset.snap_to_a(ioutput)
+        redshift=1./aexp-1.
         
         # ------------------- covariance ------------------- #
         covfile = output_file_name("cov",powertype,simset,isimmin,isimmax,noutput,nmodel)
         if (os.path.isfile(covfile)):
             power_pcov_nocut=np.loadtxt(covfile,unpack=True)
-            power_k_nocut,dummy=power_spectrum(powertype,mainpath,simset.name,1,ioutput,aexp,growth_a,growth_dplus,okprint=okprint)
+            power_k_nocut,dummy=power_spectrum(powertype,mainpath,simset.name,1,ioutput,aexp,okprint=okprint)
         else:
-            power_k_nocut,dummy,dummy,power_pcov_nocut=cov_power(powertype,mainpath,simset.name,isimmin,isimmax,ioutput,aexp,growth_a,growth_dplus,okprint=okprint)
+            power_k_nocut,dummy,dummy,power_pcov_nocut=cov_power(powertype,mainpath,simset.name,isimmin,isimmax,ioutput,aexp,okprint=okprint)
         imin = np.searchsorted(power_k_nocut,kmin)
         imax = np.searchsorted(power_k_nocut,kmax)
         power_k = power_k_nocut[imin:imax]
         power_pcov=power_pcov_nocut[imin:imax,imin:imax]
         
-        if (galaxy > 0):
+        if galaxy:
             simset256 = DeusPurSet("all_256")
-            dummy,power_pmean_nocut,dummy=mean_power("mcorrected",mainpath,simset256.name,1,simset256.nsimmax+1,ioutput,aexp,growth_a,growth_dplus,okprint=okprint)
+            dummy,power_pmean_nocut,dummy=mean_power("mcorrected",mainpath,simset256.name,1,simset256.nsimmax+1,ioutput,aexp,okprint=okprint)
             power_pmean=power_pmean_nocut[imin:imax]
             biased_cov=np.zeros(np.shape(power_pcov))
-            bias=1.#galaxy_bias(power_k,ioutput)
+            bias=1.#galaxy_bias(power_k,redshift)
             ng=galaxy_density(ioutput,frac)
             biased_cov = pow(bias,4.)*power_pcov + 2.*pow(bias,2.)*np.sqrt(np.outer(power_pmean,power_pmean))/ng + 1./pow(ng,2.)
             cov_fac = scipy.linalg.cho_factor(biased_cov)
@@ -219,10 +350,10 @@ def fisher_matrix_kcut(kmin, kmax, powertype = "power", galaxy = 0, list_par = [
             else:
                 if (ialpha==6+iz):
                     ialpha=6
-                dummy,Ppda=pkann_power(ialpha,dalpha,1,powertype,ioutput,mainpath,aexp,growth_a,growth_dplus)
-                dummy,Pmda=pkann_power(ialpha,dalpha,-1,powertype,ioutput,mainpath,aexp,growth_a,growth_dplus)
-                dummy,Pp2da=pkann_power(ialpha,dalpha,2,powertype,ioutput,mainpath,aexp,growth_a,growth_dplus)
-                dummy,Pm2da=pkann_power(ialpha,dalpha,-2,powertype,ioutput,mainpath,aexp,growth_a,growth_dplus)
+                dummy,Ppda=pkann_power(par_list(ialpha,dalpha,1),redshift,power_k)
+                dummy,Pmda=pkann_power(par_list(ialpha,dalpha,-1),redshift,power_k)
+                dummy,Pp2da=pkann_power(par_list(ialpha,dalpha,2),redshift,power_k)
+                dummy,Pm2da=pkann_power(par_list(ialpha,dalpha,-2),redshift,power_k)
                 dtheta_alpha=dalpha*abs(fiducial[ialpha])
                 derpar_T_nocut=2.*(Ppda-Pmda)/(3.*dtheta_alpha)+(Pp2da-Pm2da)/(12.*dtheta_alpha)
                 derpar_T[ia]=derpar_T_nocut[imin:imax]
@@ -237,7 +368,7 @@ def fisher_matrix_kcut(kmin, kmax, powertype = "power", galaxy = 0, list_par = [
             
     if (store):
         fname = "fisher_"+powertype+"_k"+str(kmin)+"_"+str(kmax)
-        if (galaxy==0):
+        if not galaxy:
             fname += "matter.txt"
         else:
             fname += "galaxy.txt"
@@ -251,13 +382,66 @@ def fisher_matrix_kcut(kmin, kmax, powertype = "power", galaxy = 0, list_par = [
 
     return fisher
 
-def galaxy_bias(power_k=np.zeros(0), noutput=1):
+def par_list(ipar,dpar,fact):
+    """ Get cosmological parameter list for PkANN power spectra
+        
+    Parameters
+    ----------
+    ipar: int
+        parameter number
+    dpar: float
+        amount of variation around fiducial
+    fact: int
+        number of times the variation is applied (can be negative)
+    
+    Returns
+    -------
+    list
+        parameter list
+    """
+    
+    # omega_m h^2, omega_b h^2, n_s, w, sigma_8, m_nu, bias
+    par=np.array([0.2573*0.5184, 0.04356*0.5184, 0.963, -1., 0.801, 0., 1.])
+    par[ipar] += fact * dpar * abs(par[ipar])
+    return par
+
+def galaxy_bias(power_k, redshift=1.):
+    """ Fiducial galaxy bias for given k bins and redshift
+        
+    Parameters
+    ----------
+    power_k: numpy array of floats
+        k bins
+    redshift: float
+        redshift (default 1.)
+        
+    Returns
+    -------
+    numpy array of floats
+        fiducial galaxy bias
+    """
+    
     bias=np.zeros(power_k.size)
     bias=np.fill(1.5)
     return bias
 
 
 def galaxy_density(noutput=1,frac=1.):
+    """ Galaxy number density observed by Euclid
+        
+    Parameters
+    ----------
+    noutput: int
+        snapshot number
+    frac: float
+        fraction of observed galaxies
+        
+    Returns
+    -------
+    float
+        galaxy number density in (h/Mpc)^3
+    """
+    
     if (noutput==2):
         ng=frac*1.5e-4
     elif (noutput==3):
