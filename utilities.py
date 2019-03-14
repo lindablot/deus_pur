@@ -434,9 +434,9 @@ def input_file_name(filetype="", mainpath="", simset=DeusPurSet("all_256"), nsim
         else:
             dataprefix = "/mask"+str(mask)+"/power/power"+typestr
     elif filetype == "info":
-        dataprefix = "/info/info_"
+        dataprefix = "/info/info"
     elif filetype == "massfunction":
-        dataprefix = "/massfunction/massfunction_"
+        dataprefix = "/massfunction/massfunction"
     else:
         raise ValueError("filetype not found")
 
