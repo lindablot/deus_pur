@@ -6,9 +6,10 @@ from power_types import *
 # ---------------------------------------------------------------------------- #
 
 
+
 # -------------------------------- MEAN POWER (ALTERNATIVE) -------------------------------- #
 def mean_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isimmin=1, isimmax=2, noutput=1, aexp=0., okprint=False, store=False,
-               rebin=0, outpath="."):
+               rebin=0, irsd=0, multipole=0, shotnoise=True, mask=0, outpath="."):
     """ Mean and standard deviation of power spectra. See power_spectrum for the description of the power spectrum types. If file exists it will be read from file.
 
 
@@ -34,6 +35,14 @@ def mean_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isi
         store file. If True and file exists it will be overwritten (default False)
     rebin: int
         number of bins to combine when rebinning (default 0, i.e. no rebinning)
+    irsd: int
+        direction of redshift space index (0 for real space, 1-3 for x,y or z, default 0)
+    multipole: int
+        multipole index (default 0)
+    shotnoise: bool
+        correct for Poisson shotnoise (default True)
+    mask: int
+        mask index (default 0)
     outpath: string
         path where output file is stored (default .)
 
@@ -44,7 +53,7 @@ def mean_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isi
     """
 
     nsim = isimmax-isimmin
-    fname = outpath+"/"+output_file_name("mean", powertype, simset, isimmin, isimmax, noutput)
+    fname = outpath+"/"+output_file_name("mean", powertype, simset, isimmin, isimmax, noutput, multipole, irsd, mask)
 
     if os.path.isfile(fname) and not store:
         if okprint:
@@ -212,7 +221,7 @@ def high_moments(powertype="power", mainpath="", simset=DeusPurSet("all_256"), i
         power_kurt = file_content[2]
     else:
         power_k, power_pmean, power_psigma = mean_power(powertype, mainpath, simset, isimmin, isimmax, noutput,
-                                                        aexp, okprint, store, rebin)
+                                                        aexp, okprint, store, rebin, outpath=outpath)
         power_skew = np.zeros(power_k.size)
         power_kurt = np.zeros(power_k.size)
 
@@ -483,7 +492,7 @@ def correction_power(mainpath="", simset=DeusPurSet("all_256"), noutput=1, aexp=
 
 # ----------------------- WRAPPER FOR ALL POWER TYPES ------------------------- #
 def power_spectrum(powertype="power", mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1,
-                   aexp=0., okprint=False, store=False, rebin=0, irsd=0, multipole=0, k_interp = np.zeros(0)):
+                   aexp=0., okprint=False, store=False, rebin=0, irsd=0, multipole=0, shotnoise=True, mask=0, k_interp = np.zeros(0)):
     """ Wrapper for different power spectrum types. If file exists it will be read from file.
     Different power types are:
     - power: raw power spectrum from file
@@ -519,6 +528,10 @@ def power_spectrum(powertype="power", mainpath="", simset=DeusPurSet("all_256"),
         direction of redshift space index (0 for real space, 1-3 for x,y or z, default 0)
     multipole: int
         multipole index (default 0)
+    shotnoise: bool
+        correct for Poisson shotnoise (default True)
+    mask: int
+        mask index (default 0)
     k_interp: numpy array (default empty)
         array of k values where the power spectrum is interpolated
 
@@ -584,7 +597,7 @@ def power_spectrum(powertype="power", mainpath="", simset=DeusPurSet("all_256"),
         nmodes = simset.num_modes(power_k)
 
     elif setname in MinervaSet.simsets:
-        fname = input_file_name("power", mainpath, setname, nsim, noutput, irsd, okprint, "_"+powertype+"_irsd", mask)
+        fname = input_file_name("power", mainpath, setname, nsim, noutput, nmodel, okprint, powertype, irsd, mask)
         power_k, power_p, nmodes = read_power_powerI4(fname,multipole)
         if shotnoise and multipole<2:
             nhalos = read_nobjects(fname)

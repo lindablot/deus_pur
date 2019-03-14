@@ -392,7 +392,7 @@ def cosmo_iterator(param,var):
 
 # -------------------------------- INPUT FILE NAME --------------------------------- #
 def input_file_name(filetype="", mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1,
-                    okprint=False, powertype="gridcic", mask=0):
+                    okprint=False, powertype="gridcic", irsd=0, mask=0):
     """ Input file name generator
 
     Parameters
@@ -411,8 +411,10 @@ def input_file_name(filetype="", mainpath="", simset=DeusPurSet("all_256"), nsim
         verbose mode (default is False)
     powertype : string
         type of power spectrum file (default is gridcic)
+    irsd: int
+        index of redshift space direction (default 0)
     mask: int
-        mask index
+        mask index (default 0)
 
     Returns
     -------
@@ -423,10 +425,14 @@ def input_file_name(filetype="", mainpath="", simset=DeusPurSet("all_256"), nsim
     fullpath = str(mainpath)
 
     if filetype == "power":
+        if simset.name in DeusPurSet:
+            typestr=powertype
+        elif simset.name in MinervaSet:
+            typestr="_"+powertype+"_irsd"
         if mask==0:
-            dataprefix = "/power/power"+powertype+"_"
+            dataprefix = "/power/power"+typestr
         else:
-            dataprefix = "/mask"+str(mask)+"/power/power"+powertype+"_"
+            dataprefix = "/mask"+str(mask)+"/power/power"+typestr
     elif filetype == "info":
         dataprefix = "/info/info_"
     elif filetype == "massfunction":
@@ -437,25 +443,25 @@ def input_file_name(filetype="", mainpath="", simset=DeusPurSet("all_256"), nsim
     setname, nsim = sim_iterator(simset, nsim)
     nmodel = simset.nmodel
     if setname == "4096_furphase" or setname == "4096_otherphase":
-        fullpath += setname + dataprefix + str(int(noutput)).zfill(5) + ".txt"
+        fullpath += setname + dataprefix +"_"+ str(int(noutput)).zfill(5) + ".txt"
     elif setname == "4096_furphase_512":
         fullpath += setname + "/boxlen1312-5_n512_lcdmw7_" + str(int(nsim)).zfill(5) + \
-                    dataprefix + str(int(noutput)).zfill(5) + ".txt"
+                    dataprefix +"_" + str(int(noutput)).zfill(5) + ".txt"
     elif setname == "4096_furphase_256" or setname == "4096_otherphase_256" or setname == "4096_adaphase_256":
         fullpath += setname + "/boxlen656-25_n256_lcdmw7_" + str(int(nsim)).zfill(5) + \
-                    dataprefix + str(int(noutput)).zfill(5) + ".txt"
+                    dataprefix +"_"+ str(int(noutput)).zfill(5) + ".txt"
     elif setname == "64_adaphase_1024" or setname == "64_curiephase_1024":
         fullpath += setname + "/boxlen656-25_n1024_lcdmw7_" + str(int(nsim)).zfill(5) + \
-                    dataprefix + str(int(noutput)).zfill(5) + ".txt"
+                    dataprefix +"_"+ str(int(noutput)).zfill(5) + ".txt"
     elif setname == "512_adaphase_512_328-125":
         fullpath += setname + "/boxlen328-125_n512_model" + str(int(nmodel)).zfill(5) + "_" + str(int(nsim)).zfill(5) \
-                    + dataprefix + str(int(noutput)).zfill(5) + ".txt"
+                    + dataprefix +"_" + str(int(noutput)).zfill(5) + ".txt"
     elif setname in MinervaSet.simsets:
         if setname == "lognormal":
             nsimstr = str(int(nsim)).zfill(4)
         else:
             nsimstr = str(int(nsim)).zfill(3)
-        fullpath += setname + dataprefix+str(int(nmodel)) + "_" + nsimstr + "_" + str(int(noutput)).zfill(3) + ".txt"
+        fullpath += setname + dataprefix+str(int(irsd)) + "_" + nsimstr + "_" + str(int(noutput)).zfill(3) + ".txt"
     else:
         raise ValueError("setname not found")
 
@@ -468,7 +474,7 @@ def input_file_name(filetype="", mainpath="", simset=DeusPurSet("all_256"), nsim
 
 # --------------------------- OUTPUT FILE NAME --------------------------- #
 def output_file_name(prefix="cov", powertype="", simset=DeusPurSet("all_256"),
-                     isimmin=1, isimmax=1, file_id=1, nmodel=0, mpole=0, mask=0, extension=".txt"):
+                     isimmin=1, isimmax=1, file_id=1, nmodel=0, mpole=0, irsd=0, mask=0, extension=".txt"):
     """ Output file name generator
 
     Parameters
@@ -489,6 +495,8 @@ def output_file_name(prefix="cov", powertype="", simset=DeusPurSet("all_256"),
         cosmological model number (default is 0)
     mpole: int
         multipole index (default is 0)
+    irsd: int
+        index of redshift space direction (default 0)
     mask: int
         mask index (default is 0)
     extension: string
@@ -504,7 +512,7 @@ def output_file_name(prefix="cov", powertype="", simset=DeusPurSet("all_256"),
 
     if simset.name in MinervaSet.simsets:
         mpolename = ["real_space", "monopole", "quadrupole", "hexadecapole"]
-        fname = prefix+powertype+str(int(nmodel))+"_"+str("%05d"%ioutput)+"_"
+        fname = prefix+"_"+powertype+"_irsd"+str(int(nmodel))+"_"+str("%05d"%ioutput)+"_"
         if mask > 0:
             fname = fname+"mask"+str(mask)+"_"
         if nsim == simset.nsimmax:
