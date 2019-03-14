@@ -474,7 +474,7 @@ def input_file_name(filetype="", mainpath="", simset=DeusPurSet("all_256"), nsim
 
 # --------------------------- OUTPUT FILE NAME --------------------------- #
 def output_file_name(prefix="cov", powertype="", simset=DeusPurSet("all_256"),
-                     isimmin=1, isimmax=1, file_id=1, nmodel=0, mpole=0, irsd=0, mask=0, extension=".txt"):
+                     isimmin=1, isimmax=1, file_id=1, nmodel=0, mpole=0, irsd=0, mask=0, mpole2=-1, extension=".txt"):
     """ Output file name generator
 
     Parameters
@@ -499,6 +499,8 @@ def output_file_name(prefix="cov", powertype="", simset=DeusPurSet("all_256"),
         index of redshift space direction (default 0)
     mask: int
         mask index (default is 0)
+    mpole2: int
+        second multipole index for cross covariance (optional)
     extension: string
         extension of the file (default ".txt")
 
@@ -512,13 +514,19 @@ def output_file_name(prefix="cov", powertype="", simset=DeusPurSet("all_256"),
 
     if simset.name in MinervaSet.simsets:
         mpolename = ["real_space", "monopole", "quadrupole", "hexadecapole"]
-        fname = prefix+"_"+powertype+"_irsd"+str(int(nmodel))+"_"+str("%05d"%ioutput)+"_"
+        fname = prefix+"_"+powertype+"_irsd"+str(int(irsd))+"_"+str("%05d"%ioutput)+"_"
         if mask > 0:
             fname = fname+"mask"+str(mask)+"_"
         if nsim == simset.nsimmax:
-            fname = fname+simset.name+"_"+mpolename[mpole]+".txt"
+            fname = fname+simset.name
         else:
-            fname = fname+simset.name+"_"+str(isimmin)+"_"+str(isimmax)+"_"+mpolename[mpole]+".txt"
+            fname = fname+simset.name+"_"+str(isimmin)+"_"+str(isimmax)
+        if mpole1<0 and mpole2<0:
+            fname = fname + ".txt"
+        elif mpole2<0:
+            fname = fname+"_"+mpolename[mpole]+".txt"
+        else:
+            fname = fname+"_"+mpolename[mpole]+"_"+mpolename[mpole2]+".txt"
     else:
         nmodel = simset.nmodel
         if isinstance(file_id, (int, long)):
