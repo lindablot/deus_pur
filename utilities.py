@@ -73,6 +73,7 @@ class Simset(object):
         return self.l_box**3 / (2.*math.pi**2) * (power_k*power_k*delta_k + delta_k*delta_k*delta_k/12.)
 
 
+
 class DeusPurSet(Simset):
     """ Derived class from the Simset class used to represent the Deus Pur simulation set
 
@@ -219,6 +220,83 @@ class DeusPurSet(Simset):
 
         return 1./self.snap_to_a(noutput)-1.
 
+
+
+class MinervaSet(Simset):
+    """ Derived class from the Simset class used to represent the Euclid covariance comparison simulation sets
+    
+    Given the set name sets all attributes of the Simset class and adds some useful attributes
+    
+    Attributes
+    ----------
+    name : string
+        simset name
+    cosmo : bool
+        multiple cosmology set
+        
+    Methods
+    -------
+    sample(binnum,type,order)
+        method to generate string of sample name
+    """
+
+    simsets=["Minerva","COLA","Pinocchio","Halogen","lognormal","Patchy","PeakPatch","Gaussian","ICE-COLA"]
+
+    def __init__(self,name):
+        """
+        Parameters
+        ---------
+        name: string
+            simulation set name
+        """
+
+        if (name in self.simsets):
+            if name=="ICE-COLA":
+                self.name="COLA"
+            else:
+                self.name = name
+        else:
+            raise Exception("Unknown simset "+name+" in MinervaSet")
+
+        self.l_box=1500.
+        self.npart=1000.
+        if name=="lognormal":
+            self.nsimmax=1000
+        else:
+            self.nsimmax=300
+        
+        self.cosmo_par={'om_b': 0.02224, 'om_m': 0.284954*0.483025, 'n_s': 0.9632, 'h': 0.695, 'w_0': -1., 'sigma_8': 0.828, 'm_nu': 0.}
+        Simset.__init__(self, self.l_box, self.npart, self.nsimmax, self.cosmo_par)
+        self.nyquist = math.pi/self.l_box*self.npart
+        self.cosmo = False
+
+    def sample(self,binnum,type,order=1):
+        """ Gives the string of the sample name
+        
+        Parameters
+        ----------
+        binnum: int
+            mass bin index
+        type: string
+            mass cut or abundance matching ("mass" or "am")
+        order: int
+            order of string for abundance matching (1 for am_mlim[binnum], 2 for mlim[binnum]_am)
+        
+        Returns
+        -------
+        string
+            sample name
+        """
+        
+        noam=["Minerva","Halogen","lognormal","Patchy","Gaussian","Gaussian_linear"]
+        
+        if (self.name in noam) or (type.lower()=="mass"):
+            return "mlim"+str(binnum)
+        else:
+            if order==1:
+                return "am_mlim"+str(binnum)
+            else:
+                return "mlim"+str(binnum)+"_am"
 # ---------------------------------------------------------------------------- #
 
 
