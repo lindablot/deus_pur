@@ -224,16 +224,16 @@ class DeusPurSet(Simset):
 
 class MinervaSet(Simset):
     """ Derived class from the Simset class used to represent the Euclid covariance comparison simulation sets
-    
+
     Given the set name sets all attributes of the Simset class and adds some useful attributes
-    
+
     Attributes
     ----------
     name : string
         simset name
     cosmo : bool
         multiple cosmology set
-        
+
     Methods
     -------
     sample(binnum,type,order)
@@ -264,7 +264,7 @@ class MinervaSet(Simset):
             self.nsimmax=1000
         else:
             self.nsimmax=300
-        
+
         self.cosmo_par={'om_b': 0.02224, 'om_m': 0.284954*0.483025, 'n_s': 0.9632, 'h': 0.695, 'w_0': -1., 'sigma_8': 0.828, 'm_nu': 0.}
         Simset.__init__(self, self.l_box, self.npart, self.nsimmax, self.cosmo_par)
         self.nyquist = math.pi/self.l_box*self.npart
@@ -272,7 +272,7 @@ class MinervaSet(Simset):
 
     def sample(self,binnum,type,order=1):
         """ Gives the string of the sample name
-        
+
         Parameters
         ----------
         binnum: int
@@ -281,15 +281,15 @@ class MinervaSet(Simset):
             mass cut or abundance matching ("mass" or "am")
         order: int
             order of string for abundance matching (1 for am_mlim[binnum], 2 for mlim[binnum]_am)
-        
+
         Returns
         -------
         string
             sample name
         """
-        
+
         noam=["Minerva","Halogen","lognormal","Patchy","Gaussian","Gaussian_linear"]
-        
+
         if (self.name in noam) or (type.lower()=="mass"):
             return "mlim"+str(binnum)
         else:
@@ -392,7 +392,7 @@ def cosmo_iterator(param,var):
 
 # -------------------------------- INPUT FILE NAME --------------------------------- #
 def input_file_name(filetype="", mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1,
-                    okprint=False, powertype="gridcic"):
+                    okprint=False, powertype="gridcic", mask=0):
     """ Input file name generator
 
     Parameters
@@ -401,8 +401,8 @@ def input_file_name(filetype="", mainpath="", simset=DeusPurSet("all_256"), nsim
         type of file (options are power, info, massfunction)
     mainpath : string
         path to base folder
-    simset : Simset instance (default is DeusPurSet("all_256"))
-        simulation set
+    simset : Simset instance
+        simulation set (default is DeusPurSet("all_256"))
     nsim : int
         simulation number (default is 1)
     noutput : int
@@ -411,6 +411,8 @@ def input_file_name(filetype="", mainpath="", simset=DeusPurSet("all_256"), nsim
         verbose mode (default is False)
     powertype : string
         type of power spectrum file (default is gridcic)
+    mask: int
+        mask index
 
     Returns
     -------
@@ -421,7 +423,10 @@ def input_file_name(filetype="", mainpath="", simset=DeusPurSet("all_256"), nsim
     fullpath = str(mainpath)
 
     if filetype == "power":
-        dataprefix = "/power/power"+powertype+"_"
+        if mask==0:
+            dataprefix = "/power/power"+powertype+"_"
+        else:
+            dataprefix = "/mask"+str(mask)+"/power/power"+powertype+"_"
     elif filetype == "info":
         dataprefix = "/info/info_"
     elif filetype == "massfunction":
@@ -445,6 +450,12 @@ def input_file_name(filetype="", mainpath="", simset=DeusPurSet("all_256"), nsim
     elif setname == "512_adaphase_512_328-125":
         fullpath += setname + "/boxlen328-125_n512_model" + str(int(nmodel)).zfill(5) + "_" + str(int(nsim)).zfill(5) \
                     + dataprefix + str(int(noutput)).zfill(5) + ".txt"
+    elif setname in MinervaSet.simsets:
+        if setname == "lognormal":
+            nsimstr = str(int(nsim)).zfill(4)
+        else:
+            nsimstr = str(int(nsim)).zfill(3)
+        fullpath += setname + dataprefix+str(int(nmodel)) + "_" + nsimstr + "_" + str(int(noutput)).zfill(3) + ".txt"
     else:
         raise ValueError("setname not found")
 
@@ -457,7 +468,7 @@ def input_file_name(filetype="", mainpath="", simset=DeusPurSet("all_256"), nsim
 
 # --------------------------- OUTPUT FILE NAME --------------------------- #
 def output_file_name(prefix="cov", powertype="", simset=DeusPurSet("all_256"),
-                     isimmin=1, isimmax=1, file_id=1, extension=".txt"):
+                     isimmin=1, isimmax=1, file_id=1, nmodel=0, mpole=0, mask=0, extension=".txt"):
     """ Output file name generator
 
     Parameters
@@ -474,6 +485,12 @@ def output_file_name(prefix="cov", powertype="", simset=DeusPurSet("all_256"),
         final number of simulation used (default is 1)
     file_id : int or float
         number identifying the file (could be snapshot number or source redshift, default is 1)
+    nmodel : int
+        cosmological model number (default is 0)
+    mpole: int
+        multipole index (default is 0)
+    mask: int
+        mask index (default is 0)
     extension: string
         extension of the file (default ".txt")
 
@@ -484,21 +501,32 @@ def output_file_name(prefix="cov", powertype="", simset=DeusPurSet("all_256"),
     """
 
     nsim = isimmax-isimmin
-    nmodel = simset.nmodel
-    if isinstance(file_id, (int, long)):
-        fname = prefix+"_"+powertype+"_"+str("%05d" % file_id)+"_"
-    else:
-        fname = prefix+"_"+powertype+"_"+str(file_id)+"_"
-    if nsim == simset.nsimmax:
-        if simset.cosmo:
-            fname = fname+"cosmo_model"+str(int(nmodel)).zfill(2)+extension
+
+    if simset.name in MinervaSet.simsets:
+        mpolename = ["real_space", "monopole", "quadrupole", "hexadecapole"]
+        fname = prefix+powertype+str(int(nmodel))+"_"+str("%05d"%ioutput)+"_"
+        if mask > 0:
+            fname = fname+"mask"+str(mask)+"_"
+        if nsim == simset.nsimmax:
+            fname = fname+simset.name+"_"+mpolename[mpole]+".txt"
         else:
-            fname = fname+simset.name+extension
+            fname = fname+simset.name+"_"+str(isimmin)+"_"+str(isimmax)+"_"+mpolename[mpole]+".txt"
     else:
-        if simset.cosmo:
-            fname = fname+"cosmo_model"+str(int(nmodel)).zfill(2)+"_"+str(isimmin)+"_"+str(isimmax)+extension
+        nmodel = simset.nmodel
+        if isinstance(file_id, (int, long)):
+            fname = prefix+"_"+powertype+"_"+str("%05d" % file_id)+"_"
         else:
-            fname = fname+simset.name+"_"+str(isimmin)+"_"+str(isimmax)+extension
+            fname = prefix+"_"+powertype+"_"+str(file_id)+"_"
+        if nsim == simset.nsimmax:
+            if simset.cosmo:
+                fname = fname+"cosmo_model"+str(int(nmodel)).zfill(2)+extension
+            else:
+                fname = fname+simset.name+extension
+        else:
+            if simset.cosmo:
+                fname = fname+"cosmo_model"+str(int(nmodel)).zfill(2)+"_"+str(isimmin)+"_"+str(isimmax)+extension
+            else:
+                fname = fname+simset.name+"_"+str(isimmin)+"_"+str(isimmax)+extension
 
     return fname
 # ---------------------------------------------------------------------------- #
