@@ -483,8 +483,8 @@ def output_file_name(prefix="cov", powertype="", simset=DeusPurSet("all_256"),
         prefix indicating the content of the file (default is cov)
     powertype : string
         type of power spectrum file (default is empty)
-    simset : DeusPurSet instance
-        simulation set (default is all_256)
+    simset : Simset instance
+        simulation set (default is DeusPurSet("all_256"))
     isimmin :  int
         initial number of simulation used (default is 1)
     isimmax : int
