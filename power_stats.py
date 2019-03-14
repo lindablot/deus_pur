@@ -259,8 +259,7 @@ def high_moments(powertype="power", mainpath="", simset=DeusPurSet("all_256"), i
 
 # ------------------------- SPECTRUM CORRECTED FOR MASS RES EFFECT --------------------------- #
 def mass_corrected_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1,
-                         aexp=0., growth_a=np.zeros(0), growth_dplus=np.zeros(0),
-                         corr_type="var_pres_smooth", okprint=False, store=False):
+                         aexp=0., corr_type="var_pres_smooth", okprint=False, store=False):
     """ Power spectrum corrected for mass resolution effects. See correction_power for different correction types. If file exists it is read from file.
     
     Parameters
@@ -275,10 +274,6 @@ def mass_corrected_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, nout
         snapshot number (default 1)
     aexp: float
         expansion factor (default 0)
-    growth_a: numpy array
-        expansion factor for growth function (default 0)
-    growth_dplus: numpy array
-        growth function at expansion factors growth_a (default 0)
     corr_type: string
         correction type: var_pres, var_pres_smooth, var_pres_pl, mean (default var_pres_smooth)
     okprint: bool
@@ -302,17 +297,16 @@ def mass_corrected_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, nout
         power_k, power_p = nyquist_power(mainpath, simset.name, nsim, noutput,
                                          aexp, growth_a, growth_dplus, okprint=okprint)
         correction_smooth = correction_power(mainpath, simset.name, noutput,
-                                             aexp, growth_a, growth_dplus, corr_type, okprint=okprint, store=store)
+                                             aexp, corr_type, okprint=okprint, store=store)
 
         if corr_type == "var_pres" or corr_type == "var_pres_smooth" or corr_type == "var_pres_pl":
             simset_256 = DeusPurSet("all_256")
             power_k, power_pmean, power_psigma = mean_power("nyquist", mainpath, simset_256, 1,
                                                             simset_256.nsimmax+1, noutput,
-                                                            aexp, growth_a, growth_dplus, okprint=okprint, store=store)
+                                                            aexp, okprint=okprint, store=store)
             simset_1024 = DeusPurSet("all_1024")
             power_k1024, power_pmean1024, power_psigma1024 = mean_power("nyquist", mainpath, simset_1024, 1,
-                                                                        simset_1024.nsimmax+1, noutput, aexp, growth_a,
-                                                                        growth_dplus, okprint=okprint, store=store)
+                                                                        simset_1024.nsimmax+1, noutput, aexp, okprint=okprint, store=store)
             index = (power_k1024 <= power_k[power_k.size-1])
             power_pmean_1024 = power_pmean1024[index]
             corrected_p = correction_smooth * power_p + power_pmean_1024 - correction_smooth * power_pmean
@@ -332,8 +326,7 @@ def mass_corrected_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, nout
 
 
 # ------------------------- CORRECTION TO THE LOW RES SPECTRA ------------------------------ #
-def correction_power(mainpath="", simset=DeusPurSet("all_256"), noutput=1, aexp=1., growth_a=np.zeros(0),
-                     growth_dplus=np.zeros(0), corr_type="var_pres_smooth", okprint=False, store=False):
+def correction_power(mainpath="", simset=DeusPurSet("all_256"), noutput=1, aexp=1., corr_type="var_pres_smooth", okprint=False, store=False):
     """ Correction factor for mass resolution corrected power spectra.
     The correction types are:
     - var_pres: variance preserving correction
@@ -351,10 +344,6 @@ def correction_power(mainpath="", simset=DeusPurSet("all_256"), noutput=1, aexp=
         snapshot number (default 1)
     aexp: float
         expansion factor (default 0)
-    growth_a: numpy array
-        expansion factor for growth function (default 0)
-    growth_dplus: numpy array
-        growth function at expansion factors growth_a (default 0)
     corr_type: string
         correction type: var_pres, var_pres_smooth, var_pres_pl, mean (default var_pres_smooth)
     okprint: bool
@@ -379,8 +368,9 @@ def correction_power(mainpath="", simset=DeusPurSet("all_256"), noutput=1, aexp=
             if okprint:
                 print "Mass resolution correction for mean and variance of the power spectrum with no smoothing."
             power_k, power_pmean, power_psigma = mean_power("nyquist", mainpath, simset_256, 1, simset_256.nsimmax+1,
-                                                            noutput, aexp, growth_a, growth_dplus, okprint)
+                                                            noutput, aexp, okprint=okprint)
             power_k_CAMB, power_p_CAMB = read_power_camb(mainpath)
+            growth_a, growth_dplus = read_growth(mainpath)
             aexp_end = 1.
             dplus_a = extrapolate([aexp], growth_a, growth_dplus)
             dplus_end = extrapolate([aexp_end], growth_a, growth_dplus)
@@ -390,7 +380,7 @@ def correction_power(mainpath="", simset=DeusPurSet("all_256"), noutput=1, aexp=
             
             power_k1024, power_pmean1024, power_psigma1024 = mean_power("nyquist", mainpath, simset_1024, 1,
                                                                         simset_1024.nsimmax+1, noutput,
-                                                                        aexp, growth_a, growth_dplus, okprint)
+                                                                        aexp, okprint=okprint)
             index = (power_k1024 <= power_k[power_k.size-1])
             power_psigma_1024 = power_psigma1024[index]
 
@@ -405,10 +395,10 @@ def correction_power(mainpath="", simset=DeusPurSet("all_256"), noutput=1, aexp=
                 print "Mass resolution correction for mean and variance of the power spectrum " \
                       "with polynomial smoothing (4th order)."
             power_k, power_pmean, power_psigma = mean_power("nyquist", mainpath, simset_256, 1, simset_256.nsimmax+1,
-                                                            noutput, aexp, growth_a, growth_dplus, okprint)
+                                                            noutput, aexp, okprint=okprint)
             power_k1024, power_pmean1024, power_psigma1024 = mean_power("nyquist", mainpath, simset_1024, 1,
                                                                         simset_1024.nsimmax+1, noutput,
-                                                                        aexp, growth_a, growth_dplus, okprint)
+                                                                        aexp, okprint=okprint)
             index = (power_k1024 <= power_k[power_k.size-1])
             power_psigma_1024 = power_psigma1024[index]
 
@@ -443,10 +433,10 @@ def correction_power(mainpath="", simset=DeusPurSet("all_256"), noutput=1, aexp=
             if okprint:
                 print "Mass resolution correction for mean and variance of the power spectrum with power-law smoothing"
             power_k, power_pmean, power_psigma = mean_power("nyquist", mainpath, simset_256, 1, simset_256.nsimmax+1,
-                                                            noutput, aexp, growth_a, growth_dplus, okprint)
+                                                            noutput, aexp, okprint=okprint)
             power_k1024, power_pmean1024, power_psigma1024 = mean_power("nyquist", mainpath, simset_1024, 1,
                                                                         simset_1024.nsimmax+1, noutput, aexp,
-                                                                        growth_a, growth_dplus, okprint)
+                                                                        okprint=okprint)
             index = (power_k1024 <= power_k[power_k.size-1])
             power_psigma_1024 = power_psigma1024[index]
 
@@ -473,10 +463,9 @@ def correction_power(mainpath="", simset=DeusPurSet("all_256"), noutput=1, aexp=
             if okprint:
                 print "Mass resolution correction for mean power spectrum"
             power_k, power_pmean, power_psigma = mean_power("nyquist", mainpath, simset_256, 1, simset_256.nsimmax+1,
-                                                            noutput, aexp, growth_a, growth_dplus, okprint)
-            power_k1024, power_pmean1024, power_psigma1024 = mean_power("nyquist", mainpath, simset_1024.name, 1,
-                                                                        simset_1024.nsimmax+1, noutput, aexp,
-                                                                        growth_a, growth_dplus, okprint)
+                                                            noutput, aexp, okprint=okprint)
+            power_k1024, power_pmean1024, power_psigma1024 = mean_power("nyquist", mainpath, simset_1024, 1,
+                                                                        simset_1024.nsimmax+1, noutput, aexp, okprint=okprint)
             index = (power_k1024 <= power_k[power_k.size-1])
             power_pmean_1024 = power_pmean1024[index]
             correction = power_pmean / power_pmean1024
@@ -562,7 +551,7 @@ def power_spectrum(powertype="power", mainpath="", simset=DeusPurSet("all_256"),
                                            growth_a, growth_dplus, nmodel, okprint, store)
     elif powertype == "mcorrected":
         power_k, power_p = mass_corrected_power(mainpath, internal_simset, nsim, noutput,
-                                                aexp, growth_a, growth_dplus, okprint=okprint, store=store)
+                                                aexp, okprint=okprint, store=store)
     elif powertype == "linear":
         power_k_CAMB, power_p_CAMB = read_power_camb(mainpath, model)
         power_k_nocut, dummy, dummy = read_power_powergrid(fname)
