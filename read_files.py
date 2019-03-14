@@ -157,6 +157,72 @@ def read_power_powergrid(filename="", refcol=np.zeros(0)):
 # ---------------------------------------------------------------------------- #
 
 
+
+# ------------------------------ READ POWERI4 -------------------------------- #
+def read_power_powerI4(filename="",multipole=0,bin_center=False):
+    """ Read power spectrum from PowerI4 files.
+    Multipoles are:
+    0: real space
+    1: monopole
+    2: quadrupole
+    3: hexadecapole
+    
+    Parameters
+    ----------
+    filename: string
+        name of the file (default empty)
+    multipole: int
+        multipole index (default 0)
+    bin_center: bool
+        center of k bin or average k of the bin (default False)
+    
+    Returns
+    -------
+    3 numpy arrays
+        k, pk and number of modes
+    """
+    
+    if multipole==0:
+        power_k1, power_k2, power_p, nmodes = np.genfromtxt(filename,skip_header=1,unpack=True)
+    elif multipole==1:
+        power_k1, power_k2, power_p, dummy, dummy, nmodes = np.genfromtxt(filename,skip_header=1,unpack=True)
+    elif multipole==2:
+        power_k1, power_k2, dummy, power_p, dummy, nmodes = np.genfromtxt(fname,skip_header=1,unpack=True)
+    elif multipole==3:
+        power_k1, power_k2, dummy, dummy, power_p, nmodes = np.genfromtxt(fname,skip_header=1,unpack=True)
+    else:
+        raise ValueError("Multipole not implemented")
+    if bin_center:
+        return power_k2, power_p, nmodes
+    else:
+        return power_k1, power_p, nmodes
+# ---------------------------------------------------------------------------- #
+
+
+
+# ---------------------------- READ OBJECT NUMBER ---------------------------- #
+def read_nobjects(filename=""):
+    """ Read object number from PowerI4 file
+    
+    Parameters
+    ----------
+    filename: string
+        name of the file (default empty)
+        
+    Returns
+    -------
+    int
+        number of objects
+    """
+    
+    with open(fname, 'r') as f:
+        first_line = f.readline().strip()
+        nobjects=int(first_line.split()[0])
+    return nobjects
+# ---------------------------------------------------------------------------- #
+
+
+
 # -------------------------------- READ INFO --------------------------------- #
 def read_aexp_info(filename=""):
     """ Extract exact expansion factor value from the simulation info file
