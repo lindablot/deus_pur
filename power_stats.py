@@ -480,9 +480,10 @@ def correction_power(mainpath="", simset=DeusPurSet("all_256"), noutput=1, aexp=
 # ---------------------------------------------------------------------------- #
 
 
+
 # ----------------------- WRAPPER FOR ALL POWER TYPES ------------------------- #
 def power_spectrum(powertype="power", mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1,
-                   aexp=0., okprint=False, store=False, rebin=0, k_interp = np.zeros(0)):
+                   aexp=0., okprint=False, store=False, rebin=0, irsd=0, multipole=0, k_interp = np.zeros(0)):
     """ Wrapper for different power spectrum types. If file exists it will be read from file.
     Different power types are:
     - power: raw power spectrum from file
@@ -492,11 +493,12 @@ def power_spectrum(powertype="power", mainpath="", simset=DeusPurSet("all_256"),
     - mcorrected: power spectrum corrected for the mass resolution effect
     - linear: CAMB linear power spectrum rescaled to given aexp
     - linear_mock: CAMB linear power spectrum rescaled to given aexp + Gaussian error realisation
+    - [sample_name]: name of the sample for MinervaSet simulations
 
     Parameters
     ---------
     powertype: string
-        type of power spectrum (power, nyquist, renormalized, corrected, mcorrected, linear, linear_mock)
+        type of power spectrum (power, nyquist, renormalized, corrected, mcorrected, linear, linear_mock or [sample_name])
     mainpath: string
         path to base folder
     simset: Simset instance
@@ -513,6 +515,10 @@ def power_spectrum(powertype="power", mainpath="", simset=DeusPurSet("all_256"),
         store file. If True and file exists it will be overwritten (default False)
     rebin: int
         number of bins to combine when rebinning (default 0, i.e. no rebinning)
+    irsd: int
+        direction of redshift space index (0 for real space, 1-3 for x,y or z, default 0)
+    multipole: int
+        multipole index (default 0)
     k_interp: numpy array (default empty)
         array of k values where the power spectrum is interpolated
 
@@ -576,18 +582,21 @@ def power_spectrum(powertype="power", mainpath="", simset=DeusPurSet("all_256"),
 
         plin_interp = np.interp(power_k, power_k_CAMB, plin)
         nmodes = simset.num_modes(power_k)
-        noise = np.sqrt(2./nmodes)*plin_interp
-        error = np.random.normal(0., noise, noise.size)
-        power_p = plin_interp + error
-    else:
-        raise ValueError("powertype not existent in function power_spectrum")
+
+    elif setname in MinervaSet.simsets:
+        fname = input_file_name("power", mainpath, setname, nsim, noutput, irsd, okprint, "_"+powertype+"_irsd", mask)
+        power_k, power_p, nmodes = read_power_powerI4(fname,multipole)
+        if shotnoise and multipole<2:
+            nhalos = read_nobjects(fname)
+            if okprint:
+                print "Shot noise contribution ",1./(2.*math.pi)**3/(float(nhalos)/simset.l_box**3)
+            power_p = power_p - 1./(2.*math.pi)**3/(float(nhalos)/simset.l_box**3)
 
     if k_interp.size!=0 and powertype!="linear":
         power_p = np.interp(k_interp, power_k, power_p)
         power_k = k_interp
 
     if rebin > 0:
-        nmodes = simset.num_modes(power_k)
         power_k, power_p = rebin_pk(power_k, power_p, nmodes, rebin)
 
     return power_k, power_p
