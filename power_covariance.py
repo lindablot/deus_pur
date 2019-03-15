@@ -66,7 +66,7 @@ def cov_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isim
                 if okprint:
                     true_simset, true_isim = sim_iterator(simset, isim)
                     print true_simset, true_isim
-                dummy, power_p = power_spectrum(powertype, mainpath, true_simset, true_isim, noutput, aexp, nmodel, okprint)
+                dummy, power_p = power_spectrum(powertype, mainpath, simset, isim, noutput, aexp, nmodel, okprint)
                 diff_power_p = power_p - power_pmean
                 power_pcov += np.outer(diff_power_p, diff_power_p)
             power_pcov /= float(nsim-1)
