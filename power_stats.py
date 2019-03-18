@@ -290,7 +290,7 @@ def mass_corrected_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, nout
     if simset.npart!=256 or (simset.name not in DeusPurSet.simsets):
         raise ValueError("mass resolution correction only valid for Deus Pur sets with npart=256")
 
-    fname = input_file_name("power", mainpath, simset.name, nsim, noutput, 0, okprint, "mcorrected")
+    fname = input_file_name("power", mainpath, simset, nsim, noutput, 0, okprint, "mcorrected")
     if os.path.isfile(fname) and not store:
         power_k, corrected_p = np.loadtxt(fname, unpack=True)
     else:
@@ -527,18 +527,18 @@ def power_spectrum(powertype="power", mainpath="", simset=DeusPurSet("all_256"),
         k and P(k)
     """
 
-    aexp_info = read_aexp_info(input_file_name("info", mainpath, simset, nsim, noutput))
-    if not np.isclose(aexp, aexp_info, atol=1.e-2):
-        print "Warning: aexp is different from snapshot expansion factor by ", aexp-aexp_info
     setname, nsim = sim_iterator(simset, nsim)
     internal_simset = DeusPurSet(setname)
+    aexp_info = read_aexp_info(input_file_name("info", mainpath, internal_simset, nsim, noutput))
+    if not np.isclose(aexp, aexp_info, atol=1.e-2):
+        print "Warning: aexp is different from snapshot expansion factor by ", aexp-aexp_info
     if nmodel == 0:
         model = "lcdmw7"
     else:
         model = "model"+str(int(nmodel)).zfill(5)
     growth_a, growth_dplus = read_growth(mainpath, model)
     if powertype == "power":
-        fname = input_file_name("power", mainpath, setname, nsim, noutput, nmodel)
+        fname = input_file_name("power", mainpath, internal_simset, nsim, noutput, nmodel)
         power_k, power_p, dummy = read_power_powergrid(fname)
     elif powertype == "nyquist":
         power_k, power_p = nyquist_power(mainpath, internal_simset, nsim, noutput,
@@ -563,7 +563,7 @@ def power_spectrum(powertype="power", mainpath="", simset=DeusPurSet("all_256"),
         power_k = power_k_nocut[idx]
         power_p = np.interp(power_k, power_k_CAMB, plin)
         if store:
-            linfname = input_file_name("power", mainpath, setname, nsim, noutput, nmodel, okprint, powertype)
+            linfname = input_file_name("power", mainpath, internal_simset, nsim, noutput, nmodel, okprint, powertype)
             if okprint:
                 print "Writing file: ", linfname
             f=open(linfname, "w")
@@ -577,7 +577,7 @@ def power_spectrum(powertype="power", mainpath="", simset=DeusPurSet("all_256"),
         else:
             model = "model"+str(int(nmodel)).zfill(5)
         power_k_CAMB, power_p_CAMB = read_power_camb(mainpath, model)
-        power_k, dummy, dummy = read_power_powergrid(input_file_name("power", mainpath, setname, nsim, noutput, nmodel))
+        power_k, dummy, dummy = read_power_powergrid(input_file_name("power", mainpath, internal_simset, nsim, noutput, nmodel))
         aexp_end = 1.
         dplus_a = extrapolate([aexp], growth_a, growth_dplus)
         dplus_end = extrapolate([aexp_end], growth_a, growth_dplus)

@@ -38,14 +38,14 @@ def renormalized_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutpu
         k and P(k)
     """
 
-    fname = input_file_name("power", mainpath, simset.name, nsim, noutput, nmodel, okprint, "renormalized")
+    fname = input_file_name("power", mainpath, simset, nsim, noutput, nmodel, okprint, "renormalized")
     if os.path.isfile(fname) and not store:
         power_k, power_p = np.loadtxt(fname, unpack=True)
     else:
-        power_k, power_p_ini, dummy = read_power_powergrid(input_file_name("power", mainpath, simset.name, nsim, 1, nmodel))
-        power_k, power_p_end, dummy = read_power_powergrid(input_file_name("power", mainpath, simset.name, nsim, noutput, nmodel))
-        aexp_ini = read_aexp_info(input_file_name("info", mainpath, simset.name, nsim, 1, nmodel))
-        aexp_end = read_aexp_info(input_file_name("info", mainpath, simset.name, nsim, noutput, nmodel))
+        power_k, power_p_ini, dummy = read_power_powergrid(input_file_name("power", mainpath, simset, nsim, 1, nmodel))
+        power_k, power_p_end, dummy = read_power_powergrid(input_file_name("power", mainpath, simset, nsim, noutput, nmodel))
+        aexp_ini = read_aexp_info(input_file_name("info", mainpath, simset, nsim, 1, nmodel))
+        aexp_end = read_aexp_info(input_file_name("info", mainpath, simset, nsim, noutput, nmodel))
         dplus_ini = extrapolate([aexp_ini], growth_a, growth_dplus)
         dplus_end = extrapolate([aexp_end], growth_a, growth_dplus)
         power_p = (power_p_end * dplus_ini * dplus_ini) / (power_p_ini * dplus_end * dplus_end)
@@ -94,13 +94,13 @@ def corrected_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1
         k and P(k)
     """
 
-    fname = input_file_name("power", mainpath, simset.name, nsim, noutput, nmodel, okprint, "corrected")
+    fname = input_file_name("power", mainpath, simset, nsim, noutput, nmodel, okprint, "corrected")
     if os.path.isfile(fname) and not store:
         power_k, power_p = np.loadtxt(fname, unpack=True)
     else:
-        power_k, power_p_raw, dummy = read_power_powergrid(input_file_name("power", mainpath, simset.name, nsim, noutput, nmodel))
+        power_k, power_p_raw, dummy = read_power_powergrid(input_file_name("power", mainpath, simset, nsim, noutput, nmodel))
         if aexp != 0.:
-            aexp_raw = read_aexp_info(input_file_name("info", mainpath, simset.name, nsim, noutput, nmodel))
+            aexp_raw = read_aexp_info(input_file_name("info", mainpath, simset, nsim, noutput, nmodel))
             dplus_raw = extrapolate([aexp_raw], growth_a, growth_dplus)
             dplus = extrapolate([aexp], growth_a, growth_dplus)
             power_p = (power_p_raw * dplus * dplus) / (dplus_raw * dplus_raw)
@@ -151,7 +151,7 @@ def nyquist_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1, 
         k and P(k)
     """
 
-    fname = input_file_name("power", mainpath, simset.name, nsim, noutput, nmodel, okprint, "nyquist")
+    fname = input_file_name("power", mainpath, simset, nsim, noutput, nmodel, okprint, "nyquist")
     if os.path.isfile(fname) and not store:
         power_k_new, power_p_new = np.loadtxt(fname, unpack=True)
     else:

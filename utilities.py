@@ -273,7 +273,7 @@ def sim_iterator(simset=DeusPurSet("all_256"), isim=1, random=False, replace=Fal
 
 
 # -------------------------------- INPUT FILE NAME --------------------------------- #
-def input_file_name(filetype="", mainpath="", setname="", nsim=1, noutput=1, nmodel=0,
+def input_file_name(filetype="", mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1, nmodel=0,
                     okprint=False, powertype="gridcic"):
     """ Input file name generator
     
@@ -283,8 +283,8 @@ def input_file_name(filetype="", mainpath="", setname="", nsim=1, noutput=1, nmo
         type of file (options are power, info, massfunction)
     mainpath : string
         path to base folder
-    setname : string
-        simulation set name
+    simset : Simset instance (default is DeusPurSet("all_256"))
+        simulation set
     nsim : int
         simulation number (default is 1)
     noutput : int
@@ -313,7 +313,7 @@ def input_file_name(filetype="", mainpath="", setname="", nsim=1, noutput=1, nmo
     else:
         raise ValueError("filetype not found")
 
-    setname, nsim = sim_iterator(DeusPurSet(setname), nsim)
+    setname, nsim = sim_iterator(simset, nsim)
     if setname == "4096_furphase" or setname == "4096_otherphase":
         fullpath += setname + dataprefix + str(int(noutput)).zfill(5) + ".txt"
     elif setname == "4096_furphase_512":
