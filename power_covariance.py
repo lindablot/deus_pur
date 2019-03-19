@@ -51,7 +51,7 @@ def cov_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isim
         if okprint:
             print "Reading power spectrum covariance from file: ", fname
         power_k, power_pmean, power_psigma = mean_power(powertype, mainpath, simset, isimmin, isimmax, noutput, aexp, nmodel, okprint)
-        power_pcov = np.loadtxt(fname, unpack=True)
+        power_pcov = pd.read_csv(fname, " ", header=None).values
     else:
         if okprint:
             print "Computing power spectrum covariance"
@@ -127,7 +127,7 @@ def corr_coeff(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isi
         if okprint:
             print "Reading power spectrum correlation coefficient from file: ", fname
         power_k, power_pmean, power_psigma = mean_power(powertype, mainpath, simset, isimmin, isimmax, noutput, aexp, nmodel, okprint)
-        power_corr_coeff = np.loadtxt(fname, unpack=True)
+        power_corr_coeff = pd.read_csv(fname, " ", header=None).values
     else:
         if okprint:
             print "Computing power spectrum correlation coefficient"
@@ -189,7 +189,9 @@ def signoise(powertype="nyquist", mainpath="", simset=DeusPurSet("all_256"), nou
     if os.path.isfile(fname):
         if okprint:
             print "Reading signal-to-noise from file: ", fname
-        kmax, sig_noise = np.loadtxt(fname, unpack=True)
+        file_content = pd.read_csv(fname, " ", header=None).values
+        kmax = file_content[0]
+        sig_noise = file_content[1]
     else:
         if okprint:
             print "Computing signal-to-noise"

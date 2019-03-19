@@ -40,7 +40,9 @@ def renormalized_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutpu
 
     fname = input_file_name("power", mainpath, simset, nsim, noutput, nmodel, okprint, "renormalized")
     if os.path.isfile(fname) and not store:
-        power_k, power_p = np.loadtxt(fname, unpack=True)
+        file_content = pd.read_csv(fname, " ", header=None).values
+        power_k = file_content[0]
+        power_p = file_content[1]
     else:
         power_k, power_p_ini, dummy = read_power_powergrid(input_file_name("power", mainpath, simset, nsim, 1, nmodel))
         power_k, power_p_end, dummy = read_power_powergrid(input_file_name("power", mainpath, simset, nsim, noutput, nmodel))
@@ -96,7 +98,9 @@ def corrected_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1
 
     fname = input_file_name("power", mainpath, simset, nsim, noutput, nmodel, okprint, "corrected")
     if os.path.isfile(fname) and not store:
-        power_k, power_p = np.loadtxt(fname, unpack=True)
+        file_content = pd.read_csv(fname, " ", header=None).values
+        power_k = file_content[0]
+        power_p = file_content[1]
     else:
         power_k, power_p_raw, dummy = read_power_powergrid(input_file_name("power", mainpath, simset, nsim, noutput, nmodel))
         if aexp != 0.:
@@ -153,7 +157,9 @@ def nyquist_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1, 
 
     fname = input_file_name("power", mainpath, simset, nsim, noutput, nmodel, okprint, "nyquist")
     if os.path.isfile(fname) and not store:
-        power_k_new, power_p_new = np.loadtxt(fname, unpack=True)
+        file_content = pd.read_csv(fname, " ", header=None).values
+        power_k_new = file_content[0]
+        power_p_new = file_content[1]
     else:
         power_k, power_p = corrected_power(mainpath, simset, nsim, noutput, aexp, growth_a, growth_dplus, nmodel)
         idx = (power_k < simset.nyquist)
@@ -201,7 +207,9 @@ def pkann_power(par, redshift, power_k=np.zeros(0), okprint=False, store=False):
     if os.path.isfile(pfile) and not store:
         if okprint:
             print "Reading file ", pfile
-        power_k, power_pkann = np.loadtxt(pfile, unpack=True)
+        file_content = pd.read_csv(pfile, " ", header=None).values
+        power_k = file_content[0]
+        power_pkann = file_content[1]
     else:
         if okprint:
             print "Running Pkann"
@@ -220,7 +228,9 @@ def pkann_power(par, redshift, power_k=np.zeros(0), okprint=False, store=False):
 
         command = "cd "+pkanndir+"; ./unix.sh > output.out; cd - > tmp"
         os.system(command)
-        kpkann, ppkann = np.loadtxt(outfile, skiprows=4, unpack=True)
+        file_content = pd.read_csv(outfile, " ", header=None, skiprows=4).values
+        kpkann = file_content[0]
+        ppkann = file_content[1]
 
         if power_k.size > 0:
             power_pkann = par[6]*par[6]*np.interp(power_k,kpkann,ppkann)

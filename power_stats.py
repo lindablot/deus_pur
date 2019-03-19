@@ -52,7 +52,10 @@ def mean_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isi
     if os.path.isfile(fname) and not store:
         if okprint:
             print "Reading mean spectrum from file: ", fname
-        power_k, power_pmean, power_psigma = np.loadtxt(fname, unpack=True)
+        file_content = pd.read_csv(fname, " ", header=None).values
+        power_k = file_content[0]
+        power_pmean = file_content[1]
+        power_psigma = file_content[2]
     else:
         if okprint:
             print "Computing mean and standard deviation of spectra"
@@ -142,7 +145,9 @@ def distrib_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), 
 
     fname = outpath+"/"+output_file_name("distrib_k"+str(kref), powertype, simset, isimmin, isimmax, noutput, nmodel)
     if os.path.isfile(fname) and not store:
-        bincenter, npower_bin = np.loadtxt(fname, unpack=True)
+        file_content = pd.read_csv(fname, " ", header=None).values
+        bincenter = file_content[0]
+        npower_bin = file_content[1]
     else:
         for isim in xrange(1, nsim+1):
             if okprint:
@@ -220,7 +225,10 @@ def high_moments(powertype="power", mainpath="", simset=DeusPurSet("all_256"), i
 
     fname = outpath+"/"+output_file_name("high_moments_"+bias, powertype, simset, isimmin, isimmax, noutput, nmodel)
     if os.path.isfile(fname) and not store:
-        power_k, power_skew, power_kurt = np.loadtxt(fname, unpack=True)
+        file_content = pd.read_csv(fname, " ", header=None).values
+        power_k = file_content[0]
+        power_skew = file_content[1]
+        power_kurt = file_content[2]
     else:
         power_k, power_pmean, power_psigma = mean_power(powertype, mainpath, simset, isimmin, isimmax, noutput,
                                                         aexp, nmodel, okprint, store, rebin)
@@ -296,7 +304,9 @@ def mass_corrected_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, nout
 
     fname = input_file_name("power", mainpath, simset, nsim, noutput, 0, okprint, "mcorrected")
     if os.path.isfile(fname) and not store:
-        power_k, corrected_p = np.loadtxt(fname, unpack=True)
+        file_content = pd.read_csv(fname, " ", header=None).values
+        power_k = file_content[0]
+        corrected_p = file_content[1]
     else:
         power_k, power_p = nyquist_power(mainpath, simset.name, nsim, noutput,
                                          aexp, growth_a, growth_dplus, okprint=okprint)
@@ -363,7 +373,7 @@ def correction_power(mainpath="", simset=DeusPurSet("all_256"), noutput=1, aexp=
 
     fname = "correction_"+corr_type+"_"+str("%05d"%noutput)+".txt"
     if os.path.isfile(fname) and not store:
-        correction = np.loadtxt(fname, unpack=True)
+        correction = pd.read_csv(fname, " ", header=None).values
     else:
         simset_256 = DeusPurSet("all_256")
         simset_1024 = DeusPurSet("all_1024")

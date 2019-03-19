@@ -2,6 +2,7 @@
 # read_files.py - Vincent Reverdy (vince.rev@gmail.com) and Linda Blot (linda.blot@obspm.fr) - 2013
 # ---------------------------------- IMPORT ---------------------------------- #
 import numpy as np
+import pandas as pd
 # ---------------------------------------------------------------------------- #
 
 
@@ -34,10 +35,16 @@ def read_cosmo_data(mainpath="", model="lcdmw7"):
         proper time
     """
     
-    power_k, power_p = np.loadtxt(mainpath+"/data/pk_"+model+".dat", unpack=True)
-    growth_a, dummy, growth_dplus, dummy = np.loadtxt(mainpath+"/data/mpgrafic_input_"+model+".dat", unpack=True)
-    evolution_a, evolution_hh0, dummy, dummy, evolution_tproperh0 = \
-        np.loadtxt(mainpath+"/data/ramses_input_"+model+".dat", unpack=True)
+    file_content = pd.read_csv(mainpath+"/data/pk_"+model+".dat", " ", header=None).values
+    power_k = file_content[0]
+    power_p = file_content[1]
+    file_content = pd.read_csv(mainpath+"/data/mpgrafic_input_"+model+".dat", " ", header=None).values
+    growth_a = file_content[0]
+    growth_dplus = file_content[2]
+    file_content = pd.read_csv(mainpath+"/data/ramses_input_"+model+".dat", " ", header=None).values
+    evolution_a = file_content[0]
+    evolution_hh0 = file_content[1]
+    evolution_tproperh0 = file_content[4]
     return power_k, power_p, growth_a, growth_dplus, evolution_a, evolution_hh0, evolution_tproperh0
 # ---------------------------------------------------------------------------- #
 
@@ -61,7 +68,9 @@ def read_power_camb(mainpath="", model="lcdmw7"):
         linear power spectrum
     """
     
-    power_k, power_p = np.loadtxt(mainpath+"/data/pk_"+model+".dat", unpack=True)
+    file_content = pd.read_csv(mainpath+"/data/pk_"+model+".dat", " ", header=None).values
+    power_k = file_content[0]
+    power_p = file_content[1]
     return power_k, power_p
 # ---------------------------------------------------------------------------- #
 
@@ -85,7 +94,9 @@ def read_growth(mainpath="", model="lcdmw7"):
         growth factor
     """
     
-    growth_a, dummy, growth_dplus, dummy = np.loadtxt(mainpath+"/data/mpgrafic_input_"+model+".dat", unpack=True)
+    file_content = pd.read_csv(mainpath+"/data/mpgrafic_input_"+model+".dat", " ", header=None).values
+    growth_a = file_content[0]
+    growth_dplus = file_content[2]
     return growth_a, growth_dplus
 # ---------------------------------------------------------------------------- #
 
@@ -109,7 +120,10 @@ def read_power_powergrid(filename="", refcol=np.zeros(0)):
         some strange function of the expansion factor
     """
     
-    data1, data2, data3 = np.loadtxt(filename, unpack=True)
+    file_content = pd.read_csv(filename, " ", header=None).values
+    data1 = file_content[0]
+    data2 = file_content[1]
+    data3 = file_content[2]
     if refcol.size > 0:
         column1 = np.array(refcol)
         column2 = np.zeros(refcol.size)
@@ -186,5 +200,9 @@ def read_massfunction(filename=""):
     """
     
     mf_binmin, mf_binmax, mf_count = np.loadtxt(filename, unpack=True)
+    file_content = pd.read_csv(filename, " ", header=None).values
+    mf_binmin = file_content[0]
+    mf_binmax = file_content[1]
+    mf_count = file_content[2]
     return mf_binmin, mf_binmax, mf_count
 # ---------------------------------------------------------------------------- #
