@@ -10,7 +10,7 @@ from utilities import *
 def renormalized_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1, growth_a=np.zeros(0),
                        growth_dplus=np.zeros(0), okprint=False, store=False):
     """ Power spectrum renormalised to initial power spectrum using growth function. If file exists it will be read from file
-    
+
     Parameters
     ----------
     mainpath: string
@@ -29,7 +29,7 @@ def renormalized_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutpu
         verbose (default False)
     store: bool
         store file. If True and file exists it will be overwritten (default False)
-        
+
     Returns
     -------
     2 numpy arrays
@@ -64,7 +64,7 @@ def renormalized_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutpu
 def corrected_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1, aexp=0., growth_a=np.zeros(0),
                     growth_dplus=np.zeros(0), okprint=False, store=False):
     """ Power spectrum rescaled to given aexp using growth function. If file exists it will be read from file
-    
+
     Parameters
     ----------
     mainpath: string
@@ -85,7 +85,7 @@ def corrected_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1
         verbose (default False)
     store: bool
         store file. If True and file exists it will be overwritten (default False)
-        
+
     Returns
     -------
     2 numpy arrays
@@ -121,7 +121,7 @@ def corrected_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1
 def nyquist_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1, aexp=0., growth_a=np.zeros(0),
                   growth_dplus=np.zeros(0), okprint=False, store=False):
     """ Power spectrum rescaled to given aexp using growth function and cut at half the nyquist frequency. If file exists it will be read from file
-        
+
     Parameters
     ----------
     mainpath: string
@@ -142,7 +142,7 @@ def nyquist_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1, 
         verbose (default False)
     store: bool
         store file. If True and file exists it will be overwritten (default False)
-        
+
     Returns
     -------
     2 numpy arrays
@@ -173,7 +173,7 @@ def nyquist_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1, 
 # ------------------------------- POWER SPECTRUM COMPUTED BY PkANN ------------------ #
 def pkann_power(par, redshift, power_k=np.zeros(0), okprint=False, store=False):
     """ Power spectrum computed by PkANN emulator
-    
+
     Parameters
     ----------
     par: simset.cosmo_par dictionary
@@ -186,7 +186,7 @@ def pkann_power(par, redshift, power_k=np.zeros(0), okprint=False, store=False):
         verbose (default False)
     store: bool
         store file. If True and file exists it will be overwritten (default False)
-        
+
     Returns
     -------
     2 numpy arrays
@@ -248,7 +248,7 @@ def pkann_power(par, redshift, power_k=np.zeros(0), okprint=False, store=False):
 # --------------- POWER SPECTRUM COMPUTED BY EuclidEmulator ------------------ #
 def euemu_power(par, redshift, power_k=np.zeros(0), linear=False):
     """ Power spectrum computed by Euclid emulator
-    
+
     Parameters
     ----------
     par: dictionary with keys om_b, om_m, n_s, h, w_0, sigma_8
@@ -257,13 +257,13 @@ def euemu_power(par, redshift, power_k=np.zeros(0), linear=False):
         redshift
     power_k: numpy array
         array of k values where the power spectrum will be interpolated (optional)
-    
+
     Returns
     -------
     2 numpy arrays
         k and P(k)
     """
-    
+
     import e2py as emu
     result = emu.get_pnonlin(par, redshift)
     power_kemu = result['k']
@@ -282,7 +282,7 @@ def euemu_power(par, redshift, power_k=np.zeros(0), linear=False):
 # ------------------ POWER SPECTRUM COMPUTED BY CosmicEmu -------------------- #
 def cosmicemu_power(par, redshift, power_k=np.zeros(0), component="cb"):
     """ Power spectrum computed by CosmicEmu emulator
-    
+
     Parameters
     ----------
     par: dictionary with keys om_b, om_m, n_s, h, w_0, sigma_8
@@ -291,13 +291,13 @@ def cosmicemu_power(par, redshift, power_k=np.zeros(0), component="cb"):
         redshift
     power_k: numpy array
         array of k values where the power spectrum will be interpolated (optional)
-    
+
     Returns
     -------
     2 numpy arrays
         k and P(k)
     """
-    
+
     cosmicemu_dir = "CosmicEmu/P_"+component+"/"
     infile = "xstar.dat"
     outfile = "EMU0.txt"

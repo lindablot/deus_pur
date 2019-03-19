@@ -9,15 +9,15 @@ from utilities import *
 
 # -------------------------------- READ DATA --------------------------------- #
 def read_cosmo_data(mainpath="", simset=DeusPurSet("all_256")):
-    """ Read linear power spectrum and lookup tables for cosmological quantities 
-    
+    """ Read linear power spectrum and lookup tables for cosmological quantities
+
     Parameters
     ---------
     mainpath : str
         path to base folder (default is empty)
     simset: Simset instance
         simulation set (default DeusPurSet("all_256"))
-        
+
     Returns
     -------
     numpy array
@@ -35,7 +35,7 @@ def read_cosmo_data(mainpath="", simset=DeusPurSet("all_256")):
     numpy array
         proper time
     """
-    
+
     model = simset.model
     file_content = pd.read_csv(mainpath+"/data/pk_"+model+".dat", header=None, delim_whitespace=True).values
     power_k = file_content.T[0]
@@ -54,14 +54,14 @@ def read_cosmo_data(mainpath="", simset=DeusPurSet("all_256")):
 # -------------------------------- READ CAMB POWER SPECTRUM ------------------ #
 def read_power_camb(mainpath="", simset=DeusPurSet("all_256")):
     """ Read linear power spectrum
-    
+
     Parameters
     ---------
     mainpath : str
         Path to base folder (default is empty)
     simset: Simset instance
         simulation set (default DeusPurSet("all_256"))
-        
+
     Returns
     -------
     numpy array
@@ -69,7 +69,7 @@ def read_power_camb(mainpath="", simset=DeusPurSet("all_256")):
     numpy array
         linear power spectrum
     """
-    
+
     model = simset.model
     file_content = pd.read_csv(mainpath+"/data/pk_"+model+".dat", header=None, delim_whitespace=True).values
     power_k = file_content.T[0]
@@ -81,14 +81,14 @@ def read_power_camb(mainpath="", simset=DeusPurSet("all_256")):
 # -------------------------------- READ GROWTH FACTOR ------------------------ #
 def read_growth(mainpath="", simset=DeusPurSet("all_256")):
     """ Read growth factor
-    
+
     Parameters
     ---------
     mainpath : str
         Path to base folder (default is empty)
     simset: Simset instance
         simulation set (default DeusPurSet("all_256"))
-        
+
     Returns
     -------
     numpy array
@@ -96,7 +96,7 @@ def read_growth(mainpath="", simset=DeusPurSet("all_256")):
     numpy array
         growth factor
     """
-    
+
     model = simset.model
     file_content = pd.read_csv(mainpath+"/data/mpgrafic_input_"+model+".dat", header=None, delim_whitespace=True).values
     growth_a = file_content.T[0]
@@ -108,12 +108,12 @@ def read_growth(mainpath="", simset=DeusPurSet("all_256")):
 # -------------------------------- READ POWER -------------------------------- #
 def read_power_powergrid(filename="", refcol=np.zeros(0)):
     """ Read powergrid output file
-    
+
     Parameters
     ---------
     filename : str
         Name of powergrid output file (default is empty)
-        
+
     Returns
     -------
     numpy array
@@ -123,7 +123,7 @@ def read_power_powergrid(filename="", refcol=np.zeros(0)):
     numpy array
         some strange function of the expansion factor
     """
-    
+
     file_content = pd.read_csv(filename, header=None, delim_whitespace=True).values
     data1 = file_content.T[0]
     data2 = file_content.T[1]
@@ -166,7 +166,7 @@ def read_power_powerI4(filename="",multipole=0,bin_center=False):
     1: monopole
     2: quadrupole
     3: hexadecapole
-    
+
     Parameters
     ----------
     filename: string
@@ -175,13 +175,13 @@ def read_power_powerI4(filename="",multipole=0,bin_center=False):
         multipole index (default 0)
     bin_center: bool
         center of k bin or average k of the bin (default False)
-    
+
     Returns
     -------
     3 numpy arrays
         k, pk and number of modes
     """
-    
+
     if multipole==0:
         power_k1, power_k2, power_p, nmodes = np.genfromtxt(filename,skip_header=1,unpack=True)
     elif multipole==1:
@@ -203,18 +203,18 @@ def read_power_powerI4(filename="",multipole=0,bin_center=False):
 # ---------------------------- READ OBJECT NUMBER ---------------------------- #
 def read_nobjects(filename=""):
     """ Read object number from PowerI4 file
-    
+
     Parameters
     ----------
     filename: string
         name of the file (default empty)
-        
+
     Returns
     -------
     int
         number of objects
     """
-    
+
     with open(fname, 'r') as f:
         first_line = f.readline().strip()
         nobjects=int(first_line.split()[0])
@@ -226,18 +226,18 @@ def read_nobjects(filename=""):
 # -------------------------------- READ INFO --------------------------------- #
 def read_aexp_info(filename=""):
     """ Extract exact expansion factor value from the simulation info file
-    
+
     Parameters
     ---------
     filename : str
         Name of simulation info file (default is empty)
-        
+
     Returns
     -------
     double
         expansion factor
     """
-    
+
     aexp = 0
     lines = [line.strip() for line in open(filename)]
     for i in xrange(0, len(lines)):
@@ -253,12 +253,12 @@ def read_aexp_info(filename=""):
 # ---------------------------- READ MASSFUNCTION ----------------------------- #
 def read_massfunction(filename=""):
     """ Read halo mass function file
-    
+
     Parameters
     ---------
     filename
         Name of mass function file (default is empty)
-    
+
     Returns
     -------
     numpy array
@@ -268,7 +268,7 @@ def read_massfunction(filename=""):
     numpy array
         Halo counts in mass bins
     """
-    
+
     mf_binmin, mf_binmax, mf_count = np.loadtxt(filename, unpack=True)
     file_content = pd.read_csv(filename, " ", header=None).values
     mf_binmin = file_content[0]
