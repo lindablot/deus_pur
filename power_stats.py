@@ -9,7 +9,7 @@ from power_types import *
 # -------------------------------- MEAN POWER (ALTERNATIVE) -------------------------------- #
 def mean_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isimmin=1, isimmax=2, noutput=1, aexp=0.,
                nmodel=0, okprint=False, store=False,
-               rebin=0, outpath=""):
+               rebin=0, outpath="."):
     """ Mean and standard deviation of power spectra. See power_spectrum for the description of the power spectrum types. If file exists it will be read from file.
 
     
@@ -38,7 +38,7 @@ def mean_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isi
     rebin: int
         number of bins to combine when rebinning (default 0, i.e. no rebinning)
     outpath: string
-        path where output file is stored (default empty)
+        path where output file is stored (default .)
     
     Returns
     -------
@@ -96,7 +96,7 @@ def mean_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isi
 
 # --------------------- PDF OF POWER SPECTRA --------------------------- #
 def distrib_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isimmin=1, isimmax=2, noutput=1, nbin=50, kref=0.2,
-                  aexp=0., nmodel=0, okprint=False, store=False, rebin=0, outpath=""):
+                  aexp=0., nmodel=0, okprint=False, store=False, rebin=0, outpath="."):
     """ Distribution of power spectra at given k. See power_spectrum for the description of the power spectrum types. If file exists it will be read from file.
 
     
@@ -129,7 +129,7 @@ def distrib_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), 
     rebin: int
         number of bins to combine when rebinning (default 0, i.e. no rebinning)
     outpath: string
-        path where output file is stored (default empty)
+        path where output file is stored (default .)
     
     Returns
     -------
@@ -172,7 +172,7 @@ def distrib_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), 
 
 # ------------------ HIGH MOMENTS OF SPECTRA PDF ---------------------- #
 def high_moments(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isimmin=1, isimmax=2, noutput=1,
-                 aexp=0., nmodel=0, unbiased=True, okprint=False, store=False, rebin=0, outpath=""):
+                 aexp=0., nmodel=0, unbiased=True, okprint=False, store=False, rebin=0, outpath="."):
     """ Skewness and Kurtosis of the distribution of power spectra. See power_spectrum for the description of the power spectrum types. If file exists it will be read from file.
 
     
@@ -203,7 +203,7 @@ def high_moments(powertype="power", mainpath="", simset=DeusPurSet("all_256"), i
     rebin: int
         number of bins to combine when rebinning (default 0, i.e. no rebinning)
     outpath: string
-        path where output file is stored (default empty)
+        path where output file is stored (default .)
     
     Returns
     -------

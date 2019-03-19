@@ -7,7 +7,7 @@ from power_stats import *
 
 
 # -------------------------------- COVARIANCE POWER -------------------------------- #
-def cov_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isimmin=1, isimmax=2, noutput=1, aexp=0., nmodel=0, okprint=False, store=False, outpath=""):
+def cov_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isimmin=1, isimmax=2, noutput=1, aexp=0., nmodel=0, okprint=False, store=False, outpath="."):
     """ Covariance of power spectra. See power_spectrum for the description of the power spectrum types. If file exists it will be read from file.
 
     
@@ -34,7 +34,7 @@ def cov_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isim
     store: bool
         store file. If True and file exists it will be overwritten (default False)
     outpath: string
-        path where output file is stored (default empty)
+        path where output file is stored (default .)
     
     Returns
     -------
@@ -86,7 +86,7 @@ def cov_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isim
 
 # -------------------- CORRELATION COEFFICIENT POWER ------------------------- #
 def corr_coeff(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isimmin=1, isimmax=2, noutput=1,
-               aexp=0., nmodel=0, okprint=False, store=False, outpath=""):
+               aexp=0., nmodel=0, okprint=False, store=False, outpath="."):
     """ Correlation coefficient of power spectra. See power_spectrum for the description of the power spectrum types. If file exists it will be read from file.
 
     
@@ -113,7 +113,7 @@ def corr_coeff(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isi
     store: bool
         store file. If True and file exists it will be overwritten (default False)
     outpath: string
-        path where output file is stored (default empty)
+        path where output file is stored (default .)
     
     Returns
     -------
@@ -148,7 +148,7 @@ def corr_coeff(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isi
 
 
 # ----------------------------- SIGNAL TO NOISE ------------------------------ #
-def signoise(powertype="nyquist", mainpath="", simset=DeusPurSet("all_256"), noutput=1, nsimmax=1, aexp=0., nmodel=0, unbiased=False, okprint=False, store=False, outpath=""):
+def signoise(powertype="nyquist", mainpath="", simset=DeusPurSet("all_256"), noutput=1, nsimmax=1, aexp=0., nmodel=0, unbiased=False, okprint=False, store=False, outpath="."):
     """ Signal to noise of power spectrum. See power_spectrum for the description of the power spectrum types. If file exists it will be read from file.
 
     
@@ -175,7 +175,7 @@ def signoise(powertype="nyquist", mainpath="", simset=DeusPurSet("all_256"), nou
     store: bool
         store file. If True and file exists it will be overwritten (default False)
     outpath: string
-        path where output file is stored (default empty)
+        path where output file is stored (default .)
     
     Returns
     -------
