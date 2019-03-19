@@ -96,7 +96,7 @@ def mean_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isi
 
 # --------------------- PDF OF POWER SPECTRA --------------------------- #
 def distrib_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isimmin=1, isimmax=2, noutput=1, nbin=50, kref=0.2,
-                  aexp=0., nmodel=0, okprint=False, store=False, outpath=""):
+                  aexp=0., nmodel=0, okprint=False, store=False, rebin=0, outpath=""):
     """ Distribution of power spectra at given k. See power_spectrum for the description of the power spectrum types. If file exists it will be read from file.
 
     
@@ -126,6 +126,8 @@ def distrib_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), 
         verbose (default False)
     store: bool
         store file. If True and file exists it will be overwritten (default False)
+    rebin: int
+        number of bins to combine when rebinning (default 0, i.e. no rebinning)
     outpath: string
         path where output file is stored (default empty)
     
@@ -146,7 +148,7 @@ def distrib_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), 
             if okprint:
                 true_simset, true_isim = sim_iterator(simset, isim)
                 print true_simset, true_isim
-            power_k, power_p = power_spectrum(powertype, mainpath, simset, isim, noutput, aexp, nmodel)
+            power_k, power_p = power_spectrum(powertype, mainpath, simset, isim, noutput, aexp, nmodel, rebin=rebin)
             if kref > power_k[power_k.size-1] or kref < power_k[0]:
                 raise ValueError("reference k value outside simulation k range in distrib_power")
 
@@ -170,7 +172,7 @@ def distrib_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), 
 
 # ------------------ HIGH MOMENTS OF SPECTRA PDF ---------------------- #
 def high_moments(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isimmin=1, isimmax=2, noutput=1,
-                 aexp=0., nmodel=0, unbiased=True, okprint=False, store=False, outpath=""):
+                 aexp=0., nmodel=0, unbiased=True, okprint=False, store=False, rebin=0, outpath=""):
     """ Skewness and Kurtosis of the distribution of power spectra. See power_spectrum for the description of the power spectrum types. If file exists it will be read from file.
 
     
@@ -198,6 +200,8 @@ def high_moments(powertype="power", mainpath="", simset=DeusPurSet("all_256"), i
         verbose (default False)
     store: bool
         store file. If True and file exists it will be overwritten (default False)
+    rebin: int
+        number of bins to combine when rebinning (default 0, i.e. no rebinning)
     outpath: string
         path where output file is stored (default empty)
     
@@ -219,7 +223,7 @@ def high_moments(powertype="power", mainpath="", simset=DeusPurSet("all_256"), i
         power_k, power_skew, power_kurt = np.loadtxt(fname, unpack=True)
     else:
         power_k, power_pmean, power_psigma = mean_power(powertype, mainpath, simset, isimmin, isimmax, noutput,
-                                                        aexp, nmodel, okprint, store)
+                                                        aexp, nmodel, okprint, store, rebin)
         power_skew = np.zeros(power_k.size)
         power_kurt = np.zeros(power_k.size)
     
@@ -227,7 +231,7 @@ def high_moments(powertype="power", mainpath="", simset=DeusPurSet("all_256"), i
             if okprint:
                 true_simset, true_isim = sim_iterator(simset, isim)
                 print true_simset, true_isim
-            power_k, power_p = power_spectrum(powertype, mainpath, simset, isim, noutput, aexp, nmodel)
+            power_k, power_p = power_spectrum(powertype, mainpath, simset, isim, noutput, aexp, nmodel, rebin=rebin)
             power_skew += (power_p-power_pmean)*(power_p-power_pmean)*(power_p-power_pmean)
             power_kurt += (power_p-power_pmean)*(power_p-power_pmean)*(power_p-power_pmean)*(power_p-power_pmean)
 
