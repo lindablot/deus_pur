@@ -35,16 +35,16 @@ def read_cosmo_data(mainpath="", model="lcdmw7"):
         proper time
     """
     
-    file_content = pd.read_csv(mainpath+"/data/pk_"+model+".dat", " ", header=None).values
-    power_k = file_content[0]
-    power_p = file_content[1]
-    file_content = pd.read_csv(mainpath+"/data/mpgrafic_input_"+model+".dat", " ", header=None).values
-    growth_a = file_content[0]
-    growth_dplus = file_content[2]
-    file_content = pd.read_csv(mainpath+"/data/ramses_input_"+model+".dat", " ", header=None).values
-    evolution_a = file_content[0]
-    evolution_hh0 = file_content[1]
-    evolution_tproperh0 = file_content[4]
+    file_content = pd.read_csv(mainpath+"/data/pk_"+model+".dat", header=None, delim_whitespace=True).values
+    power_k = file_content.T[0]
+    power_p = file_content.T[1]
+    file_content = pd.read_csv(mainpath+"/data/mpgrafic_input_"+model+".dat", header=None, delim_whitespace=True).values
+    growth_a = file_content.T[0]
+    growth_dplus = file_content.T[2]
+    file_content = pd.read_csv(mainpath+"/data/ramses_input_"+model+".dat", header=None, delim_whitespace=True).values
+    evolution_a = file_content.T[0]
+    evolution_hh0 = file_content.T[1]
+    evolution_tproperh0 = file_content.T[4]
     return power_k, power_p, growth_a, growth_dplus, evolution_a, evolution_hh0, evolution_tproperh0
 # ---------------------------------------------------------------------------- #
 
@@ -68,9 +68,9 @@ def read_power_camb(mainpath="", model="lcdmw7"):
         linear power spectrum
     """
     
-    file_content = pd.read_csv(mainpath+"/data/pk_"+model+".dat", " ", header=None).values
-    power_k = file_content[0]
-    power_p = file_content[1]
+    file_content = pd.read_csv(mainpath+"/data/pk_"+model+".dat", header=None, delim_whitespace=True).values
+    power_k = file_content.T[0]
+    power_p = file_content.T[1]
     return power_k, power_p
 # ---------------------------------------------------------------------------- #
 
@@ -94,9 +94,9 @@ def read_growth(mainpath="", model="lcdmw7"):
         growth factor
     """
     
-    file_content = pd.read_csv(mainpath+"/data/mpgrafic_input_"+model+".dat", " ", header=None).values
-    growth_a = file_content[0]
-    growth_dplus = file_content[2]
+    file_content = pd.read_csv(mainpath+"/data/mpgrafic_input_"+model+".dat", header=None, delim_whitespace=True).values
+    growth_a = file_content.T[0]
+    growth_dplus = file_content.T[2]
     return growth_a, growth_dplus
 # ---------------------------------------------------------------------------- #
 
@@ -120,10 +120,10 @@ def read_power_powergrid(filename="", refcol=np.zeros(0)):
         some strange function of the expansion factor
     """
     
-    file_content = pd.read_csv(filename, " ", header=None).values
-    data1 = file_content[0]
-    data2 = file_content[1]
-    data3 = file_content[2]
+    file_content = pd.read_csv(filename, header=None, delim_whitespace=True).values
+    data1 = file_content.T[0]
+    data2 = file_content.T[1]
+    data3 = file_content.T[2]
     if refcol.size > 0:
         column1 = np.array(refcol)
         column2 = np.zeros(refcol.size)
