@@ -124,11 +124,13 @@ class DeusPurSet(Simset):
                 self.nsimmax = 12288
             else:
                 self.nsimmax = 4096
+            self.alist=[0.01,0.33,0.4,0.5,0.59,0.66,0.77,0.91,1.]
             self.cosmo = False
         elif self.name == "4096_furphase_512":
             self.npart = 512.
             self.l_box = 1312.5
             self.nsimmax = 512
+            self.alist = None
             self.cosmo = False
         elif self.name == "64_adaphase_1024" or self.name == "64_curiephase_1024" or self.name == "all_1024":
             self.npart = 1024.
@@ -139,17 +141,20 @@ class DeusPurSet(Simset):
                 self.nsimmax = 32
             else:
                 self.nsimmax = 96
+            self.alist=[0.05,0.33,0.4,0.5,0.59,0.66,0.77,0.91,1.]
             self.cosmo = False
         elif self.name == "512_adaphase_512_328-125":
             self.npart = 512.
             self.l_box = 328.125
             self.nsimmax = 512
+            self.alist=[0.0097153,0.3333,0.3650,0.4000,0.4167,0.4444,0.4762, 0.5000,0.5263, 0.5556, 0.5882,0.6250, 0.6667,0.7042, 0.7692,0.800,0.8696, 0.9091,0.9524,1.0000]
             self.nmodel = nmodel
             self.cosmo = True
         elif self.name == "4096_otherphase" or self.name == "4096_otherphase":
             self.npart = 4096.
             self.l_box = 10500.
             self.nsimmax = 1
+            self.alist = None
             self.cosmo = False
         
         if not self.cosmo or nmodel==0:
@@ -180,14 +185,9 @@ class DeusPurSet(Simset):
             expansion factor corresponding to the snapshot number
         """
         
-        if self.name == "4096_furphase_256" or self.name == "4096_adaphase_256" or self.name == "4096_otherphase_256" \
-         or self.name == "all_256":
-            alist=[0.01,0.33,0.4,0.5,0.59,0.66,0.77,0.91,1.]
-        elif self.name == "64_adaphase_1024" or self.name == "64_curiephase_1024" or self.name == "all_1024":
-            alist=[0.05,0.33,0.4,0.5,0.59,0.66,0.77,0.91,1.]
-        elif self.name == "512_adaphase_512_328-125":
-            alist=[0.0097153,0.3333,0.3650,0.4000,0.4167,0.4444,0.4762, 0.5000,0.5263, 0.5556, 0.5882,0.6250, 0.6667,0.7042, 0.7692,0.800,0.8696, 0.9091,0.9524,1.0000]
-        return alist[noutput-1]
+        if self.alist==None:
+            raise NotImplementedError("alist not implemented")
+        return self.alist[noutput-1]
 
     def snap_to_z(self, noutput):
         """Gives the redshift corresponding to the snapshot number
