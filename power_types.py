@@ -40,7 +40,7 @@ def renormalized_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutpu
 
     fname = input_file_name("power", mainpath, simset, nsim, noutput, nmodel, okprint, "renormalized")
     if os.path.isfile(fname) and not store:
-        file_content = pd.read_csv(fname, " ", header=None).values
+        file_content = pd.read_csv(fname, delim_whitespace=True, header=None).values.T
         power_k = file_content[0]
         power_p = file_content[1]
     else:
@@ -98,7 +98,7 @@ def corrected_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1
 
     fname = input_file_name("power", mainpath, simset, nsim, noutput, nmodel, okprint, "corrected")
     if os.path.isfile(fname) and not store:
-        file_content = pd.read_csv(fname, " ", header=None).values
+        file_content = pd.read_csv(fname, delim_whitespace=True, header=None).values.T
         power_k = file_content[0]
         power_p = file_content[1]
     else:
@@ -157,7 +157,7 @@ def nyquist_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1, 
 
     fname = input_file_name("power", mainpath, simset, nsim, noutput, nmodel, okprint, "nyquist")
     if os.path.isfile(fname) and not store:
-        file_content = pd.read_csv(fname, " ", header=None).values
+        file_content = pd.read_csv(fname, delim_whitespace=True, header=None).values.T
         power_k_new = file_content[0]
         power_p_new = file_content[1]
     else:
@@ -182,8 +182,8 @@ def pkann_power(par, redshift, power_k=np.zeros(0), okprint=False, store=False):
     
     Parameters
     ----------
-    par: list
-        cosmological parameters omega_m h^2, omega_b h^2, n_s, w, sigma_8, m_nu, bias
+    par: simset.cosmo_par dictionary
+        cosmological parameters
     redshift: float
         redshift
     power_k: numpy array
@@ -203,24 +203,27 @@ def pkann_power(par, redshift, power_k=np.zeros(0), okprint=False, store=False):
     command = "mkdir -p " + folder
     os.system(command)
 
-    pfile = folder+"pkann_"+str(ipar)+"_"+str(dpar)+"_"+str(fact)+"_"+powertype+"_"+str(ioutput)+".txt"
+    pfile = folder+"pkann_"
+    for param in par.keys():
+        pfile += param+str(par[param])+"_"
+    pfile += str(redshift)+".txt"
     if os.path.isfile(pfile) and not store:
         if okprint:
             print "Reading file ", pfile
-        file_content = pd.read_csv(pfile, " ", header=None).values
+        file_content = pd.read_csv(pfile, delim_whitespace=True, header=None).values.T
         power_k = file_content[0]
         power_pkann = file_content[1]
     else:
         if okprint:
             print "Running Pkann"
-        pkanndir = "/data/lblot/deus_pur/PkANN/"
+        pkanndir = "PkANN/"
         infile1 = pkanndir+"Testing_set/parameters.txt"
         infile2 = pkanndir+"Testing_set/z_list.txt"
         outfile = pkanndir+"Testing_set/PkANN_predictions/model_1/ps_nl_1.dat"
         fltformat = "%1.8f"
         f1 = open(infile1, "w")
-        f1.write("   " + str(fltformat % par[0]) + "   "+str(fltformat % par[1]) + "   "+str(fltformat % par[2])+"   " +
-                 str(fltformat % par[3])+"   "+str(fltformat % par[4])+"   "+str(fltformat % par[5])+"\n")
+        f1.write("   " + str(fltformat % par['om_m']) + "   "+str(fltformat % par['om_b']) + "   "+str(fltformat % par['n_s'])+"   " +
+                 str(fltformat % par['w_0'])+"   "+str(fltformat % par['sigma_8'])+"   "+str(fltformat % par['m_nu'])+"\n")
         f1.close()
         f2 = open(infile2, "w")
         f2.write(str(fltformat % redshift)+"\n")
@@ -228,16 +231,15 @@ def pkann_power(par, redshift, power_k=np.zeros(0), okprint=False, store=False):
 
         command = "cd "+pkanndir+"; ./unix.sh > output.out; cd - > tmp"
         os.system(command)
-        file_content = pd.read_csv(outfile, " ", header=None, skiprows=4).values
+        file_content = pd.read_csv(outfile, delim_whitespace=True, header=None, skiprows=4).values.T
         kpkann = file_content[0]
         ppkann = file_content[1]
 
         if power_k.size > 0:
-            power_pkann = par[6]*par[6]*np.interp(power_k,kpkann,ppkann)
+            power_pkann = par['bias']*par['bias']*np.interp(power_k,kpkann,ppkann)
         else:
             power_k = kpkann
-            power_pkann = par[6]*par[6]*ppkann
-
+            power_pkann = par['bias']*par['bias']*ppkann
         if store:
             fltformat2 = "%-.12e"
             fout = open(pfile, "w")
