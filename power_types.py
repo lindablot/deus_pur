@@ -40,7 +40,7 @@ def renormalized_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutpu
 
     fname = input_file_name("power", mainpath, simset, nsim, noutput, nmodel, okprint, "renormalized")
     if os.path.isfile(fname) and not store:
-        file_content = pd.read_csv(fname, " ", header=None).values.T
+        file_content = pd.read_csv(fname, delim_whitespace=True, header=None).values.T
         power_k = file_content[0]
         power_p = file_content[1]
     else:
@@ -98,7 +98,7 @@ def corrected_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1
 
     fname = input_file_name("power", mainpath, simset, nsim, noutput, nmodel, okprint, "corrected")
     if os.path.isfile(fname) and not store:
-        file_content = pd.read_csv(fname, " ", header=None).values.T
+        file_content = pd.read_csv(fname, delim_whitespace=True, header=None).values.T
         power_k = file_content[0]
         power_p = file_content[1]
     else:
@@ -157,7 +157,7 @@ def nyquist_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1, 
 
     fname = input_file_name("power", mainpath, simset, nsim, noutput, nmodel, okprint, "nyquist")
     if os.path.isfile(fname) and not store:
-        file_content = pd.read_csv(fname, " ", header=None).values.T
+        file_content = pd.read_csv(fname, delim_whitespace=True, header=None).values.T
         power_k_new = file_content[0]
         power_p_new = file_content[1]
     else:
@@ -210,7 +210,7 @@ def pkann_power(par, redshift, power_k=np.zeros(0), okprint=False, store=False):
     if os.path.isfile(pfile) and not store:
         if okprint:
             print "Reading file ", pfile
-        file_content = pd.read_csv(pfile, " ", header=None).values.T
+        file_content = pd.read_csv(pfile, delim_whitespace=True, header=None).values.T
         power_k = file_content[0]
         power_pkann = file_content[1]
     else:

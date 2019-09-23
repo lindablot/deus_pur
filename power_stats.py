@@ -52,7 +52,7 @@ def mean_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isi
     if os.path.isfile(fname) and not store:
         if okprint:
             print "Reading mean spectrum from file: ", fname
-        file_content = pd.read_csv(fname, " ", header=None).values
+        file_content = pd.read_csv(fname, delim_whitespace=True, header=None).values.T
         power_k = file_content[0]
         power_pmean = file_content[1]
         power_psigma = file_content[2]
@@ -145,7 +145,7 @@ def distrib_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), 
 
     fname = outpath+"/"+output_file_name("distrib_k"+str(kref), powertype, simset, isimmin, isimmax, noutput, nmodel)
     if os.path.isfile(fname) and not store:
-        file_content = pd.read_csv(fname, " ", header=None).values
+        file_content = pd.read_csv(fname, delim_whitespace=True, header=None).values.T
         bincenter = file_content[0]
         npower_bin = file_content[1]
     else:
@@ -225,7 +225,7 @@ def high_moments(powertype="power", mainpath="", simset=DeusPurSet("all_256"), i
 
     fname = outpath+"/"+output_file_name("high_moments_"+bias, powertype, simset, isimmin, isimmax, noutput, nmodel)
     if os.path.isfile(fname) and not store:
-        file_content = pd.read_csv(fname, " ", header=None).values
+        file_content = pd.read_csv(fname, delim_whitespace=True, header=None).values.T
         power_k = file_content[0]
         power_skew = file_content[1]
         power_kurt = file_content[2]
@@ -304,7 +304,7 @@ def mass_corrected_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, nout
 
     fname = input_file_name("power", mainpath, simset, nsim, noutput, 0, okprint, "mcorrected")
     if os.path.isfile(fname) and not store:
-        file_content = pd.read_csv(fname, " ", header=None).values
+        file_content = pd.read_csv(fname, delim_whitespace=True, header=None).values.T
         power_k = file_content[0]
         corrected_p = file_content[1]
     else:
@@ -373,7 +373,7 @@ def correction_power(mainpath="", simset=DeusPurSet("all_256"), noutput=1, aexp=
 
     fname = "correction_"+corr_type+"_"+str("%05d"%noutput)+".txt"
     if os.path.isfile(fname) and not store:
-        correction = pd.read_csv(fname, " ", header=None).values
+        correction = pd.read_csv(fname, delim_whitespace=True, header=None).values.T
     else:
         simset_256 = DeusPurSet("all_256")
         simset_1024 = DeusPurSet("all_1024")
