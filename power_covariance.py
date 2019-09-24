@@ -7,7 +7,7 @@ from power_stats import *
 
 
 # -------------------------------- COVARIANCE POWER -------------------------------- #
-def cov_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isimmin=1, isimmax=2, noutput=1, aexp=0., nmodel=0, okprint=False, store=False, outpath="."):
+def cov_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isimmin=1, isimmax=2, noutput=1, aexp=0., nmodel=0, okprint=False, store=False, rebin=0, outpath="."):
     """ Covariance of power spectra. See power_spectrum for the description of the power spectrum types. If file exists it will be read from file.
 
     
@@ -33,6 +33,8 @@ def cov_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isim
         verbose (default False)
     store: bool
         store file. If True and file exists it will be overwritten (default False)
+    rebin: int
+        number of bins to combine when rebinning (default 0, i.e. no rebinning)
     outpath: string
         path where output file is stored (default .)
     
@@ -50,23 +52,23 @@ def cov_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isim
     if os.path.isfile(fname):
         if okprint:
             print "Reading power spectrum covariance from file: ", fname
-        power_k, power_pmean, power_psigma = mean_power(powertype, mainpath, simset, isimmin, isimmax, noutput, aexp, nmodel, okprint)
+        power_k, power_pmean, power_psigma = mean_power(powertype, mainpath, simset, isimmin, isimmax, noutput, aexp, nmodel, okprint, rebin = rebin, outpath = outpath)
         power_pcov = pd.read_csv(fname, delim_whitespace=True, header=None).values
     else:
         if okprint:
             print "Computing power spectrum covariance"
         if powertype == "linear":
-            power_k, power_pmean = power_spectrum("linear", mainpath, simset, 1, noutput, aexp, nmodel, okprint)
+            power_k, power_pmean = power_spectrum("linear", mainpath, simset, 1, noutput, aexp, nmodel, okprint, rebin = rebin)
             power_psigma = np.sqrt(2./simset.num_modes(power_k)) * power_pmean
             power_pcov = np.diag(power_psigma * power_psigma)
         else:
-            power_k, power_pmean, power_psigma = mean_power(powertype, mainpath, simset, isimmin, isimmax, noutput, aexp, nmodel, okprint)
+            power_k, power_pmean, power_psigma = mean_power(powertype, mainpath, simset, isimmin, isimmax, noutput, aexp, nmodel, okprint, rebin = rebin, outpath = outpath)
             power_pcov = np.zeros((power_k.size, power_k.size))
             for isim in xrange(isimmin, isimmax):
                 if okprint:
                     true_simset, true_isim = sim_iterator(simset, isim)
                     print true_simset, true_isim
-                dummy, power_p = power_spectrum(powertype, mainpath, simset, isim, noutput, aexp, nmodel, okprint)
+                dummy, power_p = power_spectrum(powertype, mainpath, simset, isim, noutput, aexp, nmodel, okprint, rebin = rebin)
                 diff_power_p = power_p - power_pmean
                 power_pcov += np.outer(diff_power_p, diff_power_p)
             power_pcov /= float(nsim-1)
@@ -86,7 +88,7 @@ def cov_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isim
 
 # -------------------- CORRELATION COEFFICIENT POWER ------------------------- #
 def corr_coeff(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isimmin=1, isimmax=2, noutput=1,
-               aexp=0., nmodel=0, okprint=False, store=False, outpath="."):
+               aexp=0., nmodel=0, okprint=False, store=False, rebin=0, outpath="."):
     """ Correlation coefficient of power spectra. See power_spectrum for the description of the power spectrum types. If file exists it will be read from file.
 
     
@@ -112,6 +114,8 @@ def corr_coeff(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isi
         verbose (default False)
     store: bool
         store file. If True and file exists it will be overwritten (default False)
+    rebin: int
+        number of bins to combine when rebinning (default 0, i.e. no rebinning)
     outpath: string
         path where output file is stored (default .)
     
@@ -126,12 +130,12 @@ def corr_coeff(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isi
     if os.path.isfile(fname):
         if okprint:
             print "Reading power spectrum correlation coefficient from file: ", fname
-        power_k, power_pmean, power_psigma = mean_power(powertype, mainpath, simset, isimmin, isimmax, noutput, aexp, nmodel, okprint)
+        power_k, power_pmean, power_psigma = mean_power(powertype, mainpath, simset, isimmin, isimmax, noutput, aexp, nmodel, okprint, rebin = rebin, outpath = outpath)
         power_corr_coeff = pd.read_csv(fname, delim_whitespace=True, header=None).values
     else:
         if okprint:
             print "Computing power spectrum correlation coefficient"
-        power_k, power_pmean, power_psigma, power_pcov = cov_power(powertype, mainpath, simset, isimmin, isimmax, noutput, aexp, nmodel, okprint)
+        power_k, power_pmean, power_psigma, power_pcov = cov_power(powertype, mainpath, simset, isimmin, isimmax, noutput, aexp, nmodel, okprint, rebin = rebin, outpath = outpath)
         norm = np.outer(power_psigma, power_psigma)
         power_corr_coeff = power_pcov / norm
 
@@ -148,7 +152,7 @@ def corr_coeff(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isi
 
 
 # ----------------------------- SIGNAL TO NOISE ------------------------------ #
-def signoise(powertype="nyquist", mainpath="", simset=DeusPurSet("all_256"), noutput=1, nsimmax=1, aexp=0., nmodel=0, unbiased=False, okprint=False, store=False, outpath="."):
+def signoise(powertype="nyquist", mainpath="", simset=DeusPurSet("all_256"), noutput=1, nsimmax=1, aexp=0., nmodel=0, unbiased=False, okprint=False, store=False, rebin=0, outpath="."):
     """ Signal to noise of power spectrum. See power_spectrum for the description of the power spectrum types. If file exists it will be read from file.
 
     
@@ -174,6 +178,8 @@ def signoise(powertype="nyquist", mainpath="", simset=DeusPurSet("all_256"), nou
         verbose (default False)
     store: bool
         store file. If True and file exists it will be overwritten (default False)
+    rebin: int
+        number of bins to combine when rebinning (default 0, i.e. no rebinning)
     outpath: string
         path where output file is stored (default .)
     
@@ -189,7 +195,7 @@ def signoise(powertype="nyquist", mainpath="", simset=DeusPurSet("all_256"), nou
     if os.path.isfile(fname):
         if okprint:
             print "Reading signal-to-noise from file: ", fname
-        file_content = pd.read_csv(fname, delim_whitespace=True, header=None).values
+        file_content = pd.read_csv(fname, delim_whitespace=True, header=None).values.T
         kmax = file_content[0]
         sig_noise = file_content[1]
     else:
@@ -198,7 +204,7 @@ def signoise(powertype="nyquist", mainpath="", simset=DeusPurSet("all_256"), nou
         nmax = nsimmax-1
         step = 1
         
-        power_k, power_pmean, dummy, power_pcov = cov_power(powertype, mainpath, simset, 1, nsimmax, noutput, aexp, nmodel, okprint)
+        power_k, power_pmean, dummy, power_pcov = cov_power(powertype, mainpath, simset, 1, nsimmax, noutput, aexp, nmodel, okprint, rebin = rebin, outpath = outpath)
 
         num_iter = min(power_k.size, nmax-2)
         sig_noise = np.zeros(num_iter/step)
