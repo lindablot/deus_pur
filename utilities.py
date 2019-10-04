@@ -374,12 +374,12 @@ def output_file_name(prefix="cov", powertype="", simset=DeusPurSet("all_256"),
     fname = prefix+"_"+powertype+"_"+str("%05d" % ioutput)+"_"
     if nsim == simset.nsimmax:
         if simset.cosmo:
-            fname = fname+"cosmo_model"+str(int(nmodel))+".txt"
+            fname = fname+"cosmo_model"+str(int(nmodel)).zfill(2)+".txt"
         else:
             fname = fname+simset.name+".txt"
     else:
         if simset.cosmo:
-            fname = fname+"cosmo_model"+str(int(nmodel))+"_"+str(isimmin)+"_"+str(isimmax)+".txt"
+            fname = fname+"cosmo_model"+str(int(nmodel)).zfill(2)+"_"+str(isimmin)+"_"+str(isimmax)+".txt"
         else:
             fname = fname+simset.name+"_"+str(isimmin)+"_"+str(isimmax)+".txt"
 
