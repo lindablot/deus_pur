@@ -3,19 +3,20 @@
 # ---------------------------------- IMPORT ---------------------------------- #
 import numpy as np
 import pandas as pd
+from utilities import *
 # ---------------------------------------------------------------------------- #
 
 
 # -------------------------------- READ DATA --------------------------------- #
-def read_cosmo_data(mainpath="", model="lcdmw7"):
+def read_cosmo_data(mainpath="", simset=DeusPurSet("all_256")):
     """ Read linear power spectrum and lookup tables for cosmological quantities 
     
     Parameters
     ---------
     mainpath : str
         path to base folder (default is empty)
-    model : str, optional
-        Cosmological model (default is lcdmw7)
+    simset: Simset instance
+        simulation set (default DeusPurSet("all_256"))
         
     Returns
     -------
@@ -35,6 +36,7 @@ def read_cosmo_data(mainpath="", model="lcdmw7"):
         proper time
     """
     
+    model = simset.model
     file_content = pd.read_csv(mainpath+"/data/pk_"+model+".dat", header=None, delim_whitespace=True).values
     power_k = file_content.T[0]
     power_p = file_content.T[1]
@@ -50,15 +52,15 @@ def read_cosmo_data(mainpath="", model="lcdmw7"):
 
 
 # -------------------------------- READ CAMB POWER SPECTRUM ------------------ #
-def read_power_camb(mainpath="", model="lcdmw7"):
+def read_power_camb(mainpath="", simset=DeusPurSet("all_256")):
     """ Read linear power spectrum
     
     Parameters
     ---------
     mainpath : str
         Path to base folder (default is empty)
-    model : str, optional
-        Cosmological model (default is lcdmw7)
+    simset: Simset instance
+        simulation set (default DeusPurSet("all_256"))
         
     Returns
     -------
@@ -68,6 +70,7 @@ def read_power_camb(mainpath="", model="lcdmw7"):
         linear power spectrum
     """
     
+    model = simset.model
     file_content = pd.read_csv(mainpath+"/data/pk_"+model+".dat", header=None, delim_whitespace=True).values
     power_k = file_content.T[0]
     power_p = file_content.T[1]
@@ -76,15 +79,15 @@ def read_power_camb(mainpath="", model="lcdmw7"):
 
 
 # -------------------------------- READ GROWTH FACTOR ------------------------ #
-def read_growth(mainpath="", model="lcdmw7"):
+def read_growth(mainpath="", simset=DeusPurSet("all_256")):
     """ Read growth factor
     
     Parameters
     ---------
     mainpath : str
         Path to base folder (default is empty)
-    model : str, optional
-        Cosmological model (default is lcdmw7)
+    simset: Simset instance
+        simulation set (default DeusPurSet("all_256"))
         
     Returns
     -------
@@ -94,6 +97,7 @@ def read_growth(mainpath="", model="lcdmw7"):
         growth factor
     """
     
+    model = simset.model
     file_content = pd.read_csv(mainpath+"/data/mpgrafic_input_"+model+".dat", header=None, delim_whitespace=True).values
     growth_a = file_content.T[0]
     growth_dplus = file_content.T[2]

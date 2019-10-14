@@ -8,7 +8,7 @@ from utilities import *
 
 # --------------------------- RENORMALIZED POWER SPECTRUM ----------------------------- #
 def renormalized_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1, growth_a=np.zeros(0),
-                       growth_dplus=np.zeros(0), nmodel=0, okprint=False, store=False):
+                       growth_dplus=np.zeros(0), okprint=False, store=False):
     """ Power spectrum renormalised to initial power spectrum using growth function. If file exists it will be read from file
     
     Parameters
@@ -25,8 +25,6 @@ def renormalized_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutpu
         expansion factor for growth function (default 0)
     growth_dplus: numpy array
         growth function at expansion factors growth_a (default 0)
-    nmodel: int
-        number of cosmological model (default 0)
     okprint: bool
         verbose (default False)
     store: bool
@@ -38,16 +36,16 @@ def renormalized_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutpu
         k and P(k)
     """
 
-    fname = input_file_name("power", mainpath, simset, nsim, noutput, nmodel, okprint, "renormalized")
+    fname = input_file_name("power", mainpath, simset, nsim, noutput, okprint, "renormalized")
     if os.path.isfile(fname) and not store:
         file_content = pd.read_csv(fname, delim_whitespace=True, header=None).values.T
         power_k = file_content[0]
         power_p = file_content[1]
     else:
-        power_k, power_p_ini, dummy = read_power_powergrid(input_file_name("power", mainpath, simset, nsim, 1, nmodel))
-        power_k, power_p_end, dummy = read_power_powergrid(input_file_name("power", mainpath, simset, nsim, noutput, nmodel))
-        aexp_ini = read_aexp_info(input_file_name("info", mainpath, simset, nsim, 1, nmodel))
-        aexp_end = read_aexp_info(input_file_name("info", mainpath, simset, nsim, noutput, nmodel))
+        power_k, power_p_ini, dummy = read_power_powergrid(input_file_name("power", mainpath, simset, nsim, 1))
+        power_k, power_p_end, dummy = read_power_powergrid(input_file_name("power", mainpath, simset, nsim, noutput))
+        aexp_ini = read_aexp_info(input_file_name("info", mainpath, simset, nsim, 1))
+        aexp_end = read_aexp_info(input_file_name("info", mainpath, simset, nsim, noutput))
         dplus_ini = extrapolate([aexp_ini], growth_a, growth_dplus)
         dplus_end = extrapolate([aexp_end], growth_a, growth_dplus)
         power_p = (power_p_end * dplus_ini * dplus_ini) / (power_p_ini * dplus_end * dplus_end)
@@ -64,7 +62,7 @@ def renormalized_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutpu
 
 # ----------------------------- POWER SPECTRUM CORRECTED FOR a DIFFERENCES ------------------------------ #
 def corrected_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1, aexp=0., growth_a=np.zeros(0),
-                    growth_dplus=np.zeros(0), nmodel=0, okprint=False, store=False):
+                    growth_dplus=np.zeros(0), okprint=False, store=False):
     """ Power spectrum rescaled to given aexp using growth function. If file exists it will be read from file
     
     Parameters
@@ -83,8 +81,6 @@ def corrected_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1
         expansion factor (default 0)
     growth_dplus: numpy array
         growth function at expansion factors growth_a (default 0)
-    nmodel: int
-        number of cosmological model (default 0)
     okprint: bool
         verbose (default False)
     store: bool
@@ -96,15 +92,15 @@ def corrected_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1
         k and P(k)
     """
 
-    fname = input_file_name("power", mainpath, simset, nsim, noutput, nmodel, okprint, "corrected")
+    fname = input_file_name("power", mainpath, simset, nsim, noutput, okprint, "corrected")
     if os.path.isfile(fname) and not store:
         file_content = pd.read_csv(fname, delim_whitespace=True, header=None).values.T
         power_k = file_content[0]
         power_p = file_content[1]
     else:
-        power_k, power_p_raw, dummy = read_power_powergrid(input_file_name("power", mainpath, simset, nsim, noutput, nmodel))
+        power_k, power_p_raw, dummy = read_power_powergrid(input_file_name("power", mainpath, simset, nsim, noutput))
         if aexp != 0.:
-            aexp_raw = read_aexp_info(input_file_name("info", mainpath, simset, nsim, noutput, nmodel))
+            aexp_raw = read_aexp_info(input_file_name("info", mainpath, simset, nsim, noutput))
             dplus_raw = extrapolate([aexp_raw], growth_a, growth_dplus)
             dplus = extrapolate([aexp], growth_a, growth_dplus)
             power_p = (power_p_raw * dplus * dplus) / (dplus_raw * dplus_raw)
@@ -123,7 +119,7 @@ def corrected_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1
 
 # ----------------------------- POWER SPECTRUM CUT AT NYQUIST FREQUENCY ------------------------------ #
 def nyquist_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1, aexp=0., growth_a=np.zeros(0),
-                  growth_dplus=np.zeros(0), nmodel=0, okprint=False, store=False):
+                  growth_dplus=np.zeros(0), okprint=False, store=False):
     """ Power spectrum rescaled to given aexp using growth function and cut at half the nyquist frequency. If file exists it will be read from file
         
     Parameters
@@ -142,8 +138,6 @@ def nyquist_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1, 
         expansion factorfor grwoth function (default 0)
     growth_dplus: numpy array
         growth function at expansion factors growth_a (default 0)
-    nmodel: int
-        number of cosmological model (default 0)
     okprint: bool
         verbose (default False)
     store: bool
@@ -155,13 +149,13 @@ def nyquist_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1, 
         k and P(k)
     """
 
-    fname = input_file_name("power", mainpath, simset, nsim, noutput, nmodel, okprint, "nyquist")
+    fname = input_file_name("power", mainpath, simset, nsim, noutput, okprint, "nyquist")
     if os.path.isfile(fname) and not store:
         file_content = pd.read_csv(fname, delim_whitespace=True, header=None).values.T
         power_k_new = file_content[0]
         power_p_new = file_content[1]
     else:
-        power_k, power_p = corrected_power(mainpath, simset, nsim, noutput, aexp, growth_a, growth_dplus, nmodel)
+        power_k, power_p = corrected_power(mainpath, simset, nsim, noutput, aexp, growth_a, growth_dplus)
         idx = (power_k < simset.nyquist)
         power_k_new = power_k[idx]
         power_p_new = power_p[idx]

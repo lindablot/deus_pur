@@ -7,8 +7,7 @@ from power_types import *
 
 
 # -------------------------------- MEAN POWER (ALTERNATIVE) -------------------------------- #
-def mean_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isimmin=1, isimmax=2, noutput=1, aexp=0.,
-               nmodel=0, okprint=False, store=False,
+def mean_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isimmin=1, isimmax=2, noutput=1, aexp=0., okprint=False, store=False,
                rebin=0, outpath="."):
     """ Mean and standard deviation of power spectra. See power_spectrum for the description of the power spectrum types. If file exists it will be read from file.
 
@@ -29,8 +28,6 @@ def mean_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isi
         snapshot number (default 1)
     aexp: float
         expansion factor (default 0)
-    nmodel: int
-        cosmological model number (default 0)
     okprint: bool
         verbose (default False)
     store: bool
@@ -47,7 +44,7 @@ def mean_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isi
     """
 
     nsim = isimmax-isimmin
-    fname = outpath+"/"+output_file_name("mean", powertype, simset, isimmin, isimmax, noutput, nmodel)
+    fname = outpath+"/"+output_file_name("mean", powertype, simset, isimmin, isimmax, noutput)
 
     if os.path.isfile(fname) and not store:
         if okprint:
@@ -61,11 +58,11 @@ def mean_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isi
             print "Computing mean and standard deviation of spectra"
         if powertype == "linear":
             power_k, power_pmean = power_spectrum("linear", mainpath, simset, 1, noutput,
-                                                  aexp, nmodel, okprint, False, rebin)
+                                                  aexp, okprint, False, rebin)
             power_psigma = np.sqrt(2./simset.num_modes(power_k))*power_pmean
         else:
             power_k, dummy = power_spectrum(powertype, mainpath, simset, isimmin, noutput,
-                                            aexp, nmodel, okprint, False, rebin)
+                                            aexp, okprint, False, rebin)
             power_p = np.zeros((nsim, power_k.size))
             for isim in xrange(isimmin, isimmax):
                 isim0 = isim - isimmin
@@ -73,7 +70,7 @@ def mean_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isi
                     true_simset, true_isim = sim_iterator(simset, isim)
                     print true_simset, true_isim
                 dummy, power_p[isim0] = power_spectrum(powertype, mainpath, simset, isim, noutput,
-                                                       aexp, nmodel, okprint, False, rebin)
+                                                       aexp, okprint, False, rebin)
 
             power_pmean = np.mean(power_p, axis=0)
             if nsim > 1:
@@ -99,7 +96,7 @@ def mean_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isi
 
 # --------------------- PDF OF POWER SPECTRA --------------------------- #
 def distrib_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isimmin=1, isimmax=2, noutput=1, nbin=50, kref=0.2,
-                  aexp=0., nmodel=0, okprint=False, store=False, rebin=0, outpath="."):
+                  aexp=0., okprint=False, store=False, rebin=0, outpath="."):
     """ Distribution of power spectra at given k. See power_spectrum for the description of the power spectrum types. If file exists it will be read from file.
 
     
@@ -123,8 +120,6 @@ def distrib_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), 
         k value (default 0.2 h/Mpc)
     aexp: float
         expansion factor (default 0)
-    nmodel: int
-        cosmological model number (default 0)
     okprint: bool
         verbose (default False)
     store: bool
@@ -143,7 +138,7 @@ def distrib_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), 
     nsim = isimmax - isimmin
     power_values = np.zeros(nsim)
 
-    fname = outpath+"/"+output_file_name("distrib_k"+str(kref), powertype, simset, isimmin, isimmax, noutput, nmodel)
+    fname = outpath+"/"+output_file_name("distrib_k"+str(kref), powertype, simset, isimmin, isimmax, noutput)
     if os.path.isfile(fname) and not store:
         file_content = pd.read_csv(fname, delim_whitespace=True, header=None).values.T
         bincenter = file_content[0]
@@ -153,7 +148,7 @@ def distrib_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), 
             if okprint:
                 true_simset, true_isim = sim_iterator(simset, isim)
                 print true_simset, true_isim
-            power_k, power_p = power_spectrum(powertype, mainpath, simset, isim, noutput, aexp, nmodel, rebin=rebin)
+            power_k, power_p = power_spectrum(powertype, mainpath, simset, isim, noutput, aexp, rebin=rebin)
             if kref > power_k[power_k.size-1] or kref < power_k[0]:
                 raise ValueError("reference k value outside simulation k range in distrib_power")
 
@@ -177,7 +172,7 @@ def distrib_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), 
 
 # ------------------ HIGH MOMENTS OF SPECTRA PDF ---------------------- #
 def high_moments(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isimmin=1, isimmax=2, noutput=1,
-                 aexp=0., nmodel=0, unbiased=True, okprint=False, store=False, rebin=0, outpath="."):
+                 aexp=0., unbiased=True, okprint=False, store=False, rebin=0, outpath="."):
     """ Skewness and Kurtosis of the distribution of power spectra. See power_spectrum for the description of the power spectrum types. If file exists it will be read from file.
 
     
@@ -197,8 +192,6 @@ def high_moments(powertype="power", mainpath="", simset=DeusPurSet("all_256"), i
         snapshot number (default 1)
     aexp: float
         expansion factor (default 0)
-    nmodel: int
-        cosmological model number (default 0)
     unbiased: bool
         use unbiased estimators for Skewness and Kurtosis (default True)
     okprint: bool
@@ -223,7 +216,7 @@ def high_moments(powertype="power", mainpath="", simset=DeusPurSet("all_256"), i
     else:
         bias = "biased"
 
-    fname = outpath+"/"+output_file_name("high_moments_"+bias, powertype, simset, isimmin, isimmax, noutput, nmodel)
+    fname = outpath+"/"+output_file_name("high_moments_"+bias, powertype, simset, isimmin, isimmax, noutput)
     if os.path.isfile(fname) and not store:
         file_content = pd.read_csv(fname, delim_whitespace=True, header=None).values.T
         power_k = file_content[0]
@@ -231,7 +224,7 @@ def high_moments(powertype="power", mainpath="", simset=DeusPurSet("all_256"), i
         power_kurt = file_content[2]
     else:
         power_k, power_pmean, power_psigma = mean_power(powertype, mainpath, simset, isimmin, isimmax, noutput,
-                                                        aexp, nmodel, okprint, store, rebin)
+                                                        aexp, okprint, store, rebin)
         power_skew = np.zeros(power_k.size)
         power_kurt = np.zeros(power_k.size)
     
@@ -239,7 +232,7 @@ def high_moments(powertype="power", mainpath="", simset=DeusPurSet("all_256"), i
             if okprint:
                 true_simset, true_isim = sim_iterator(simset, isim)
                 print true_simset, true_isim
-            power_k, power_p = power_spectrum(powertype, mainpath, simset, isim, noutput, aexp, nmodel, rebin=rebin)
+            power_k, power_p = power_spectrum(powertype, mainpath, simset, isim, noutput, aexp, rebin=rebin)
             power_skew += (power_p-power_pmean)*(power_p-power_pmean)*(power_p-power_pmean)
             power_kurt += (power_p-power_pmean)*(power_p-power_pmean)*(power_p-power_pmean)*(power_p-power_pmean)
 
@@ -501,7 +494,7 @@ def correction_power(mainpath="", simset=DeusPurSet("all_256"), noutput=1, aexp=
 
 # ----------------------- WRAPPER FOR ALL POWER TYPES ------------------------- #
 def power_spectrum(powertype="power", mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1,
-                   aexp=0., nmodel=0, okprint=False, store=False, rebin=0):
+                   aexp=0., okprint=False, store=False, rebin=0):
     """ Wrapper for different power spectrum types. If file exists it will be read from file.
     Different power types are:
     - power: raw power spectrum from file
@@ -526,8 +519,6 @@ def power_spectrum(powertype="power", mainpath="", simset=DeusPurSet("all_256"),
         snapshot number
     aexp: float
         expansion factor (default 0)
-    nmodel: int
-        cosmological model number
     okprint: bool
         verbose (default False)
     store: bool
@@ -542,29 +533,29 @@ def power_spectrum(powertype="power", mainpath="", simset=DeusPurSet("all_256"),
     """
 
     setname, nsim = sim_iterator(simset, nsim)
-    internal_simset = DeusPurSet(setname)
-    aexp_info = read_aexp_info(input_file_name("info", mainpath, internal_simset, nsim, noutput, nmodel))
+    internal_simset = DeusPurSet(setname,simset.nmodel,datapath=mainpath+"/data/")
+    aexp_info = read_aexp_info(input_file_name("info", mainpath, internal_simset, nsim, noutput))
     if not np.isclose(aexp, aexp_info, atol=1.e-2):
         print "Warning: aexp is different from snapshot expansion factor by ", aexp-aexp_info
-    growth_a, growth_dplus = read_growth(mainpath, simset.model)
+    growth_a, growth_dplus = read_growth(mainpath, internal_simset)
     if powertype == "power":
-        fname = input_file_name("power", mainpath, internal_simset, nsim, noutput, nmodel)
+        fname = input_file_name("power", mainpath, internal_simset, nsim, noutput)
         power_k, power_p, dummy = read_power_powergrid(fname)
     elif powertype == "nyquist":
         power_k, power_p = nyquist_power(mainpath, internal_simset, nsim, noutput,
-                                         aexp, growth_a, growth_dplus, nmodel, okprint, store)
+                                         aexp, growth_a, growth_dplus, okprint, store)
     elif powertype == "renormalized":
         power_k, power_p = renormalized_power(mainpath, internal_simset, nsim, noutput,
-                                              growth_a, growth_dplus, nmodel, okprint, store)
+                                              growth_a, growth_dplus, okprint, store)
     elif powertype == "corrected":
         power_k, power_p = corrected_power(mainpath, internal_simset, aexp, nsim, noutput,
-                                           growth_a, growth_dplus, nmodel, okprint, store)
+                                           growth_a, growth_dplus, okprint, store)
     elif powertype == "mcorrected":
         power_k, power_p = mass_corrected_power(mainpath, internal_simset, nsim, noutput,
                                                 aexp, okprint=okprint, store=store)
     elif powertype == "linear":
-        power_k_CAMB, power_p_CAMB = read_power_camb(mainpath, simset.model)
-        power_k_nocut, dummy, dummy = read_power_powergrid(input_file_name("power", mainpath, internal_simset, nsim, noutput, nmodel))
+        power_k_CAMB, power_p_CAMB = read_power_camb(mainpath, internal_simset)
+        power_k_nocut, dummy, dummy = read_power_powergrid(input_file_name("power", mainpath, internal_simset, nsim, noutput))
         aexp_end = 1.
         dplus_a = extrapolate([aexp], growth_a, growth_dplus)
         dplus_end = extrapolate([aexp_end], growth_a, growth_dplus)
@@ -573,7 +564,7 @@ def power_spectrum(powertype="power", mainpath="", simset=DeusPurSet("all_256"),
         power_k = power_k_nocut[idx]
         power_p = np.interp(power_k, power_k_CAMB, plin)
         if store:
-            linfname = input_file_name("power", mainpath, internal_simset, nsim, noutput, nmodel, okprint, powertype)
+            linfname = input_file_name("power", mainpath, internal_simset, nsim, noutput, okprint, powertype)
             if okprint:
                 print "Writing file: ", linfname
             f=open(linfname, "w")
@@ -582,8 +573,8 @@ def power_spectrum(powertype="power", mainpath="", simset=DeusPurSet("all_256"),
             f.close()
 
     elif powertype == "linear_mock":
-        power_k_CAMB, power_p_CAMB = read_power_camb(mainpath, simset.model)
-        power_k, dummy, dummy = read_power_powergrid(input_file_name("power", mainpath, internal_simset, nsim, noutput, nmodel))
+        power_k_CAMB, power_p_CAMB = read_power_camb(mainpath, internal_simset)
+        power_k, dummy, dummy = read_power_powergrid(input_file_name("power", mainpath, internal_simset, nsim, noutput))
         aexp_end = 1.
         dplus_a = extrapolate([aexp], growth_a, growth_dplus)
         dplus_end = extrapolate([aexp_end], growth_a, growth_dplus)

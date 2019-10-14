@@ -90,6 +90,8 @@ class DeusPurSet(Simset):
         list of expansion factor values of snapshots
     model : string
         cosmological model name
+    nmodel : int
+        cosmological model number
         
     Methods
     -------
@@ -168,9 +170,10 @@ class DeusPurSet(Simset):
             self.cosmo_par = {'om_b': Om_b[nmodel-1]*h[nmodel-1]**2, 'om_m': Om_m[nmodel-1]*h[nmodel-1]**2, 'n_s': n_s[nmodel-1], 'h': h[nmodel-1], 'w_0': w[nmodel-1], 'sigma_8': sigma_8[nmodel-1], 'm_nu': 0.}
             
         if self.cosmo:
-            self.model="model"+str(int(nmodel)).zfill(5)
+            self.model = "model"+str(int(nmodel)).zfill(5)
         else:
-            self.model="lcdmw7"
+            self.model = "lcdmw7"
+        self.nmodel = nmodel
 
         Simset.__init__(self, self.l_box, self.npart, self.nsimmax, self.cosmo_par)
         self.nyquist = math.pi/self.l_box*self.npart
@@ -283,7 +286,7 @@ def sim_iterator(simset=DeusPurSet("all_256"), isim=1, random=False, replace=Fal
 
 
 # -------------------------------- INPUT FILE NAME --------------------------------- #
-def input_file_name(filetype="", mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1, nmodel=0,
+def input_file_name(filetype="", mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1,
                     okprint=False, powertype="gridcic"):
     """ Input file name generator
     
@@ -299,8 +302,6 @@ def input_file_name(filetype="", mainpath="", simset=DeusPurSet("all_256"), nsim
         simulation number (default is 1)
     noutput : int
         snapshot number (default is 1)
-    nmodel : int
-        number of cosmological model (default is 0)
     okprint : bool
         verbose mode (default is False)
     powertype : string
@@ -324,6 +325,7 @@ def input_file_name(filetype="", mainpath="", simset=DeusPurSet("all_256"), nsim
         raise ValueError("filetype not found")
 
     setname, nsim = sim_iterator(simset, nsim)
+    nmodel = simset.nmodel
     if setname == "4096_furphase" or setname == "4096_otherphase":
         fullpath += setname + dataprefix + str(int(noutput)).zfill(5) + ".txt"
     elif setname == "4096_furphase_512":
@@ -350,7 +352,7 @@ def input_file_name(filetype="", mainpath="", simset=DeusPurSet("all_256"), nsim
 
 # --------------------------- OUTPUT FILE NAME --------------------------- #
 def output_file_name(prefix="cov", powertype="", simset=DeusPurSet("all_256"),
-                     isimmin=1, isimmax=1, ioutput=1, nmodel=0):
+                     isimmin=1, isimmax=1, ioutput=1):
     """ Output file name generator
     
     Parameters
@@ -367,8 +369,6 @@ def output_file_name(prefix="cov", powertype="", simset=DeusPurSet("all_256"),
         final number of simulation used (default is 1)
     ioutput : int
         snapshot number (default is 1)
-    nmodel : int
-        cosmological model number (default is 0)
     
     Returns
     ------
@@ -377,7 +377,7 @@ def output_file_name(prefix="cov", powertype="", simset=DeusPurSet("all_256"),
     """
 
     nsim = isimmax-isimmin
-    
+    nmodel = simset.nmodel
     fname = prefix+"_"+powertype+"_"+str("%05d" % ioutput)+"_"
     if nsim == simset.nsimmax:
         if simset.cosmo:
