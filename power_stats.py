@@ -564,7 +564,7 @@ def power_spectrum(powertype="power", mainpath="", simset=DeusPurSet("all_256"),
                                                 aexp, okprint=okprint, store=store)
     elif powertype == "linear":
         power_k_CAMB, power_p_CAMB = read_power_camb(mainpath, simset.model)
-        power_k_nocut, dummy, dummy = read_power_powergrid(fname)
+        power_k_nocut, dummy, dummy = read_power_powergrid(input_file_name("power", mainpath, internal_simset, nsim, noutput, nmodel))
         aexp_end = 1.
         dplus_a = extrapolate([aexp], growth_a, growth_dplus)
         dplus_end = extrapolate([aexp_end], growth_a, growth_dplus)
