@@ -88,6 +88,8 @@ class DeusPurSet(Simset):
         combination of different simulation sets
     alist : list
         list of expansion factor values of snapshots
+    model : string
+        cosmological model name
         
     Methods
     -------
@@ -164,6 +166,11 @@ class DeusPurSet(Simset):
         else:
             Om_b, Om_m, Om_lr, Om_nu, h, n_s, w, sigma_8 = np.genfromtxt(datapath+"/models_parameters.txt",unpack=True,skip_header=1)
             self.cosmo_par = {'om_b': Om_b[nmodel-1]*h[nmodel-1]**2, 'om_m': Om_m[nmodel-1]*h[nmodel-1]**2, 'n_s': n_s[nmodel-1], 'h': h[nmodel-1], 'w_0': w[nmodel-1], 'sigma_8': sigma_8[nmodel-1], 'm_nu': 0.}
+            
+        if self.cosmo:
+            self.model="model"+str(int(nmodel)).zfill(5)
+        else:
+            self.model="lcdmw7"
 
         Simset.__init__(self, self.l_box, self.npart, self.nsimmax, self.cosmo_par)
         self.nyquist = math.pi/self.l_box*self.npart

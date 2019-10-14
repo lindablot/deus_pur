@@ -546,11 +546,7 @@ def power_spectrum(powertype="power", mainpath="", simset=DeusPurSet("all_256"),
     aexp_info = read_aexp_info(input_file_name("info", mainpath, internal_simset, nsim, noutput, nmodel))
     if not np.isclose(aexp, aexp_info, atol=1.e-2):
         print "Warning: aexp is different from snapshot expansion factor by ", aexp-aexp_info
-    if nmodel == 0:
-        model = "lcdmw7"
-    else:
-        model = "model"+str(int(nmodel)).zfill(5)
-    growth_a, growth_dplus = read_growth(mainpath, model)
+    growth_a, growth_dplus = read_growth(mainpath, simset.model)
     if powertype == "power":
         fname = input_file_name("power", mainpath, internal_simset, nsim, noutput, nmodel)
         power_k, power_p, dummy = read_power_powergrid(fname)
@@ -567,7 +563,7 @@ def power_spectrum(powertype="power", mainpath="", simset=DeusPurSet("all_256"),
         power_k, power_p = mass_corrected_power(mainpath, internal_simset, nsim, noutput,
                                                 aexp, okprint=okprint, store=store)
     elif powertype == "linear":
-        power_k_CAMB, power_p_CAMB = read_power_camb(mainpath, model)
+        power_k_CAMB, power_p_CAMB = read_power_camb(mainpath, simset.model)
         power_k_nocut, dummy, dummy = read_power_powergrid(fname)
         aexp_end = 1.
         dplus_a = extrapolate([aexp], growth_a, growth_dplus)
@@ -586,11 +582,7 @@ def power_spectrum(powertype="power", mainpath="", simset=DeusPurSet("all_256"),
             f.close()
 
     elif powertype == "linear_mock":
-        if nmodel == 0:
-            model = "lcdmw7"
-        else:
-            model = "model"+str(int(nmodel)).zfill(5)
-        power_k_CAMB, power_p_CAMB = read_power_camb(mainpath, model)
+        power_k_CAMB, power_p_CAMB = read_power_camb(mainpath, simset.model)
         power_k, dummy, dummy = read_power_powergrid(input_file_name("power", mainpath, internal_simset, nsim, noutput, nmodel))
         aexp_end = 1.
         dplus_a = extrapolate([aexp], growth_a, growth_dplus)
