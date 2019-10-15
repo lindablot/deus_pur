@@ -494,7 +494,7 @@ def correction_power(mainpath="", simset=DeusPurSet("all_256"), noutput=1, aexp=
 
 # ----------------------- WRAPPER FOR ALL POWER TYPES ------------------------- #
 def power_spectrum(powertype="power", mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1,
-                   aexp=0., okprint=False, store=False, rebin=0):
+                   aexp=0., okprint=False, store=False, rebin=0, k_interp = np.zeros(0)):
     """ Wrapper for different power spectrum types. If file exists it will be read from file.
     Different power types are:
     - power: raw power spectrum from file
@@ -525,6 +525,8 @@ def power_spectrum(powertype="power", mainpath="", simset=DeusPurSet("all_256"),
         store file. If True and file exists it will be overwritten (default False)
     rebin: int
         number of bins to combine when rebinning (default 0, i.e. no rebinning)
+    k_interp: numpy array (default empty)
+        array of k values where the power spectrum is interpolated
     
     Returns
     -------
@@ -555,14 +557,17 @@ def power_spectrum(powertype="power", mainpath="", simset=DeusPurSet("all_256"),
                                                 aexp, okprint=okprint, store=store)
     elif powertype == "linear":
         power_k_CAMB, power_p_CAMB = read_power_camb(mainpath, internal_simset)
-        power_k_nocut, dummy, dummy = read_power_powergrid(input_file_name("power", mainpath, internal_simset, nsim, noutput))
+        if k_interp.size==0:
+            power_k_nocut, dummy, dummy = read_power_powergrid(input_file_name("power", mainpath, internal_simset, nsim, noutput))
+            idx = (power_k_nocut < simset.nyquist)
+            power_k = power_k_nocut[idx]
+        else:
+            power_k = k_interp
         aexp_end = 1.
         dplus_a = extrapolate([aexp], growth_a, growth_dplus)
         dplus_end = extrapolate([aexp_end], growth_a, growth_dplus)
         plin = power_p_CAMB * dplus_a * dplus_a / (dplus_end * dplus_end)
         plin = plin * (simset.cosmo_par['sigma_8']/simset.cosmo_par['sigma_8_camb'])**2
-        idx = (power_k_nocut < simset.nyquist)
-        power_k = power_k_nocut[idx]
         power_p = np.interp(power_k, power_k_CAMB, plin)
         if store:
             linfname = input_file_name("power", mainpath, internal_simset, nsim, noutput, okprint, powertype)
@@ -589,6 +594,10 @@ def power_spectrum(powertype="power", mainpath="", simset=DeusPurSet("all_256"),
     else:
         raise ValueError("powertype not existent in function power_spectrum")
 
+    if k_interp.size!=0 and powertype!="linear":
+        power_p = np.interp(k_interp, power_k, power_p)
+        power_k = k_interp
+        
     if rebin > 0:
         nmodes = simset.num_modes(power_k)
         power_k, power_p = rebin_pk(power_k, power_p, nmodes, rebin)
