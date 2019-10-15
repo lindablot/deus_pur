@@ -167,7 +167,8 @@ class DeusPurSet(Simset):
             self.cosmo_par={'om_b': 0.04356*0.5184, 'om_m': 0.2573*0.5184, 'n_s': 0.963, 'h': 0.72, 'w_0': -1., 'sigma_8': 0.801, 'm_nu': 0.}
         else:
             Om_b, Om_m, Om_lr, Om_nu, h, n_s, w, sigma_8 = np.genfromtxt(datapath+"/models_parameters.txt",unpack=True,skip_header=1)
-            self.cosmo_par = {'om_b': Om_b[nmodel-1]*h[nmodel-1]**2, 'om_m': Om_m[nmodel-1]*h[nmodel-1]**2, 'n_s': n_s[nmodel-1], 'h': h[nmodel-1], 'w_0': w[nmodel-1], 'sigma_8': sigma_8[nmodel-1], 'm_nu': 0.}
+            sigma_8_camb = np.array([1.5392379, 0.79753089, 0.8379174, 0.7400835, 0.7975309, 0.7975309, 0.9173459, 0.6546858, 0.6992297, 0.8966455])
+            self.cosmo_par = {'om_b': Om_b[nmodel-1]*h[nmodel-1]**2, 'om_m': Om_m[nmodel-1]*h[nmodel-1]**2, 'n_s': n_s[nmodel-1], 'h': h[nmodel-1], 'w_0': w[nmodel-1], 'sigma_8': sigma_8[nmodel-1], 'm_nu': 0., 'sigma_8_camb': sigma_8_camb[nmodel-1]}
             
         if self.cosmo:
             self.model = "model"+str(int(nmodel)).zfill(5)

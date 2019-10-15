@@ -560,6 +560,7 @@ def power_spectrum(powertype="power", mainpath="", simset=DeusPurSet("all_256"),
         dplus_a = extrapolate([aexp], growth_a, growth_dplus)
         dplus_end = extrapolate([aexp_end], growth_a, growth_dplus)
         plin = power_p_CAMB * dplus_a * dplus_a / (dplus_end * dplus_end)
+        plin = plin * (simset.cosmo_par['sigma_8']/simset.cosmo_par['sigma_8_camb'])**2
         idx = (power_k_nocut < simset.nyquist)
         power_k = power_k_nocut[idx]
         power_p = np.interp(power_k, power_k_CAMB, plin)
