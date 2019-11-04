@@ -286,6 +286,31 @@ def sim_iterator(simset=DeusPurSet("all_256"), isim=1, random=False, replace=Fal
 # ---------------------------------------------------------------------------- #
 
 
+
+# ---------------------- COSMOLOGICAL MODEL ITERATOR ------------------------- #
+def cosmo_iterator(param,var):
+    """
+    Given a parameter name and variation returns the number of the corresponding model
+    
+    Parameters
+    ----------
+    param: string
+        simset.cosmo_par key
+    var: string
+        variation of the parameter ('p'=plus, 'fid'=fiducial, 'm'=minus)
+        
+    Returns
+    -------
+    int
+        number of cosmological model
+    """
+    
+    ncosmo_map = {'om_m':{'m':8, 'fid':2, 'p':7}, 'h':{'m':9, 'fid':2, 'p':10}, 'sigma_8':{'m':5, 'fid':2, 'p':6}, 'w_0':{'m':3, 'fid':2, 'p':4}}
+    return ncosmo_map[param][var]
+# ---------------------------------------------------------------------------- #
+
+
+
 # -------------------------------- INPUT FILE NAME --------------------------------- #
 def input_file_name(filetype="", mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1,
                     okprint=False, powertype="gridcic"):
