@@ -391,7 +391,7 @@ def input_file_name(filetype="", mainpath="", simset=DeusPurSet("all_256"), nsim
 
 # --------------------------- OUTPUT FILE NAME --------------------------- #
 def output_file_name(prefix="cov", powertype="", simset=DeusPurSet("all_256"),
-                     isimmin=1, isimmax=1, ioutput=1, extension=".txt"):
+                     isimmin=1, isimmax=1, file_id=1, extension=".txt"):
     """ Output file name generator
     
     Parameters
@@ -406,8 +406,8 @@ def output_file_name(prefix="cov", powertype="", simset=DeusPurSet("all_256"),
         initial number of simulation used (default is 1)
     isimmax : int
         final number of simulation used (default is 1)
-    ioutput : int
-        snapshot number (default is 1)
+    file_id : int or float
+        number identifying the file (could be snapshot number or source redshift, default is 1)
     extension: string
         extension of the file (default ".txt")
     
@@ -419,7 +419,10 @@ def output_file_name(prefix="cov", powertype="", simset=DeusPurSet("all_256"),
 
     nsim = isimmax-isimmin
     nmodel = simset.nmodel
-    fname = prefix+"_"+powertype+"_"+str("%05d" % ioutput)+"_"
+    if isinstance(file_id, (int, long)):
+        fname = prefix+"_"+powertype+"_"+str("%05d" % file_id)+"_"
+    else:
+        fname = prefix+"_"+powertype+"_"+str(file_id)+"_"
     if nsim == simset.nsimmax:
         if simset.cosmo:
             fname = fname+"cosmo_model"+str(int(nmodel)).zfill(2)+extension
@@ -573,4 +576,40 @@ def rebin_pk(k, pk, nk, nbins):
     pk_new = pknk_new/nksum
 
     return k_new, pk_new
+# ---------------------------------------------------------------------------- #
+
+
+
+# ---------------------------------------------------------------------------- #
+def rebin_cl(l, Cl, nbins):
+    """ Rebin the Cls
+    
+    Parameters
+    ---------
+    l : numpy array
+        l values
+    Cl : numpy array
+        values of the Cls
+    nbins : int
+        number of bins to combine
+        
+    Returns
+    ------
+    numpy array
+        rebinned l values
+    numpy array
+        rebinned Cl values
+    """
+    
+    if l.size % nbins != 0:
+        l = l[:(l.size-l.size % nbins)]
+        Cl = np.take(Cl,np.arange(0,l.size-l.size % nbins),-1)
+    l_new = l.reshape(-1, nbins)
+    l_new = np.mean(l_new, axis=1)
+    if Cl.ndim==1:
+        Cl_new = Cl.reshape(-1, nbins)
+        Cl_new = np.mean(Cl_new, axis=1)
+    else:
+        Cl_new = np.mean(Cl.reshape(Cl.shape[0], Cl.shape[1]/nbins, nbins), axis=-1)
+    return l_new, Cl_new
 # ---------------------------------------------------------------------------- #
