@@ -246,7 +246,7 @@ def pkann_power(par, redshift, power_k=np.zeros(0), okprint=False, store=False):
 
 
 # --------------- POWER SPECTRUM COMPUTED BY EuclidEmulator ------------------ #
-def euemu_power(par, redshift, power_k=np.zeros(0)):
+def euemu_power(par, redshift, power_k=np.zeros(0), linear=False):
     """ Power spectrum computed by Euclid emulator
     
     Parameters
@@ -267,9 +267,52 @@ def euemu_power(par, redshift, power_k=np.zeros(0)):
     import e2py as emu
     result = emu.get_pnonlin(par, redshift)
     power_kemu = result['k']
-    power_pemu = result['P_nonlin']
+    if linear:
+        power_pemu = result['P_lin']
+    else:
+        power_pemu = result['P_nonlin']
     if power_k.size>0:
         power_p = np.interp(power_k,power_kemu,power_pemu)
         return power_k, power_p
     else:
         return power_kemu, power_pemu
+# ---------------------------------------------------------------------------- #
+
+
+# ------------------ POWER SPECTRUM COMPUTED BY CosmicEmu -------------------- #
+def cosmicemu_power(par, redshift, power_k=np.zeros(0), component="cb"):
+    """ Power spectrum computed by CosmicEmu emulator
+    
+    Parameters
+    ----------
+    par: dictionary with keys om_b, om_m, n_s, h, w_0, sigma_8
+        cosmological parameters Omega_b*h^2, Omega_m*h^2, n_s, h, w_0, sigma_8
+    redshift: float
+        redshift
+    power_k: numpy array
+        array of k values where the power spectrum will be interpolated (optional)
+    
+    Returns
+    -------
+    2 numpy arrays
+        k and P(k)
+    """
+    
+    cosmicemu_dir = "CosmicEmu/P_"+component+"/"
+    infile = "xstar.dat"
+    outfile = "EMU0.txt"
+    fltformat = "%1.8f"
+    f = open(cosmicemu_dir+infile, "w")
+    f.write(str(fltformat % par['om_m']) + "   "+str(fltformat % par['om_b']) + "   "+str(fltformat % par['sigma_8'])+"   " +
+             str(fltformat % par['h'])+"   "+str(fltformat % par['n_s'])+"   "+str(fltformat % par['w_0'])+"   "+str(fltformat % par['w_a'])+"   "+str(fltformat % par['om_nu'])+"   "+str(fltformat % redshift)+"\n")
+    f.close()
+    command = "cd "+cosmicemu_dir+"; rm EMU0.txt; ./emu.exe"
+    os.system(command)
+    file_content = pd.read_csv(cosmicemu_dir+outfile, delim_whitespace=True, header=None).values.T
+    power_kcosmic = file_content[0]
+    power_pcosmic = file_content[1]
+    if power_k.size>0:
+        power_p = np.interp(power_k,power_kcosmic,power_pcosmic)
+        return power_k, power_p
+    else:
+        return power_kcosmic, power_pcosmic
