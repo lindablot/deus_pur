@@ -61,17 +61,8 @@ def mean_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isi
                                                   aexp, okprint, False, rebin)
             power_psigma = np.sqrt(2./simset.num_modes(power_k))*power_pmean
         else:
-            power_k, dummy = power_spectrum(powertype, mainpath, simset, isimmin, noutput,
-                                            aexp, okprint, False, rebin)
-            power_p = np.zeros((nsim, power_k.size))
-            for isim in xrange(isimmin, isimmax):
-                isim0 = isim - isimmin
-                if okprint:
-                    true_simset, true_isim = sim_iterator(simset, isim)
-                    print true_simset, true_isim
-                dummy, power_p[isim0] = power_spectrum(powertype, mainpath, simset, isim, noutput,
-                                                       aexp, okprint, False, rebin)
-
+            power_k, power_p = load_power(powertype, mainpath, simset, noutput, aexp, rebin, outpath)
+            power_p = power_p[isimmin-1:isimmax]
             power_pmean = np.mean(power_p, axis=0)
             if nsim > 1:
                 power_psigma = np.std(power_p, axis=0, ddof=1)
@@ -140,19 +131,16 @@ def distrib_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), 
 
     fname = outpath+"/"+output_file_name("distrib_k"+str(kref), powertype, simset, isimmin, isimmax, noutput)
     if os.path.isfile(fname) and not store:
+        if okprint:
+            print "Reading distribution from file ", fname
         file_content = pd.read_csv(fname, delim_whitespace=True, header=None).values.T
         bincenter = file_content[0]
         npower_bin = file_content[1]
     else:
-        for isim in xrange(1, nsim+1):
-            if okprint:
-                true_simset, true_isim = sim_iterator(simset, isim)
-                print true_simset, true_isim
-            power_k, power_p = power_spectrum(powertype, mainpath, simset, isim, noutput, aexp, rebin=rebin)
-            if kref > power_k[power_k.size-1] or kref < power_k[0]:
-                raise ValueError("reference k value outside simulation k range in distrib_power")
-
-            power_values[isim-1] = power_p[np.searchsorted(power_k, kref)]
+        if okprint:
+            print "Computing distribution at k=",kref,"h/Mpc"
+        power_k, power_p = load_power(powertype, mainpath, simset, noutput, aexp, rebin, outpath)
+        power_values = power_p[isimmin-1:isimmax,np.searchsorted(power_k, kref)]
         
         npower_bin, bins = np.histogram(power_values, nbin)
         npower_bin = np.asfarray(npower_bin)/float(nsim)
@@ -603,4 +591,56 @@ def power_spectrum(powertype="power", mainpath="", simset=DeusPurSet("all_256"),
         power_k, power_p = rebin_pk(power_k, power_p, nmodes, rebin)
 
     return power_k, power_p
+# ---------------------------------------------------------------------------- #
+
+
+
+# ------------------------- LOAD ALL POWER SPECTRA --------------------------- #
+def load_power(powertype, mainpath, simset, noutput, aexp, rebin=0, okprint=False, outpath="."):
+    """
+    Load all power spectra of a given simulation set in memory. This leads to faster computations but needs more memory.
+    
+    Parameters
+    ----------
+    powertype: string
+        type of power spectrum (power, nyquist, renormalized, corrected, mcorrected, linear, linear_mock)
+    mainpath: string
+        path to base folder
+    simset: Simset instance
+        simulation set
+    noutput: int
+         snapshot number
+    aexp: float
+         expansion factor
+    rebin: int
+        number of bins to combine when rebinning (default 0, i.e. no rebinning)
+    okprint: bool
+        verbose (default False)
+    outpath: string
+        path where output file is stored (default .)
+        
+    Returns
+    -------
+    2 numpy arrays
+        vector of k values and array of power spectra of shape (nsim,nbin)
+    """
+    fname = outpath+"/"+output_file_name("powers", powertype, simset, 1, simset.nsimmax, noutput, extension=".npy")
+    if okprint:
+        print fname, os.path.isfile(fname)
+    power_k, dummy = power_spectrum(powertype, mainpath, simset, 1, noutput, aexp, store=False, okprint=False)
+    if os.path.isfile(fname):
+        powers_array=np.load(fname)
+    else:
+        powers_array = np.zeros((simset.nsimmax, power_k.size))
+        for isim in xrange(0, simset.nsimmax):
+            if okprint:
+                true_simset, true_isim = sim_iterator(simset, isim+1)
+                print true_simset, true_isim
+            dummy, powers_array[isim] = power_spectrum(powertype, mainpath, simset, isim+1, noutput,
+                                                       aexp, False, False)
+        np.save(fname, powers_array)
+    if rebin>0:
+        nmodes = simset.num_modes(power_k)
+        power_k, powers_array = rebin_pk(power_k, powers_array, nmodes, rebin)
+    return power_k, powers_array
 # ---------------------------------------------------------------------------- #
