@@ -561,12 +561,14 @@ def rebin_pk(k, pk, nk, nbins):
     if k.size % nbins != 0:
         k = k[:(k.size-k.size % nbins)]
         nk = nk[:(k.size-k.size % nbins)]
-        pk = pk[:(k.size-k.size % nbins)]
-    
+        pk = np.take(pk,np.arange(0,k.size-k.size % nbins),-1)
     k_new = k.reshape(-1, nbins)
     k_new = np.mean(k_new, axis=1)
-    pknk = pk*nk
-    pknk_new = np.sum(pknk.reshape(-1, nbins), axis=1)
+    pknk = np.multiply(pk,nk)
+    if pk.ndim==1:
+        pknk_new = np.sum(pknk.reshape(-1, nbins), axis=1)
+    else:
+        pknk_new = np.sum(pknk.reshape(pknk.shape[0],pknk.shape[1]/nbins, nbins), axis=-1)
     nksum = np.sum(nk.reshape(-1, nbins), axis=1)
     pk_new = pknk_new/nksum
 
