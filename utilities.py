@@ -391,7 +391,7 @@ def input_file_name(filetype="", mainpath="", simset=DeusPurSet("all_256"), nsim
 
 # --------------------------- OUTPUT FILE NAME --------------------------- #
 def output_file_name(prefix="cov", powertype="", simset=DeusPurSet("all_256"),
-                     isimmin=1, isimmax=1, ioutput=1):
+                     isimmin=1, isimmax=1, ioutput=1, extension=".txt"):
     """ Output file name generator
     
     Parameters
@@ -408,6 +408,8 @@ def output_file_name(prefix="cov", powertype="", simset=DeusPurSet("all_256"),
         final number of simulation used (default is 1)
     ioutput : int
         snapshot number (default is 1)
+    extension: string
+        extension of the file (default ".txt")
     
     Returns
     ------
@@ -420,14 +422,14 @@ def output_file_name(prefix="cov", powertype="", simset=DeusPurSet("all_256"),
     fname = prefix+"_"+powertype+"_"+str("%05d" % ioutput)+"_"
     if nsim == simset.nsimmax:
         if simset.cosmo:
-            fname = fname+"cosmo_model"+str(int(nmodel)).zfill(2)+".txt"
+            fname = fname+"cosmo_model"+str(int(nmodel)).zfill(2)+extension
         else:
-            fname = fname+simset.name+".txt"
+            fname = fname+simset.name+extension
     else:
         if simset.cosmo:
-            fname = fname+"cosmo_model"+str(int(nmodel)).zfill(2)+"_"+str(isimmin)+"_"+str(isimmax)+".txt"
+            fname = fname+"cosmo_model"+str(int(nmodel)).zfill(2)+"_"+str(isimmin)+"_"+str(isimmax)+extension
         else:
-            fname = fname+simset.name+"_"+str(isimmin)+"_"+str(isimmax)+".txt"
+            fname = fname+simset.name+"_"+str(isimmin)+"_"+str(isimmax)+extension
 
     return fname
 # ---------------------------------------------------------------------------- #
