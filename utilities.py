@@ -341,33 +341,46 @@ def input_file_name(filetype="", mainpath="", simset=DeusPurSet("all_256"), nsim
     
     fullpath = str(mainpath)
 
-    if filetype == "power":
-        dataprefix = "/power/power"+powertype+"_"
-    elif filetype == "info":
-        dataprefix = "/info/info_"
-    elif filetype == "massfunction":
-        dataprefix = "/massfunction/massfunction_"
-    else:
-        raise ValueError("filetype not found")
-
-    setname, nsim = sim_iterator(simset, nsim)
     nmodel = simset.nmodel
-    if setname == "4096_furphase" or setname == "4096_otherphase":
-        fullpath += setname + dataprefix + str(int(noutput)).zfill(5) + ".txt"
-    elif setname == "4096_furphase_512":
-        fullpath += setname + "/boxlen1312-5_n512_lcdmw7_" + str(int(nsim)).zfill(5) + \
-                    dataprefix + str(int(noutput)).zfill(5) + ".txt"
-    elif setname == "4096_furphase_256" or setname == "4096_otherphase_256" or setname == "4096_adaphase_256":
-        fullpath += setname + "/boxlen656-25_n256_lcdmw7_" + str(int(nsim)).zfill(5) + \
-                    dataprefix + str(int(noutput)).zfill(5) + ".txt"
-    elif setname == "64_adaphase_1024" or setname == "64_curiephase_1024":
-        fullpath += setname + "/boxlen656-25_n1024_lcdmw7_" + str(int(nsim)).zfill(5) + \
-                    dataprefix + str(int(noutput)).zfill(5) + ".txt"
-    elif setname == "512_adaphase_512_328-125":
-        fullpath += setname + "/boxlen328-125_n512_model" + str(int(nmodel)).zfill(5) + "_" + str(int(nsim)).zfill(5) \
-                    + dataprefix + str(int(noutput)).zfill(5) + ".txt"
+    if simset.cosmo:
+        if filetype == "power":
+            dataprefix = "/power/output_"+str(int(noutput)).zfill(5)+"/power"+powertype+"_"
+        elif filetype == "info":
+            dataprefix = "/info/info_"
+        else:
+            raise ValueError("filetype not found")
+        if simset.name == "512_adaphase_512_328-125":
+            fullpath += simset.name + "/boxlen328-125_n512_model" + str(int(nmodel)).zfill(5) + "_" + str(int(nsim)).zfill(5) \
+                + "/post/" + dataprefix + str(int(noutput)).zfill(5) + ".txt"
+        else:
+            raise ValueError("setname not found")
     else:
-        raise ValueError("setname not found")
+        if filetype == "power":
+            dataprefix = "/power/power"+powertype+"_"
+        elif filetype == "info":
+            dataprefix = "/info/info_"
+        elif filetype == "massfunction":
+            dataprefix = "/massfunction/massfunction_"
+        else:
+            raise ValueError("filetype not found")
+
+        setname, nsim = sim_iterator(simset, nsim)
+        if setname == "4096_furphase" or setname == "4096_otherphase":
+            fullpath += setname + dataprefix + str(int(noutput)).zfill(5) + ".txt"
+        elif setname == "4096_furphase_512":
+            fullpath += setname + "/boxlen1312-5_n512_lcdmw7_" + str(int(nsim)).zfill(5) + \
+                dataprefix + str(int(noutput)).zfill(5) + ".txt"
+        elif setname == "4096_furphase_256" or setname == "4096_otherphase_256" or setname == "4096_adaphase_256":
+            fullpath += setname + "/boxlen656-25_n256_lcdmw7_" + str(int(nsim)).zfill(5) + \
+                dataprefix + str(int(noutput)).zfill(5) + ".txt"
+        elif setname == "64_adaphase_1024" or setname == "64_curiephase_1024":
+            fullpath += setname + "/boxlen656-25_n1024_lcdmw7_" + str(int(nsim)).zfill(5) + \
+                dataprefix + str(int(noutput)).zfill(5) + ".txt"
+        elif setname == "512_adaphase_512_328-125":
+            fullpath += setname + "/boxlen328-125_n512_model" + str(int(nmodel)).zfill(5) + "_" + str(int(nsim)).zfill(5) \
+                + dataprefix + str(int(noutput)).zfill(5) + ".txt"
+        else:
+            raise ValueError("setname not found")
     
     if okprint:
         print fullpath
