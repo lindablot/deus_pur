@@ -2,6 +2,7 @@
 # Linda Blot (linda.blot@obspm.fr) - 2019
 # ---------------------------------- IMPORT ---------------------------------- #
 from power_stats import *
+from scipy.interpolate import interp1d
 # ---------------------------------------------------------------------------- #
 
 
@@ -9,7 +10,7 @@ from power_stats import *
 def mean_clk(powertype, mainpath, simset, isimmin, isimmax, zsource, rebin=0, okprint=False, store=False, outpath="."):
     """ Mean and standard deviation of convergence Cls. See power_spectrum for the description of the power spectrum types. If file exists it will be read from file.
 
-    
+
     Parameters
     ---------
     powertype: string
@@ -30,7 +31,7 @@ def mean_clk(powertype, mainpath, simset, isimmin, isimmax, zsource, rebin=0, ok
         store file. If True and file exists it will be overwritten (default False)
     outpath: string
         path where output file is stored (default empty)
-    
+
     Returns
     -------
     3 numpy arrays
@@ -47,7 +48,7 @@ def mean_clk(powertype, mainpath, simset, isimmin, isimmax, zsource, rebin=0, ok
     else:
         if okprint:
             print "Computing mean and standard deviation of Cls"
-        l, clks = load_clk(powertype, mainpath, simset, zsource, rebin, outpath, okprint)
+        l, clks = load_clk(powertype, mainpath, simset, zsource, rebin = rebin, outpath = outpath, okprint = okprint)
         clks = clks[isimmin-1:isimmax]
 
         clk_mean = np.mean(clks, axis=0)
@@ -72,11 +73,74 @@ def mean_clk(powertype, mainpath, simset, isimmin, isimmax, zsource, rebin=0, ok
 
 
 
+# -------------------------------- COVARIANCE CLK ---------------------------------- #
+def cov_clk(powertype, mainpath, simset, isimmin, isimmax, zsource, rebin=0, okprint=False, store=False, outpath="."):
+    """ Covariance of convergence Cls. See power_spectrum for the description of the power spectrum types. If file exists it will be read from file.
+
+
+    Parameters
+    ---------
+    powertype: string
+        type of power spectrum: power, nyquist, renormalized, corrected, mcorrected, linear or linear_mock
+    mainpath: string
+        path to base folder
+    simset: Simset instance
+        simulation set
+    isimmin: int
+        mimimum simulation number
+    isimmax: int
+        maximum simulation number
+    zsource: float
+        redshift of the source
+    okprint: bool
+        verbose (default False)
+    store: bool
+        store file. If True and file exists it will be overwritten (default False)
+    outpath: string
+        path where output file is stored (default empty)
+
+    Returns
+    -------
+    4 numpy arrays
+        l, average Cl of convergence, standard deviation and covariance
+    """
+
+    nsim = isimmax-isimmin+1
+    fname = outpath+"/"+output_file_name("cov_cls", powertype, simset, isimmin, isimmax, zsource)
+
+    if os.path.isfile(fname) and not store:
+        if okprint:
+            print "Reading covariance of Cls from file: ", fname
+        l, clk_mean, clk_sigma = mean_clk(powertype, mainpath, simset, isimmin, isimmax, zsource, rebin=rebin, outpath=outpath)
+        clk_cov = pd.read_csv(fname, delim_whitespace=True, header=None).values
+    else:
+        if okprint:
+            print "Computing covariance of Cls"
+        l, clks = load_clk(powertype, mainpath, simset, zsource, rebin = rebin, outpath = outpath, okprint = okprint)
+        clks = clks[isimmin-1:isimmax]
+        l, clk_mean, clk_sigma = mean_clk(powertype, mainpath, simset, isimmin, isimmax, zsource, rebin=rebin, outpath=outpath)
+        clk_cov=np.cov(clks,rowvar=False)
+
+        if store:
+            if okprint:
+                print "Writing file: ", fname
+            f = open(fname, "w")
+            for i in xrange(0, l.size):
+                for j in xrange(0, l.size):
+                    f.write(str(fltformat % clk_cov[i, j])+" ")
+                f.write("\n")
+            f.close()
+
+    return l, clk_mean, clk_sigma, clk_cov
+# ---------------------------------------------------------------------------- #
+
+
+
 # ----------------------- PDF OF CONVERGENCE CLS ----------------------------- #
 def distrib_clk(powertype, mainpath, simset, isimmin, isimmax, zsource, nbin=50, lref=50, rebin=0, norm=False, okprint=False, store=False, outpath="."):
     """ Distribution of convergence Cl at given l. See power_spectrum for the description of the power spectrum types. If file exists it will be read from file.
 
-    
+
     Parameters
     ---------
     powertype: string
@@ -103,7 +167,7 @@ def distrib_clk(powertype, mainpath, simset, isimmin, isimmax, zsource, nbin=50,
         store file. If True and file exists it will be overwritten (default False)
     outpath: string
         path where output file is stored (default empty)
-    
+
     Returns
     -------
     numpy array
@@ -122,12 +186,12 @@ def distrib_clk(powertype, mainpath, simset, isimmin, isimmax, zsource, nbin=50,
     else:
         if okprint:
             print "Computing distribution at l=",lref
-        l, clks = load_clk(powertype, mainpath, simset, zsource, rebin)
+        l, clks = load_clk(powertype, mainpath, simset, zsource, rebin = rebin)
         clk_values = clks[isimmin-1:isimmax,np.searchsorted(l, lref)]
 
         nclk_bin, bins = np.histogram(clk_values, nbin, density=norm)
         bincenter = 0.5*(bins[1:]+bins[:-1])
-        
+
         if store:
             if okprint:
                 print "Writing file: ", fname
@@ -144,7 +208,7 @@ def distrib_clk(powertype, mainpath, simset, isimmin, isimmax, zsource, nbin=50,
 def high_moments_clk(powertype, mainpath, simset, isimmin, isimmax, zsource, rebin=0, unbiased=True, okprint=False, store=False, outpath="."):
     """ Skewness and Kurtosis of the distribution of convergence Cls. See power_spectrum for the description of the power spectrum types. If file exists it will be read from file.
 
-    
+
     Parameters
     ---------
     powertype: string
@@ -167,7 +231,7 @@ def high_moments_clk(powertype, mainpath, simset, isimmin, isimmax, zsource, reb
         store file. If True and file exists it will be overwritten (default False)
     outpath: string
         path where output file is stored (default empty)
-    
+
     Returns
     -------
     3 numpy arrays
@@ -175,7 +239,7 @@ def high_moments_clk(powertype, mainpath, simset, isimmin, isimmax, zsource, reb
     """
 
     nsim = isimmax-isimmin+1
-    
+
     if unbiased:
         bias = "unbiased"
     else:
@@ -192,7 +256,7 @@ def high_moments_clk(powertype, mainpath, simset, isimmin, isimmax, zsource, reb
         l, clk_mean, clk_sigma = mean_clk(powertype, mainpath, simset, isimmin, isimmax, zsource, rebin)
         clk_skew = np.zeros(l.size)
         clk_kurt = np.zeros(l.size)
-        ll, clks = load_clk(powertype, mainpath, simset, zsource, rebin, outpath)
+        ll, clks = load_clk(powertype, mainpath, simset, zsource, rebin = rebin, outpath = outpath)
         if l.size!=ll.size:
             print "Inconsistent l size in high moments"
             exit()
@@ -221,16 +285,16 @@ def high_moments_clk(powertype, mainpath, simset, isimmin, isimmax, zsource, reb
                 f.write(str("%-.12e" % l[i]) + " " + str("%-.12e" % clk_skew[i]) + " " +
                         str("%-.12e" % clk_kurt[i]) + "\n")
             f.close()
-    
+
     return l, clk_skew, clk_kurt
 # ---------------------------------------------------------------------------- #
 
 
 
 # --------------------------- COMPUTE CLS FROM PKS --------------------------- #
-def pk2clk(powertype, mainpath, simset, nsim, zsource, rebin=0, k=np.zeros(0), pk_allz=np.zeros(0), lmax=4000):
+def pk2clk(powertype, mainpath, simset, nsim, zsource, rebin=0, kk=np.zeros(0), pk_allz=np.zeros(0), lmax=2000, extrapolate=True):
     """ Function to compute Cls of convergence summing the power spectra of all the snapshots between the observer and the source redshift
-        
+
     Parameters
     ---------
     powertype: string
@@ -243,13 +307,13 @@ def pk2clk(powertype, mainpath, simset, nsim, zsource, rebin=0, k=np.zeros(0), p
         simulation number
     zsource: float
         redshift of the source
-    k: numpy array
+    kk: numpy array
         k (optional)
     pk_allz: numpy array (nsnapshot, k.size)
         array of P(k) for all snapshots (optional)
     lmax: int
-        maximum l (optional, default 4000), it is overridden based on kmax of pk
-        
+        maximum l (optional, default 2000), it is overridden based on kmax of pk
+
     Returns
     -------
     numpy array
@@ -257,8 +321,8 @@ def pk2clk(powertype, mainpath, simset, nsim, zsource, rebin=0, k=np.zeros(0), p
     numpy array
         Cl
     """
-    
-    read_pk_file = k.size==0
+
+    read_pk_file = kk.size==0
     zlist = 1./np.array(simset.alist)-1.
     snaplist = np.arange(1,zlist.size+1)
     # initialise cosmology
@@ -292,16 +356,29 @@ def pk2clk(powertype, mainpath, simset, nsim, zsource, rebin=0, k=np.zeros(0), p
         if read_pk_file:
             k, pk = power_spectrum(powertype, mainpath, simset, nsim, snaplist[i], a)
         else:
+            k = kk
             pk = pk_allz[snaplist[i]-1]
-        if kmax>k[-1]:
-            l_max = k[-1]*rmed
-        else:
-            l_max = lmax
-        pk=np.extract(k<=kmax,pk)
         if zlist[i]==np.max(zlist):
             l_min = k[0]*rmed
-        weight=1.5*omega_m*fact*fact*(rs-rmed)/(rs*a)
-        li=np.extract(k<=kmax,k)*rmed
+        if extrapolate:
+            interp_logpk=interp1d(np.log10(k),np.log10(pk),fill_value="extrapolate")
+            delta_k=np.mean(np.diff(k))
+            new_k=np.append(k,np.arange(k[-1]+delta_k,13.5+delta_k,delta_k))
+            new_logk=np.log10(new_k)
+            new_logpk=interp_logpk(new_logk)
+            new_pk=np.power(10.,new_logpk)
+            k=new_k
+            pk=new_pk
+            li=k*rmed
+            l_max = lmax
+        else:
+            if kmax>k[-1]:
+                l_max = k[-1]*rmed
+            else:
+                l_max = lmax
+            pk=np.extract(k<=kmax,pk)
+            li=np.extract(k<=kmax,k)*rmed
+        weight=1.5*Omega_m*fact*fact*(rs-rmed)/(rs*a)
         limin=int(np.min(li))
         nli=int(np.max(li))-limin+1
         if nli==0:
@@ -326,7 +403,7 @@ def pk2clk(powertype, mainpath, simset, nsim, zsource, rebin=0, k=np.zeros(0), p
 def load_clk(powertype, mainpath, simset, zsource, rebin=0, okprint=False, load_power_file=True, outpath="."):
     """
     Load all the convergence Cls of a given simulation set in memory
-    
+
     Parameters
     ----------
     powertype: string
@@ -345,13 +422,14 @@ def load_clk(powertype, mainpath, simset, zsource, rebin=0, okprint=False, load_
         use function load_power to load all the power spectra of the set (faster but more memory consuming, default True)
     outpath: string
         path where output file is stored (default .)
-        
+
     Returns
     -------
     2 numpy arrays
         vector of k values and array of power spectra of shape (nsim,nbin)
     """
-    fname = outpath+"/"+output_file_name("clks", powertype, simset, 1, simset.nsimmax, zsource, extension=".npy")
+
+    fname = outpath+"/"+output_file_name("clks", powertype, simset, 1, simset.nsimmax+1, zsource, extension=".npy")
     if os.path.isfile(fname):
         l, dummy = pk2clk(powertype, mainpath, simset, 1, zsource)
         clks_array=np.load(fname)
@@ -359,7 +437,7 @@ def load_clk(powertype, mainpath, simset, zsource, rebin=0, okprint=False, load_
         if load_power_file:
             power_array = []
             for isnap in range(1,len(simset.alist)+1):
-                power_k, power_ps = load_power(powertype, mainpath, simset, isnap, simset.snap_to_a(isnap), rebin=0, outpath=outpath, okprint=True)
+                power_k, power_ps = load_power(powertype, mainpath, simset, isnap, simset.snap_to_a(isnap), rebin=0, outpath=outpath, okprint=okprint)
                 power_array.append(power_ps)
             power_array=np.array(power_array)
             l, dummy = pk2clk(powertype, mainpath, simset, 1, zsource, 0, power_k, power_array[:,0,:])
