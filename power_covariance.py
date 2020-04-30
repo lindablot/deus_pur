@@ -10,7 +10,7 @@ from power_stats import *
 def cov_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isimmin=1, isimmax=2, noutput=1, aexp=0., okprint=False, store=False, rebin=0, outpath="."):
     """ Covariance of power spectra. See power_spectrum for the description of the power spectrum types. If file exists it will be read from file.
 
-    
+
     Parameters
     ---------
     powertype: string
@@ -35,7 +35,7 @@ def cov_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isim
         number of bins to combine when rebinning (default 0, i.e. no rebinning)
     outpath: string
         path where output file is stored (default .)
-    
+
     Returns
     -------
     4 numpy arrays
@@ -60,16 +60,10 @@ def cov_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isim
             power_psigma = np.sqrt(2./simset.num_modes(power_k)) * power_pmean
             power_pcov = np.diag(power_psigma * power_psigma)
         else:
+            power_k, power_p = load_power(powertype, mainpath, simset, noutput, aexp, rebin = rebin, outpath = outpath)
+            power_p = power_p[isimmin-1:isimmax]
             power_k, power_pmean, power_psigma = mean_power(powertype, mainpath, simset, isimmin, isimmax, noutput, aexp, okprint, rebin = rebin, outpath = outpath)
-            power_pcov = np.zeros((power_k.size, power_k.size))
-            for isim in xrange(isimmin, isimmax):
-                if okprint:
-                    true_simset, true_isim = sim_iterator(simset, isim)
-                    print true_simset, true_isim
-                dummy, power_p = power_spectrum(powertype, mainpath, simset, isim, noutput, aexp, okprint, rebin = rebin)
-                diff_power_p = power_p - power_pmean
-                power_pcov += np.outer(diff_power_p, diff_power_p)
-            power_pcov /= float(nsim-1)
+            power_pcov=np.cov(power_p,rowvar=False)
 
         if store:
             f = open(fname, "w")
@@ -89,7 +83,7 @@ def corr_coeff(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isi
                aexp=0., okprint=False, store=False, rebin=0, outpath="."):
     """ Correlation coefficient of power spectra. See power_spectrum for the description of the power spectrum types. If file exists it will be read from file.
 
-    
+
     Parameters
     ---------
     powertype: string
@@ -114,7 +108,7 @@ def corr_coeff(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isi
         number of bins to combine when rebinning (default 0, i.e. no rebinning)
     outpath: string
         path where output file is stored (default .)
-    
+
     Returns
     -------
     4 numpy arrays
@@ -151,7 +145,7 @@ def corr_coeff(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isi
 def signoise(powertype="nyquist", mainpath="", simset=DeusPurSet("all_256"), noutput=1, nsimmax=1, aexp=0., unbiased=False, okprint=False, store=False, rebin=0, outpath="."):
     """ Signal to noise of power spectrum. See power_spectrum for the description of the power spectrum types. If file exists it will be read from file.
 
-    
+
     Parameters
     ---------
     powertype: string
@@ -176,7 +170,7 @@ def signoise(powertype="nyquist", mainpath="", simset=DeusPurSet("all_256"), nou
         number of bins to combine when rebinning (default 0, i.e. no rebinning)
     outpath: string
         path where output file is stored (default .)
-    
+
     Returns
     -------
     2 numpy arrays
@@ -197,7 +191,7 @@ def signoise(powertype="nyquist", mainpath="", simset=DeusPurSet("all_256"), nou
             print "Computing signal-to-noise"
         nmax = nsimmax-1
         step = 1
-        
+
         power_k, power_pmean, dummy, power_pcov = cov_power(powertype, mainpath, simset, 1, nsimmax, noutput, aexp, okprint, rebin = rebin, outpath = outpath)
 
         num_iter = min(power_k.size, nmax-2)
