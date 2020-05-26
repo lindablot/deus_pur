@@ -12,20 +12,20 @@ import pandas as pd
 class Simset(object):
     """
     Class that represents the simulation set
-    
+
     Attributes
     ---------
     l_box : double
         size of the simulation box
     npart : double
         cube root of the number of particles
-    nsimmax : int 
+    nsimmax : int
         last simulation number
     nyquist : double
         half of the nyquist frequency of the power spectrum grid
     cosmo_par : dictionary with keys om_b, om_m, n_s, h, w_0, w_a, sigma_8, m_nu, om_nu
         cosmological parameters Omega_m*h^2, Omega_m*h^2, n_s, h, w_0, w_a, sigma_8, m_nu, Omega_nu*h^2
-    
+
     Methods
     ------
     num_modes(k)
@@ -40,12 +40,12 @@ class Simset(object):
             size of the simulation box
         npart : double
             cube root of the number of particles
-        nsimmax : int 
+        nsimmax : int
             last simulation number
         cosmo_par : dictionary with keys om_b, om_m, n_s, h, w_0, w_a, sigma_8, m_nu, om_nu
             cosmological parameters Omega_m*h^2, Omega_m*h^2, n_s, h, w_0, w_a, sigma_8, m_nu, Omega_nu*h^2
         """
-        
+
         self.l_box = l_box
         self.npart = npart
         self.nsimmax = nsimmax
@@ -54,20 +54,20 @@ class Simset(object):
 
     def num_modes(self, power_k):
         """Computes the number of modes at given k values
-        
+
         Assumes regular linear binning
-        
+
         Parameters
         ----------
         power_k : numpy array
             array of k values
-            
+
         Returns
         -------
         numpy array
             number of modes at given k values
         """
-        
+
         delta_k = np.diff(power_k)
         delta_k = np.append(delta_k, delta_k[-1])
         return self.l_box**3 / (2.*math.pi**2) * (power_k*power_k*delta_k + delta_k*delta_k*delta_k/12.)
@@ -75,9 +75,9 @@ class Simset(object):
 
 class DeusPurSet(Simset):
     """ Derived class from the Simset class used to represent the Deus Pur simulation set
-    
+
     Given the set name sets all attributes of the Simset class and adds some useful attributes
-    
+
     Attributes
     ----------
     name : string
@@ -92,7 +92,7 @@ class DeusPurSet(Simset):
         cosmological model name
     nmodel : int
         cosmological model number
-        
+
     Methods
     -------
     snap_to_a(nsnap)
@@ -100,11 +100,11 @@ class DeusPurSet(Simset):
     snap_to_z(nsnap)
         gives the redshift corresponding to the snapshot number
     """
-    
+
     simsets = ["4096_furphase_256", "4096_adaphase_256", "4096_otherphase_256", "all_256", "4096_furphase_512",
                "64_adaphase_1024", "64_curiephase_1024", "all_1024", "512_adaphase_512_328-125",
                "4096_furphase", "4096_otherphase"]
-    
+
     def __init__(self, name, nmodel=0, datapath="/data/deus_pur_cosmo/data/"):
         """
         Parameters
@@ -116,7 +116,8 @@ class DeusPurSet(Simset):
         datapath: string, optional
             path to the folder that contains the models_parameters.txt file (default is /data/deus_pur_cosmo/data/)
         """
-        
+
+        self.datapath = datapath
         if name in self.simsets:
             self.name = name
         else:
@@ -162,14 +163,14 @@ class DeusPurSet(Simset):
             self.nsimmax = 1
             self.alist = None
             self.cosmo = False
-        
+
         if not self.cosmo or nmodel==0:
             self.cosmo_par={'om_b': 0.04356*0.5184, 'om_m': 0.2573*0.5184, 'n_s': 0.963, 'h': 0.72, 'w_0': -1., 'w_a':0., 'sigma_8': 0.801, 'm_nu': 0., 'om_nu':0.}
         else:
             Om_b, Om_m, Om_lr, Om_nu, h, n_s, w, sigma_8 = np.genfromtxt(datapath+"/models_parameters.txt",unpack=True,skip_header=1)
             sigma_8_camb = np.array([1.5392379, 0.79753089, 0.8379174, 0.7400835, 0.7975309, 0.7975309, 0.9173459, 0.6546858, 0.6992297, 0.8966455])
             self.cosmo_par = {'om_b': Om_b[nmodel-1]*h[nmodel-1]**2, 'om_m': Om_m[nmodel-1]*h[nmodel-1]**2, 'n_s': n_s[nmodel-1], 'h': h[nmodel-1], 'w_0': w[nmodel-1], 'w_a':0., 'sigma_8': sigma_8[nmodel-1], 'm_nu': 0., 'om_nu': 0., 'sigma_8_camb': sigma_8_camb[nmodel-1]}
-            
+
         if self.cosmo:
             self.model = "model"+str(int(nmodel)).zfill(5)
         else:
@@ -178,44 +179,44 @@ class DeusPurSet(Simset):
 
         Simset.__init__(self, self.l_box, self.npart, self.nsimmax, self.cosmo_par)
         self.nyquist = math.pi/self.l_box*self.npart
-        
+
         if name == "all_256" or name == "all_1024":
             self.composite = True
         else:
             self.composite = False
-               
+
     def snap_to_a(self, noutput):
         """Gives the expansion factor corresponding to the snapshot number
-          
+
         Parameters
         ----------
         noutput : int
             snapshot number
-          
+
         Returns
         -------
         double
             expansion factor corresponding to the snapshot number
         """
-        
+
         if self.alist==None:
             raise NotImplementedError("alist not implemented")
         return self.alist[noutput-1]
 
     def snap_to_z(self, noutput):
         """Gives the redshift corresponding to the snapshot number
-          
+
         Parameters
         ----------
         noutput : int
             snapshot number
-          
+
         Returns
         -------
         double
             redshift corresponding to the snapshot number
         """
-        
+
         return 1./self.snap_to_a(noutput)-1.
 
 # ---------------------------------------------------------------------------- #
@@ -224,9 +225,9 @@ class DeusPurSet(Simset):
 # ------------------------------ SIMULATION SET ITERATOR --------------------------------- #
 def sim_iterator(simset=DeusPurSet("all_256"), isim=1, random=False, replace=False):
     """ Tool to iterate through composite simulation sets
-    
+
     Given the composite set simulation number returns the original simulation set name and number for file retrieving. The simulations are iterated in order except if the random parameter is set to True, in this case a file with a random order is saved to disk. To replace the random order set the parameter replace to True.
-    
+
     Parameters
     ---------
     simset : Simset instance
@@ -237,7 +238,7 @@ def sim_iterator(simset=DeusPurSet("all_256"), isim=1, random=False, replace=Fal
         random order of simulations
     replace : bool
         replace the random sequence of simulation numbers
-        
+
     Returns
     -------
     string
@@ -245,7 +246,7 @@ def sim_iterator(simset=DeusPurSet("all_256"), isim=1, random=False, replace=Fal
     int
         simulation number in the original set order
     """
-    
+
     if random:
         fname = "random_series_"+simset.name+".txt"
         if os.path.isfile(fname) and not replace:
@@ -291,20 +292,20 @@ def sim_iterator(simset=DeusPurSet("all_256"), isim=1, random=False, replace=Fal
 def cosmo_iterator(param,var):
     """
     Given a parameter name and variation returns the number of the corresponding model
-    
+
     Parameters
     ----------
     param: string
         simset.cosmo_par key
     var: string
         variation of the parameter ('p'=plus, 'fid'=fiducial, 'm'=minus)
-        
+
     Returns
     -------
     int
         number of cosmological model
     """
-    
+
     ncosmo_map = {'om_m':{'m':8, 'fid':2, 'p':7}, 'h':{'m':9, 'fid':2, 'p':10}, 'sigma_8':{'m':5, 'fid':2, 'p':6}, 'w_0':{'m':3, 'fid':2, 'p':4}}
     return ncosmo_map[param][var]
 # ---------------------------------------------------------------------------- #
@@ -315,7 +316,7 @@ def cosmo_iterator(param,var):
 def input_file_name(filetype="", mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1,
                     okprint=False, powertype="gridcic"):
     """ Input file name generator
-    
+
     Parameters
     ---------
     filetype : string
@@ -332,13 +333,13 @@ def input_file_name(filetype="", mainpath="", simset=DeusPurSet("all_256"), nsim
         verbose mode (default is False)
     powertype : string
         type of power spectrum file (default is gridcic)
-        
+
     Returns
     -------
     string
         filename
     """
-    
+
     fullpath = str(mainpath)
 
     nmodel = simset.nmodel
@@ -381,7 +382,7 @@ def input_file_name(filetype="", mainpath="", simset=DeusPurSet("all_256"), nsim
                 + dataprefix + str(int(noutput)).zfill(5) + ".txt"
         else:
             raise ValueError("setname not found")
-    
+
     if okprint:
         print fullpath
 
@@ -393,7 +394,7 @@ def input_file_name(filetype="", mainpath="", simset=DeusPurSet("all_256"), nsim
 def output_file_name(prefix="cov", powertype="", simset=DeusPurSet("all_256"),
                      isimmin=1, isimmax=1, file_id=1, extension=".txt"):
     """ Output file name generator
-    
+
     Parameters
     ---------
     prefix : string
@@ -402,7 +403,7 @@ def output_file_name(prefix="cov", powertype="", simset=DeusPurSet("all_256"),
         type of power spectrum file (default is empty)
     simset : DeusPurSet instance
         simulation set (default is all_256)
-    isimmin :  int 
+    isimmin :  int
         initial number of simulation used (default is 1)
     isimmax : int
         final number of simulation used (default is 1)
@@ -410,7 +411,7 @@ def output_file_name(prefix="cov", powertype="", simset=DeusPurSet("all_256"),
         number identifying the file (could be snapshot number or source redshift, default is 1)
     extension: string
         extension of the file (default ".txt")
-    
+
     Returns
     ------
     string
@@ -441,7 +442,7 @@ def output_file_name(prefix="cov", powertype="", simset=DeusPurSet("all_256"),
 # ------------------------------- EXTRAPOLATE -------------------------------- #
 def extrapolate(value_x, array_x, array_y):
     """ Linearly extrapolate a function at a given value
-    
+
     Parameters
     ----------
     value_x : double
@@ -450,13 +451,13 @@ def extrapolate(value_x, array_x, array_y):
         x values of the function
     array_y : numpy array
         y values of the function
-        
+
     Returns
     -------
     double
         extrapolated value
     """
-    
+
     if value_x < array_x[0]:
         value_y = array_y[0]+(value_x-array_x[0])*(array_y[0]-array_y[1])/(array_x[0]-array_x[1])
     elif value_x > array_x[-1]:
@@ -470,7 +471,7 @@ def extrapolate(value_x, array_x, array_y):
 # ------------------------------- REBIN Y(k) WITH Dk/k FIXED ------------------ #
 def rebin(k=np.zeros(0), y=np.zeros(0), lim=0.1):
     """ Rebin function with fixed dx/x
-    
+
     Parameters
     ---------
     k : numpy array
@@ -479,7 +480,7 @@ def rebin(k=np.zeros(0), y=np.zeros(0), lim=0.1):
         y values of the function
     lim : double
         limit
-    
+
     Returns
     ------
     double
@@ -489,10 +490,10 @@ def rebin(k=np.zeros(0), y=np.zeros(0), lim=0.1):
     double
         rebinned y error
     """
-    
+
     delta_k = np.diff(k)
     delta_k = np.append(delta_k, delta_k[delta_k.size-1])
-    
+
     interval = 0.
     j = 0
     count = 0
@@ -510,7 +511,7 @@ def rebin(k=np.zeros(0), y=np.zeros(0), lim=0.1):
             interval = 0.
             j += 1
             max_i = i
-        
+
     rebin_y = new_y[0:j]
     rebin_k = new_k[0:j]
 
@@ -541,7 +542,7 @@ def rebin(k=np.zeros(0), y=np.zeros(0), lim=0.1):
 # ----------------------  REBIN POWER SPECTRUM EXACTLY ---------------------- #
 def rebin_pk(k, pk, nk, nbins):
     """ Rebin the power spectrum exactly using the number of modes
-    
+
     Parameters
     ---------
     k : numpy array
@@ -552,7 +553,7 @@ def rebin_pk(k, pk, nk, nbins):
         number of modes at k values
     nbins : int
         number of bins to combine
-        
+
     Returns
     ------
     numpy array
@@ -560,7 +561,7 @@ def rebin_pk(k, pk, nk, nbins):
     numpy array
         rebinned power spectrum values
     """
-    
+
     if k.size % nbins != 0:
         k = k[:(k.size-k.size % nbins)]
         nk = nk[:(k.size-k.size % nbins)]
@@ -583,7 +584,7 @@ def rebin_pk(k, pk, nk, nbins):
 # ---------------------------------------------------------------------------- #
 def rebin_cl(l, Cl, nbins):
     """ Rebin the Cls
-    
+
     Parameters
     ---------
     l : numpy array
@@ -592,7 +593,7 @@ def rebin_cl(l, Cl, nbins):
         values of the Cls
     nbins : int
         number of bins to combine
-        
+
     Returns
     ------
     numpy array
@@ -600,7 +601,7 @@ def rebin_cl(l, Cl, nbins):
     numpy array
         rebinned Cl values
     """
-    
+
     if l.size % nbins != 0:
         l = l[:(l.size-l.size % nbins)]
         Cl = np.take(Cl,np.arange(0,l.size-l.size % nbins),-1)

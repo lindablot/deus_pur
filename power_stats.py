@@ -523,7 +523,7 @@ def power_spectrum(powertype="power", mainpath="", simset=DeusPurSet("all_256"),
     """
 
     setname, nsim = sim_iterator(simset, nsim)
-    internal_simset = DeusPurSet(setname,simset.nmodel,datapath=mainpath+"/data/")
+    internal_simset = DeusPurSet(setname,simset.nmodel,datapath=simset.datapath)
     aexp_info = read_aexp_info(input_file_name("info", mainpath, internal_simset, nsim, noutput))
     if not np.isclose(aexp, aexp_info, atol=1.e-2):
         print "Warning: aexp is different from snapshot expansion factor by ", aexp-aexp_info
