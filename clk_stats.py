@@ -49,9 +49,11 @@ def mean_clk(powertype, mainpath, simset, isimmin, isimmax, zsource, rebin=0, ok
         if okprint:
             print "Computing mean and standard deviation of Cls"
         l, clks = load_clk(powertype, mainpath, simset, zsource, rebin = rebin, outpath = outpath, okprint = okprint)
+
         clks = clks[isimmin-1:isimmax]
 
         clk_mean = np.mean(clks, axis=0)
+
         if nsim > 1:
             clk_sigma = np.std(clks, axis=0, ddof=1)
         else:
@@ -132,6 +134,71 @@ def cov_clk(powertype, mainpath, simset, isimmin, isimmax, zsource, rebin=0, okp
             f.close()
 
     return l, clk_mean, clk_sigma, clk_cov
+# ---------------------------------------------------------------------------- #
+
+
+
+# -------------------------------- CORRELATION COEFFICIENT CLK ---------------------------------- #
+def corr_coeff_clk(powertype, mainpath, simset, isimmin, isimmax, zsource, rebin=0, okprint=False, store=False, outpath="."):
+    """ Correlation coefficient of convergence Cls. See power_spectrum for the description of the power spectrum types. If file exists it will be read from file.
+
+
+    Parameters
+    ---------
+    powertype: string
+        type of power spectrum: power, nyquist, renormalized, corrected, mcorrected, linear or linear_mock
+    mainpath: string
+        path to base folder
+    simset: Simset instance
+        simulation set
+    isimmin: int
+        mimimum simulation number
+    isimmax: int
+        maximum simulation number
+    zsource: float
+        redshift of the source
+    rebin: int
+        number of bins to combine when rebinning (default 0, i.e. no rebinning)
+    okprint: bool
+        verbose (default False)
+    store: bool
+        store file. If True and file exists it will be overwritten (default False)
+    outpath: string
+        path where output file is stored (default empty)
+
+    Returns
+    -------
+    4 numpy arrays
+        l, average Cl of convergence, standard deviation, covariance and correlation coefficient
+    """
+
+    nsim = isimmax-isimmin+1
+    fname = outpath+"/"+output_file_name("corr_coeff_cls", powertype, simset, isimmin, isimmax, zsource)
+
+    if os.path.isfile(fname) and not store:
+        if okprint:
+            print "Reading correlation coefficient of Cls from file: ", fname
+        l, clk_mean, clk_sigma, clk_cov = cov_clk(powertype, mainpath, simset, isimmin, isimmax, zsource, rebin=rebin, outpath=outpath)
+        clk_corr_coeff = pd.read_csv(fname, delim_whitespace=True, header=None).values
+    else:
+        if okprint:
+            print "Computing covariance of Cls"
+        l, clks = load_clk(powertype, mainpath, simset, zsource, rebin = rebin, outpath = outpath, okprint = okprint)
+        clks = clks[isimmin-1:isimmax]
+        l, clk_mean, clk_sigma, clk_cov = cov_clk(powertype, mainpath, simset, isimmin, isimmax, zsource, rebin=rebin, outpath=outpath)
+        clk_corr_coeff=np.corrcoef(clks,rowvar=False)
+
+        if store:
+            if okprint:
+                print "Writing file: ", fname
+            f = open(fname, "w")
+            for i in xrange(0, l.size):
+                for j in xrange(0, l.size):
+                    f.write(str(fltformat % clk_corr_coeff[i, j])+" ")
+                f.write("\n")
+            f.close()
+
+    return l, clk_mean, clk_sigma, clk_cov, clk_corr_coeff
 # ---------------------------------------------------------------------------- #
 
 
@@ -292,7 +359,7 @@ def high_moments_clk(powertype, mainpath, simset, isimmin, isimmax, zsource, reb
 
 
 # --------------------------- COMPUTE CLS FROM PKS --------------------------- #
-def pk2clk(powertype, mainpath, simset, nsim, zsource, rebin=0, kk=np.zeros(0), pk_allz=np.zeros(0), lmax=2000, extrapolate=True):
+def pk2clk(powertype, mainpath, simset, nsim, zsource, rebin=0, kk=np.zeros(0), pk_allz=np.zeros(0), lmax=2000, extrapolate=False):
     """ Function to compute Cls of convergence summing the power spectra of all the snapshots between the observer and the source redshift
 
     Parameters
@@ -363,7 +430,7 @@ def pk2clk(powertype, mainpath, simset, nsim, zsource, rebin=0, kk=np.zeros(0), 
         if extrapolate:
             interp_logpk=interp1d(np.log10(k),np.log10(pk),fill_value="extrapolate")
             delta_k=np.mean(np.diff(k))
-            new_k=np.append(k,np.arange(k[-1]+delta_k,13.5+delta_k,delta_k))
+            new_k=np.append(k,np.arange(k[-1]+delta_k,lmax/rmed+delta_k,delta_k))
             new_logk=np.log10(new_k)
             new_logpk=interp_logpk(new_logk)
             new_pk=np.power(10.,new_logpk)
