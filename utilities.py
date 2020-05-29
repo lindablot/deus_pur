@@ -513,7 +513,7 @@ def output_file_name(prefix="cov", powertype="", simset=DeusPurSet("all_256"),
 
     if simset.name in MinervaSet.simsets:
         mpolename = ["real_space", "monopole", "quadrupole", "hexadecapole"]
-        fname = prefix+"_"+powertype+"_irsd"+str(int(irsd))+"_"+str("%05d"%ioutput)+"_"
+        fname = prefix+"_"+powertype+"_irsd"+str(int(irsd))+"_"+str("%05d"%file_id)+"_"
         if mask > 0:
             fname = fname+"mask"+str(mask)+"_"
         if nsim == simset.nsimmax:
