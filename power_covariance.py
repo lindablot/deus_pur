@@ -68,7 +68,7 @@ def cov_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isim
             power_psigma = np.sqrt(2./simset.num_modes(power_k)) * power_pmean
             power_pcov = np.diag(power_psigma * power_psigma)
         else:
-            power_k, power_p = load_power(powertype, mainpath, simset, noutput, aexp, rebin = rebin, outpath = outpath)
+            power_k, power_p = load_power(powertype, mainpath, simset, noutput, aexp, rebin, irsd, multipole, shotnoise, mask, outpath = outpath)
             power_p = power_p[isimmin-1:isimmax]
             power_k, power_pmean, power_psigma = mean_power(powertype, mainpath, simset, isimmin, isimmax, noutput, aexp, okprint, False, rebin, irsd, multipole, shotnoise, mask, outpath = outpath)
             power_pcov=np.cov(power_p,rowvar=False)

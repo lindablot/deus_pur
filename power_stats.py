@@ -70,7 +70,7 @@ def mean_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isi
                                                   aexp, okprint, False, rebin)
             power_psigma = np.sqrt(2./simset.num_modes(power_k))*power_pmean
         else:
-            power_k, power_p = load_power(powertype, mainpath, simset, noutput, aexp, rebin = rebin, outpath = outpath)
+            power_k, power_p = load_power(powertype, mainpath, simset, noutput, aexp, rebin, irsd, multipole, shotnoise, mask, outpath = outpath)
             power_p = power_p[isimmin-1:isimmax]
             power_pmean = np.mean(power_p, axis=0)
             if nsim > 1:
@@ -148,7 +148,7 @@ def distrib_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), 
     else:
         if okprint:
             print "Computing distribution at k=",kref,"h/Mpc"
-        power_k, power_p = load_power(powertype, mainpath, simset, noutput, aexp, rebin = rebin, outpath = outpath)
+        power_k, power_p = load_power(powertype, mainpath, simset, noutput, aexp, rebin, irsd, multipole, shotnoise, mask, outpath = outpath)
         power_values = power_p[isimmin-1:isimmax,np.searchsorted(power_k, kref)]
 
         npower_bin, bins = np.histogram(power_values, nbin)
@@ -165,6 +165,7 @@ def distrib_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), 
 
     return bincenter, npower_bin
 # ---------------------------------------------------------------------------- #
+
 
 
 # ------------------ HIGH MOMENTS OF SPECTRA PDF ---------------------- #
@@ -259,6 +260,7 @@ def high_moments(powertype="power", mainpath="", simset=DeusPurSet("all_256"), i
 # ---------------------------------------------------------------------------- #
 
 
+
 # ------------------------- SPECTRUM CORRECTED FOR MASS RES EFFECT --------------------------- #
 def mass_corrected_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1,
                          aexp=0., corr_type="var_pres_smooth", okprint=False, store=False):
@@ -327,6 +329,7 @@ def mass_corrected_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, nout
 
     return power_k, corrected_p
 # ---------------------------------------------------------------------------- #
+
 
 
 # ------------------------- CORRECTION TO THE LOW RES SPECTRA ------------------------------ #
