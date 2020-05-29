@@ -297,6 +297,37 @@ class MinervaSet(Simset):
                 return "am_mlim"+str(binnum)
             else:
                 return "mlim"+str(binnum)+"_am"
+
+
+
+class Pinocchio10k(Simset):
+    """ Derived class from the Simset class used to represent the 10000 Euclid Pinocchio mocks
+
+    Attributes
+    ----------
+    binsize : int
+        size of s bin for 2pt function measurements in Mpc/h
+    """
+
+    def __init__(self,mainpath,binsize):
+        """ Init method. Sets the attributes binsize, l_box, npart, nsimmax, cosmo_par, nyquist and cosmo
+
+        Parameters
+        ---------
+        mainpath: str
+            path to the folder where the data is stored
+        binsize: int
+            size of s bin for 2pt function measurements in Mpc/h
+        """
+        self.binsize = binsize
+        self.mainpath = mainpath
+        self.l_box = 1500.
+        self.npart = 1000.
+        self.nsimmax = 9999
+        self.cosmo_par = {'om_b': 0.02224, 'om_m': 0.284954*0.483025, 'n_s': 0.9632, 'h': 0.695, 'w_0': -1., 'sigma_8': 0.828, 'm_nu': 0.}
+        Simset.__init__(self, self.l_box, self.npart, self.nsimmax, self.cosmo_par)
+        self.nyquist = math.pi/self.l_box*self.npart
+        self.cosmo = False
 # ---------------------------------------------------------------------------- #
 
 
@@ -437,6 +468,8 @@ def input_file_name(filetype="", mainpath="", simset=DeusPurSet("all_256"), nsim
         dataprefix = "/info/info"
     elif filetype == "massfunction":
         dataprefix = "/massfunction/massfunction"
+    elif filetype == "twopt":
+        dataprefix = "/twopt/"
     else:
         raise ValueError("filetype not found")
     if isinstance(simset,DeusPurSet):
@@ -463,7 +496,13 @@ def input_file_name(filetype="", mainpath="", simset=DeusPurSet("all_256"), nsim
         else:
             nsimstr = str(int(nsim)).zfill(3)
         fullpath += setname + dataprefix+str(int(irsd)) + "_" + nsimstr + "_" + str(int(noutput)).zfill(3) + ".txt"
+    elif isinstance(simset,Pinocchio10k):
+        if filetype!="twopt":
+            raise NotImplementedError
+        nsimstr = str(int(nsim)).zfill(4)
+        fullpath += "Pinocchio10k" + dataprefix+ "raw/pinocchio_z1.0_"+powertype+"_rs_multi_"+nsimstr + "_ds"+str(simset.binsize)+".dat"
     else:
+        print simset
         raise ValueError("Unknown Simset class")
 
     if okprint:
@@ -511,22 +550,7 @@ def output_file_name(prefix="cov", powertype="", simset=DeusPurSet("all_256"),
 
     nsim = isimmax-isimmin
 
-    if simset.name in MinervaSet.simsets:
-        mpolename = ["real_space", "monopole", "quadrupole", "hexadecapole"]
-        fname = prefix+"_"+powertype+"_irsd"+str(int(irsd))+"_"+str("%05d"%file_id)+"_"
-        if mask > 0:
-            fname = fname+"mask"+str(mask)+"_"
-        if nsim == simset.nsimmax:
-            fname = fname+simset.name
-        else:
-            fname = fname+simset.name+"_"+str(isimmin)+"_"+str(isimmax)
-        if mpole1<0 and mpole2<0:
-            fname = fname + ".txt"
-        elif mpole2<0:
-            fname = fname+"_"+mpolename[mpole]+".txt"
-        else:
-            fname = fname+"_"+mpolename[mpole]+"_"+mpolename[mpole2]+".txt"
-    else:
+    if isinstance(simset, DeusPurSet):
         nmodel = simset.nmodel
         if isinstance(file_id, (int, long)):
             fname = prefix+"_"+powertype+"_"+str("%05d" % file_id)+"_"
@@ -542,6 +566,24 @@ def output_file_name(prefix="cov", powertype="", simset=DeusPurSet("all_256"),
                 fname = fname+"cosmo_model"+str(int(nmodel)).zfill(2)+"_"+str(isimmin)+"_"+str(isimmax)+extension
             else:
                 fname = fname+simset.name+"_"+str(isimmin)+"_"+str(isimmax)+extension
+    else:
+        mpolename = ["real_space", "monopole", "quadrupole", "hexadecapole"]
+        if isinstance(simset, MinervaSet):
+            fname = prefix+"_"+powertype+"_irsd"+str(int(irsd))+"_"+str("%05d"%file_id)+"_"
+            if mask > 0:
+                fname = fname+"mask"+str(mask)+"_"+simset.name
+            else:
+                fname = fname+simset.name
+        else:
+            fname = prefix+"_"+powertype
+        if nsim != simset.nsimmax:
+            fname = fname+"_"+str(isimmin)+"_"+str(isimmax)
+        if mpole<0 and mpole2<0:
+            fname = fname + extension
+        elif mpole2<0:
+            fname = fname+"_"+mpolename[mpole]+extension
+        else:
+            fname = fname+"_"+mpolename[mpole]+"_"+mpolename[mpole2]+extension
 
     return fname
 # ---------------------------------------------------------------------------- #

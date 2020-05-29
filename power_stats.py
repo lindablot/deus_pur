@@ -602,7 +602,7 @@ def power_spectrum(powertype="power", mainpath="", simset=DeusPurSet("all_256"),
 
         nmodes = simset.num_modes(power_k)
 
-    elif isinstance(simset,MinervaSet):
+    elif isinstance(simset,MinervaSet) or isinstance(simset,Pinocchio10k):
         fname = input_file_name("power", mainpath, simset, nsim, noutput, okprint, powertype, irsd, mask)
         power_k, power_p, nmodes = read_power_powerI4(fname,multipole)
         if shotnoise and multipole<2:
