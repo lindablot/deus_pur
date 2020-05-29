@@ -596,7 +596,7 @@ def power_spectrum(powertype="power", mainpath="", simset=DeusPurSet("all_256"),
             plin_interp = np.interp(power_k, power_k_CAMB, plin)
         else:
             raise ValueError("Unknown powertype")
-            
+
         nmodes = simset.num_modes(power_k)
 
     elif isinstance(simset,MinervaSet):
@@ -623,7 +623,7 @@ def power_spectrum(powertype="power", mainpath="", simset=DeusPurSet("all_256"),
 
 
 # ------------------------- LOAD ALL POWER SPECTRA --------------------------- #
-def load_power(powertype, mainpath, simset, noutput, aexp, rebin=0, okprint=False, outpath="."):
+def load_power(powertype, mainpath, simset, noutput, aexp, rebin=0, irsd=0, multipole=0, shotnoise=True, mask=0, okprint=False, outpath="."):
     """
     Load all power spectra of a given simulation set in memory. This leads to faster computations but needs more memory.
 
@@ -641,6 +641,14 @@ def load_power(powertype, mainpath, simset, noutput, aexp, rebin=0, okprint=Fals
          expansion factor
     rebin: int
         number of bins to combine when rebinning (default 0, i.e. no rebinning)
+    irsd: int
+        direction of redshift space index (0 for real space, 1-3 for x,y or z, default 0)
+    multipole: int
+        multipole index (default 0)
+    shotnoise: bool
+        correct for Poisson shotnoise (default True)
+    mask: int
+        mask index (default 0)
     okprint: bool
         verbose (default False)
     outpath: string
@@ -651,10 +659,11 @@ def load_power(powertype, mainpath, simset, noutput, aexp, rebin=0, okprint=Fals
     2 numpy arrays
         vector of k values and array of power spectra of shape (nsim,nbin)
     """
-    fname = outpath+"/"+output_file_name("powers", powertype, simset, 1, simset.nsimmax+1, noutput, extension=".npy")
+
+    fname = outpath+"/"+output_file_name("powers", powertype, simset, 1, simset.nsimmax+1, noutput, multipole, irsd, mask, extension=".npy")
     if okprint:
         print fname
-    power_k, dummy = power_spectrum(powertype, mainpath, simset, 1, noutput, aexp, store=False, okprint=False)
+    power_k, dummy = power_spectrum(powertype, mainpath, simset, 1, noutput, aexp, okprint, False, 0, irsd, multipole, shotnoise, mask)
     if os.path.isfile(fname):
         powers_array=np.load(fname)
     else:
@@ -664,7 +673,7 @@ def load_power(powertype, mainpath, simset, noutput, aexp, rebin=0, okprint=Fals
                 true_simset, true_isim = sim_iterator(simset, isim+1)
                 print true_simset, true_isim
             dummy, powers_array[isim] = power_spectrum(powertype, mainpath, simset, isim+1, noutput,
-                                                       aexp, False, False)
+                                                       aexp, False, False, 0, irsd, multipole, shotnoise, mask)
         np.save(fname, powers_array)
     if rebin>0:
         nmodes = simset.num_modes(power_k)
