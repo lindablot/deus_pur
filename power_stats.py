@@ -541,69 +541,74 @@ def power_spectrum(powertype="power", mainpath="", simset=DeusPurSet("all_256"),
         k and P(k)
     """
 
-    setname, nsim = sim_iterator(simset, nsim)
-    internal_simset = DeusPurSet(setname,simset.nmodel,datapath=simset.datapath)
-    aexp_info = read_aexp_info(input_file_name("info", mainpath, internal_simset, nsim, noutput))
-    if not np.isclose(aexp, aexp_info, atol=1.e-2):
-        print "Warning: aexp is different from snapshot expansion factor by ", aexp-aexp_info
-    growth_a, growth_dplus = read_growth(mainpath, internal_simset)
-    if powertype == "power":
-        fname = input_file_name("power", mainpath, internal_simset, nsim, noutput)
-        power_k, power_p, dummy = read_power_powergrid(fname)
-    elif powertype == "nyquist":
-        power_k, power_p = nyquist_power(mainpath, internal_simset, nsim, noutput,
-                                         aexp, growth_a, growth_dplus, okprint, store)
-    elif powertype == "renormalized":
-        power_k, power_p = renormalized_power(mainpath, internal_simset, nsim, noutput,
-                                              growth_a, growth_dplus, okprint, store)
-    elif powertype == "corrected":
-        power_k, power_p = corrected_power(mainpath, internal_simset, aexp, nsim, noutput,
-                                           growth_a, growth_dplus, okprint, store)
-    elif powertype == "mcorrected":
-        power_k, power_p = mass_corrected_power(mainpath, internal_simset, nsim, noutput,
-                                                aexp, okprint=okprint, store=store)
-    elif powertype == "linear":
-        power_k_CAMB, power_p_CAMB = read_power_camb(mainpath, internal_simset)
-        if k_interp.size==0:
-            power_k_nocut, dummy, dummy = read_power_powergrid(input_file_name("power", mainpath, internal_simset, nsim, noutput))
-            idx = (power_k_nocut < simset.nyquist)
-            power_k = power_k_nocut[idx]
+    if isinstance(simset,DeusPurSet):
+        setname, nsim = sim_iterator(simset, nsim)
+        internal_simset = DeusPurSet(setname,simset.nmodel,datapath=simset.datapath)
+        aexp_info = read_aexp_info(input_file_name("info", mainpath, internal_simset, nsim, noutput))
+        if not np.isclose(aexp, aexp_info, atol=1.e-2):
+            print "Warning: aexp is different from snapshot expansion factor by ", aexp-aexp_info
+        growth_a, growth_dplus = read_growth(mainpath, internal_simset)
+        if powertype == "power":
+            fname = input_file_name("power", mainpath, internal_simset, nsim, noutput)
+            power_k, power_p, dummy = read_power_powergrid(fname)
+        elif powertype == "nyquist":
+            power_k, power_p = nyquist_power(mainpath, internal_simset, nsim, noutput,
+                                             aexp, growth_a, growth_dplus, okprint, store)
+        elif powertype == "renormalized":
+            power_k, power_p = renormalized_power(mainpath, internal_simset, nsim, noutput,
+                                                  growth_a, growth_dplus, okprint, store)
+        elif powertype == "corrected":
+            power_k, power_p = corrected_power(mainpath, internal_simset, aexp, nsim, noutput,
+                                               growth_a, growth_dplus, okprint, store)
+        elif powertype == "mcorrected":
+            power_k, power_p = mass_corrected_power(mainpath, internal_simset, nsim, noutput,
+                                                    aexp, okprint=okprint, store=store)
+        elif powertype == "linear":
+            power_k_CAMB, power_p_CAMB = read_power_camb(mainpath, internal_simset)
+            if k_interp.size==0:
+                power_k_nocut, dummy, dummy = read_power_powergrid(input_file_name("power", mainpath, internal_simset, nsim, noutput))
+                idx = (power_k_nocut < simset.nyquist)
+                power_k = power_k_nocut[idx]
+            else:
+                power_k = k_interp
+            aexp_end = 1.
+            dplus_a = extrapolate([aexp], growth_a, growth_dplus)
+            dplus_end = extrapolate([aexp_end], growth_a, growth_dplus)
+            plin = power_p_CAMB * dplus_a * dplus_a / (dplus_end * dplus_end)
+            plin = plin * (simset.cosmo_par['sigma_8']/simset.cosmo_par['sigma_8_camb'])**2
+            power_p = np.interp(power_k, power_k_CAMB, plin)
+            if store:
+                linfname = input_file_name("power", mainpath, internal_simset, nsim, noutput, okprint, powertype)
+                if okprint:
+                    print "Writing file: ", linfname
+                f=open(linfname, "w")
+                for i in xrange(0, power_k.size):
+                    f.write(str("%-.12e" % power_k[i])+" "+str("%-.12e" % power_p[i])+"\n")
+                f.close()
+
+        elif powertype == "linear_mock":
+            power_k_CAMB, power_p_CAMB = read_power_camb(mainpath, internal_simset)
+            power_k, dummy, dummy = read_power_powergrid(input_file_name("power", mainpath, internal_simset, nsim, noutput))
+            aexp_end = 1.
+            dplus_a = extrapolate([aexp], growth_a, growth_dplus)
+            dplus_end = extrapolate([aexp_end], growth_a, growth_dplus)
+            plin = power_p_CAMB * dplus_a * dplus_a / (dplus_end * dplus_end)
+            plin_interp = np.interp(power_k, power_k_CAMB, plin)
         else:
-            power_k = k_interp
-        aexp_end = 1.
-        dplus_a = extrapolate([aexp], growth_a, growth_dplus)
-        dplus_end = extrapolate([aexp_end], growth_a, growth_dplus)
-        plin = power_p_CAMB * dplus_a * dplus_a / (dplus_end * dplus_end)
-        plin = plin * (simset.cosmo_par['sigma_8']/simset.cosmo_par['sigma_8_camb'])**2
-        power_p = np.interp(power_k, power_k_CAMB, plin)
-        if store:
-            linfname = input_file_name("power", mainpath, internal_simset, nsim, noutput, okprint, powertype)
-            if okprint:
-                print "Writing file: ", linfname
-            f=open(linfname, "w")
-            for i in xrange(0, power_k.size):
-                f.write(str("%-.12e" % power_k[i])+" "+str("%-.12e" % power_p[i])+"\n")
-            f.close()
-
-    elif powertype == "linear_mock":
-        power_k_CAMB, power_p_CAMB = read_power_camb(mainpath, internal_simset)
-        power_k, dummy, dummy = read_power_powergrid(input_file_name("power", mainpath, internal_simset, nsim, noutput))
-        aexp_end = 1.
-        dplus_a = extrapolate([aexp], growth_a, growth_dplus)
-        dplus_end = extrapolate([aexp_end], growth_a, growth_dplus)
-        plin = power_p_CAMB * dplus_a * dplus_a / (dplus_end * dplus_end)
-
-        plin_interp = np.interp(power_k, power_k_CAMB, plin)
+            raise ValueError("Unknown powertype")
+            
         nmodes = simset.num_modes(power_k)
 
-    elif setname in MinervaSet.simsets:
-        fname = input_file_name("power", mainpath, setname, nsim, noutput, okprint, powertype, irsd, mask)
+    elif isinstance(simset,MinervaSet):
+        fname = input_file_name("power", mainpath, simset, nsim, noutput, okprint, powertype, irsd, mask)
         power_k, power_p, nmodes = read_power_powerI4(fname,multipole)
         if shotnoise and multipole<2:
             nhalos = read_nobjects(fname)
             if okprint:
                 print "Shot noise contribution ",1./(2.*math.pi)**3/(float(nhalos)/simset.l_box**3)
             power_p = power_p - 1./(2.*math.pi)**3/(float(nhalos)/simset.l_box**3)
+    else:
+        raise ValueError("Unknown Simset class")
 
     if k_interp.size!=0 and powertype!="linear":
         power_p = np.interp(k_interp, power_k, power_p)

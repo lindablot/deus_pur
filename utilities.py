@@ -425,9 +425,9 @@ def input_file_name(filetype="", mainpath="", simset=DeusPurSet("all_256"), nsim
     fullpath = str(mainpath)
 
     if filetype == "power":
-        if simset.name in DeusPurSet:
+        if isinstance(simset,DeusPurSet):
             typestr=powertype
-        elif simset.name in MinervaSet:
+        elif isinstance(simset, MinervaSet):
             typestr="_"+powertype+"_irsd"
         if mask==0:
             dataprefix = "/power/power"+typestr
@@ -439,31 +439,32 @@ def input_file_name(filetype="", mainpath="", simset=DeusPurSet("all_256"), nsim
         dataprefix = "/massfunction/massfunction"
     else:
         raise ValueError("filetype not found")
-
-    setname, nsim = sim_iterator(simset, nsim)
-    nmodel = simset.nmodel
-    if setname == "4096_furphase" or setname == "4096_otherphase":
-        fullpath += setname + dataprefix +"_"+ str(int(noutput)).zfill(5) + ".txt"
-    elif setname == "4096_furphase_512":
-        fullpath += setname + "/boxlen1312-5_n512_lcdmw7_" + str(int(nsim)).zfill(5) + \
-                    dataprefix +"_" + str(int(noutput)).zfill(5) + ".txt"
-    elif setname == "4096_furphase_256" or setname == "4096_otherphase_256" or setname == "4096_adaphase_256":
-        fullpath += setname + "/boxlen656-25_n256_lcdmw7_" + str(int(nsim)).zfill(5) + \
-                    dataprefix +"_"+ str(int(noutput)).zfill(5) + ".txt"
-    elif setname == "64_adaphase_1024" or setname == "64_curiephase_1024":
-        fullpath += setname + "/boxlen656-25_n1024_lcdmw7_" + str(int(nsim)).zfill(5) + \
-                    dataprefix +"_"+ str(int(noutput)).zfill(5) + ".txt"
-    elif setname == "512_adaphase_512_328-125":
-        fullpath += setname + "/boxlen328-125_n512_model" + str(int(nmodel)).zfill(5) + "_" + str(int(nsim)).zfill(5) \
-                    + dataprefix +"_" + str(int(noutput)).zfill(5) + ".txt"
-    elif setname in MinervaSet.simsets:
+    if isinstance(simset,DeusPurSet):
+        setname, nsim = sim_iterator(simset, nsim)
+        nmodel = simset.nmodel
+        if setname == "4096_furphase" or setname == "4096_otherphase":
+            fullpath += setname + dataprefix +"_"+ str(int(noutput)).zfill(5) + ".txt"
+        elif setname == "4096_furphase_512":
+            fullpath += setname + "/boxlen1312-5_n512_lcdmw7_" + str(int(nsim)).zfill(5) + \
+                        dataprefix +"_" + str(int(noutput)).zfill(5) + ".txt"
+        elif setname == "4096_furphase_256" or setname == "4096_otherphase_256" or setname == "4096_adaphase_256":
+            fullpath += setname + "/boxlen656-25_n256_lcdmw7_" + str(int(nsim)).zfill(5) + \
+                        dataprefix +"_"+ str(int(noutput)).zfill(5) + ".txt"
+        elif setname == "64_adaphase_1024" or setname == "64_curiephase_1024":
+            fullpath += setname + "/boxlen656-25_n1024_lcdmw7_" + str(int(nsim)).zfill(5) + \
+                        dataprefix +"_"+ str(int(noutput)).zfill(5) + ".txt"
+        elif setname == "512_adaphase_512_328-125":
+            fullpath += setname + "/boxlen328-125_n512_model" + str(int(nmodel)).zfill(5) + "_" + str(int(nsim)).zfill(5) \
+                        + dataprefix +"_" + str(int(noutput)).zfill(5) + ".txt"
+    elif isinstance(simset,MinervaSet):
+        setname = simset.name
         if setname == "lognormal":
             nsimstr = str(int(nsim)).zfill(4)
         else:
             nsimstr = str(int(nsim)).zfill(3)
         fullpath += setname + dataprefix+str(int(irsd)) + "_" + nsimstr + "_" + str(int(noutput)).zfill(3) + ".txt"
     else:
-        raise ValueError("setname not found")
+        raise ValueError("Unknown Simset class")
 
     if okprint:
         print fullpath
