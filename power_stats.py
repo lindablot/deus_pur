@@ -292,7 +292,7 @@ def mass_corrected_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, nout
     if simset.npart!=256 or (simset.name not in DeusPurSet.simsets):
         raise ValueError("mass resolution correction only valid for Deus Pur sets with npart=256")
 
-    fname = input_file_name("power", mainpath, simset, nsim, noutput, 0, okprint, "mcorrected")
+    fname = input_file_name("power", mainpath, simset, nsim, noutput, okprint, "mcorrected")
     if os.path.isfile(fname) and not store:
         file_content = pd.read_csv(fname, delim_whitespace=True, header=None).values.T
         power_k = file_content[0]
@@ -597,7 +597,7 @@ def power_spectrum(powertype="power", mainpath="", simset=DeusPurSet("all_256"),
         nmodes = simset.num_modes(power_k)
 
     elif setname in MinervaSet.simsets:
-        fname = input_file_name("power", mainpath, setname, nsim, noutput, nmodel, okprint, powertype, irsd, mask)
+        fname = input_file_name("power", mainpath, setname, nsim, noutput, okprint, powertype, irsd, mask)
         power_k, power_p, nmodes = read_power_powerI4(fname,multipole)
         if shotnoise and multipole<2:
             nhalos = read_nobjects(fname)

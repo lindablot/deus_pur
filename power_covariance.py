@@ -208,7 +208,7 @@ def cross_mpole_cov_power(powertype = "power", mainpath = "", simset = MinervaSe
 
     nsim = isimmax-isimmin
 
-    fname = outpath + "/" + output_file_name("cross_cov", powertype, simset, isimmin, isimmax, noutput, nmodel, multipole1, irsd, mask, multipole2)
+    fname = outpath + "/" + output_file_name("cross_cov", powertype, simset, isimmin, isimmax, noutput, multipole1, irsd, mask, multipole2)
     fltformat="%-.12e"
 
     if (os.path.isfile(fname) and not store):
@@ -290,7 +290,7 @@ def mpole_cov_power(powertype = "power", mainpath = "", simset = "", isimmin = 1
         k and covariance
     """
 
-    cov_file = outpath + "/" + output_file_name("full_cov", powertype, simset, isimmin, isimmax, noutput, nmodel, -1, irsd, mask)
+    cov_file = outpath + "/" + output_file_name("full_cov", powertype, simset, isimmin, isimmax, noutput, -1, irsd, mask)
     if os.path.isfile(cov_file) and not store:
         if okprint:
             print "Reading full covariance from file ",cov_file

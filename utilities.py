@@ -474,7 +474,7 @@ def input_file_name(filetype="", mainpath="", simset=DeusPurSet("all_256"), nsim
 
 # --------------------------- OUTPUT FILE NAME --------------------------- #
 def output_file_name(prefix="cov", powertype="", simset=DeusPurSet("all_256"),
-                     isimmin=1, isimmax=1, file_id=1, nmodel=0, mpole=0, irsd=0, mask=0, mpole2=-1, extension=".txt"):
+                     isimmin=1, isimmax=1, file_id=1, mpole=0, irsd=0, mask=0, mpole2=-1, extension=".txt"):
     """ Output file name generator
 
     Parameters
@@ -491,8 +491,6 @@ def output_file_name(prefix="cov", powertype="", simset=DeusPurSet("all_256"),
         final number of simulation used (default is 1)
     file_id : int or float
         number identifying the file (could be snapshot number or source redshift, default is 1)
-    nmodel : int
-        cosmological model number (default is 0)
     mpole: int
         multipole index (default is 0)
     irsd: int
