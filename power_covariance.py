@@ -159,7 +159,7 @@ def corr_coeff(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isi
 
 
 # ---------------------- MULTIPOLE CROSS COVARIANCE -------------------------- #
-def cross_mpole_cov_power(powertype = "power", mainpath = "", simset = MinervaSet("Minerva"), isimmin = 1, isimmax = 2, noutput = 1, aexp = 0., nmodel = 0, okprint = False, store = False, rebin = 0, irsd=0, multipole1 = 0, multipole2 = 1, shotnoise = True, mask = 0, outpath = "."):
+def cross_mpole_cov_power(powertype = "power", mainpath = "", simset = MinervaSet("Minerva"), isimmin = 1, isimmax = 2, noutput = 1, aexp = 0., okprint = False, store = False, rebin = 0, irsd=0, multipole1 = 0, multipole2 = 1, shotnoise = True, mask = 0, outpath = "."):
     """ Cross covariance of two multipoles of the power spectrum. See power_spectrum for the description of the power spectrum types. If file exists it will be read from file.
 
 
@@ -179,8 +179,6 @@ def cross_mpole_cov_power(powertype = "power", mainpath = "", simset = MinervaSe
         snapshot number (default 1)
     aexp: float
         expansion factor (default 0)
-    nmodel: int
-        cosmological model number (default 0)
     okprint: bool
         verbose (default False)
     store: bool
@@ -214,20 +212,20 @@ def cross_mpole_cov_power(powertype = "power", mainpath = "", simset = MinervaSe
     if (os.path.isfile(fname) and not store):
         if (okprint):
             print "Reading power spectrum covariance from file: ",fname
-        power_k, dummy, dummy = power_spectrum(powertype, mainpath, simset, isimmin, noutput, aexp, nmodel, okprint, False, rebin, irsd, multipole1, shotnoise, mask)
+        power_k, dummy, dummy = power_spectrum(powertype, mainpath, simset, isimmin, noutput, aexp, okprint, False, rebin, irsd, multipole1, shotnoise, mask)
         power_pcov = np.loadtxt(fname,unpack=True)
     else:
         if (okprint):
             print "Computing power spectrum covariance"
 
-        power_k, power_pmean1, dummy = mean_power(powertype, mainpath, simset, isimmin, isimmax, noutput, aexp, nmodel, okprint, False, rebin, irsd, multipole1, shotnoise, mask, outpath)
-        power_k, power_pmean2, dummy = mean_power(powertype, mainpath, simset, isimmin, isimmax, noutput, aexp, nmodel, okprint, False, rebin, irsd, multipole2, shotnoise, mask, outpath)
+        power_k, power_pmean1, dummy = mean_power(powertype, mainpath, simset, isimmin, isimmax, noutput, aexp, okprint, False, rebin, irsd, multipole1, shotnoise, mask, outpath)
+        power_k, power_pmean2, dummy = mean_power(powertype, mainpath, simset, isimmin, isimmax, noutput, aexp, okprint, False, rebin, irsd, multipole2, shotnoise, mask, outpath)
         diff_power_p1 = np.zeros(power_k.size)
         diff_power_p2 = np.zeros(power_k.size)
         power_pcov = np.zeros((power_k.size,power_k.size))
         for isim in xrange(isimmin, isimmax):
-            dummy, power_p1 = power_spectrum(powertype, mainpath, simset, isim, noutput, aexp, nmodel, okprint, False, rebin, irsd, multipole1, shotnoise, mask)
-            dummy, power_p2 = power_spectrum(powertype, mainpath, simset, isim, noutput, aexp, nmodel, okprint, False, rebin, irsd, multipole2, shotnoise, mask)
+            dummy, power_p1 = power_spectrum(powertype, mainpath, simset, isim, noutput, aexp, okprint, False, rebin, irsd, multipole1, shotnoise, mask)
+            dummy, power_p2 = power_spectrum(powertype, mainpath, simset, isim, noutput, aexp, okprint, False, rebin, irsd, multipole2, shotnoise, mask)
             diff_power_p1 = power_p1 - power_pmean1
             diff_power_p2 = power_p2 - power_pmean2
             power_pcov += np.outer(diff_power_p1,diff_power_p2)
@@ -247,7 +245,7 @@ def cross_mpole_cov_power(powertype = "power", mainpath = "", simset = MinervaSe
 
 
 # -------------------- FULL MULTIPOLES COVARIANCE ---------------------------- #
-def mpole_cov_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isimmax = 2, noutput = 1, aexp = 0., nmodel = 0, okprint = False, store = False, rebin = 0, irsd = 0, shotnoise = True, mask = 0, outpath="."):
+def mpole_cov_power(powertype = "power", mainpath = "", simset = "", isimmin = 1, isimmax = 2, noutput = 1, aexp = 0., okprint = False, store = False, rebin = 0, irsd = 0, shotnoise = True, mask = 0, outpath="."):
     """ Full covariance of the three multipoles of the power spectrum. See power_spectrum for the description of the power spectrum types. If file exists it will be read from file.
 
 
@@ -267,8 +265,6 @@ def mpole_cov_power(powertype = "power", mainpath = "", simset = "", isimmin = 1
         snapshot number (default 1)
     aexp: float
         expansion factor (default 0)
-    nmodel: int
-        cosmological model number (default 0)
     okprint: bool
         verbose (default False)
     store: bool
@@ -295,17 +291,17 @@ def mpole_cov_power(powertype = "power", mainpath = "", simset = "", isimmin = 1
         if okprint:
             print "Reading full covariance from file ",cov_file
         full_cov = np.loadtxt(cov_file,unpack=True)
-        k11, dummy = power_spectrum(powertype, mainpath, simset, isimmin, noutput, aexp, nmodel, False, False, rebin, 1, 1, shotnoise, mask)
+        k11, dummy = power_spectrum(powertype, mainpath, simset, isimmin, noutput, aexp, False, False, rebin, 1, 1, shotnoise, mask)
     else:
         if okprint:
             "Computing covariance"
-        k11, mean11, sigma11, cov11 = cov_power(powertype, mainpath, simset, isimmin, isimmax, noutput, aexp, nmodel, okprint, False, rebin, irsd, 1, shotnoise, mask, outpath)
-        k22, mean22, sigma22, cov22 = cov_power(powertype, mainpath, simset, isimmin, isimmax, noutput, aexp, nmodel, okprint, False, rebin, irsd, 2, shotnoise, mask, outpath)
-        k33, mean33, sigma33, cov33 = cov_power(powertype, mainpath, simset, isimmin, isimmax, noutput, aexp, nmodel, okprint, False, rebin, irsd, 3, shotnoise, mask, outpath)
+        k11, mean11, sigma11, cov11 = cov_power(powertype, mainpath, simset, isimmin, isimmax, noutput, aexp, okprint, False, rebin, irsd, 1, shotnoise, mask, outpath)
+        k22, mean22, sigma22, cov22 = cov_power(powertype, mainpath, simset, isimmin, isimmax, noutput, aexp, okprint, False, rebin, irsd, 2, shotnoise, mask, outpath)
+        k33, mean33, sigma33, cov33 = cov_power(powertype, mainpath, simset, isimmin, isimmax, noutput, aexp, okprint, False, rebin, irsd, 3, shotnoise, mask, outpath)
 
-        k12, cov12 = cross_mpole_cov_power(powertype, mainpath, simset, isimmin, isimmax, noutput, aexp, nmodel, okprint, False, rebin, irsd, 1, 2, shotnoise, mask, outpath)
-        k13, cov13 = cross_mpole_cov_power(powertype, mainpath, simset, isimmin, isimmax, noutput, aexp, nmodel, okprint, False, rebin, irsd, 1, 3, shotnoise, mask, outpath)
-        k23, cov23 = cross_mpole_cov_power(powertype, mainpath, simset, isimmin, isimmax, noutput, aexp, nmodel, okprint, False, rebin, irsd, 2, 3, shotnoise, mask, outpath)
+        k12, cov12 = cross_mpole_cov_power(powertype, mainpath, simset, isimmin, isimmax, noutput, aexp, okprint, False, rebin, irsd, 1, 2, shotnoise, mask, outpath)
+        k13, cov13 = cross_mpole_cov_power(powertype, mainpath, simset, isimmin, isimmax, noutput, aexp, okprint, False, rebin, irsd, 1, 3, shotnoise, mask, outpath)
+        k23, cov23 = cross_mpole_cov_power(powertype, mainpath, simset, isimmin, isimmax, noutput, aexp, okprint, False, rebin, irsd, 2, 3, shotnoise, mask, outpath)
 
         full_cov1 = np.concatenate((cov11,cov12,cov13), axis=1)
         full_cov2 = np.concatenate((cov12.T,cov22,cov23), axis=1)
