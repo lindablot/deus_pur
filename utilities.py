@@ -500,7 +500,11 @@ def input_file_name(filetype="", mainpath="", simset=DeusPurSet("all_256"), nsim
         if filetype!="twopt":
             raise NotImplementedError
         nsimstr = str(int(nsim)).zfill(4)
-        fullpath += "Pinocchio10k" + dataprefix+ "raw/pinocchio_z1.0_"+powertype+"_rs_multi_"+nsimstr + "_ds"+str(simset.binsize)+".dat"
+        if irsd==0:
+            zspacestr="rs"
+        else:
+            zspacestr="zs"+str(irsd)
+        fullpath += "Pinocchio10k" + dataprefix+ "raw/pinocchio_z1.0_"+powertype+"_"+zspacestr+"_multi_"+nsimstr + "_ds"+str(simset.binsize)+".dat"
     else:
         print simset
         raise ValueError("Unknown Simset class")
@@ -575,7 +579,7 @@ def output_file_name(prefix="cov", powertype="", simset=DeusPurSet("all_256"),
             else:
                 fname = fname+simset.name
         else:
-            fname = prefix+"_"+powertype
+            fname = prefix+"_"+powertype+"_irsd"+str(int(irsd))
         if nsim != simset.nsimmax:
             fname = fname+"_"+str(isimmin)+"_"+str(isimmax)
         if mpole<0 and mpole2<0:
