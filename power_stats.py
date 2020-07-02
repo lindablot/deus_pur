@@ -70,7 +70,7 @@ def mean_power(powertype="power", mainpath="", simset=DeusPurSet("all_256"), isi
                                                   aexp, okprint, False, rebin)
             power_psigma = np.sqrt(2./simset.num_modes(power_k))*power_pmean
         else:
-            power_k, power_p = load_power(powertype, mainpath, simset, noutput, aexp, rebin, irsd, multipole, shotnoise, mask, outpath = outpath)
+            power_k, power_p = load_power(powertype, mainpath, simset, noutput, aexp, rebin, irsd, multipole, shotnoise, mask, outpath = outpath, okprint = okprint)
             power_p = power_p[isimmin-1:isimmax]
             power_pmean = np.mean(power_p, axis=0)
             if nsim > 1:
@@ -263,7 +263,7 @@ def high_moments(powertype="power", mainpath="", simset=DeusPurSet("all_256"), i
 
 # ------------------------- SPECTRUM CORRECTED FOR MASS RES EFFECT --------------------------- #
 def mass_corrected_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1,
-                         aexp=0., corr_type="var_pres_smooth", okprint=False, store=False):
+                         aexp=0., corr_type="var_pres_smooth", okprint=False, store=False, outpath="."):
     """ Power spectrum corrected for mass resolution effects. See correction_power for different correction types. If file exists it is read from file.
 
     Parameters
@@ -284,6 +284,8 @@ def mass_corrected_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, nout
         verbose (default False)
     store: bool
         store file. If True and file exists it will be overwritten (default False)
+    outpath: string
+        path where output file is stored (default .)
 
     Returns
     -------
@@ -300,19 +302,20 @@ def mass_corrected_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, nout
         power_k = file_content[0]
         corrected_p = file_content[1]
     else:
-        power_k, power_p = nyquist_power(mainpath, simset.name, nsim, noutput,
+        growth_a, growth_dplus = read_growth(mainpath, simset)
+        power_k, power_p = nyquist_power(mainpath, simset, nsim, noutput,
                                          aexp, growth_a, growth_dplus, okprint=okprint)
-        correction_smooth = correction_power(mainpath, simset.name, noutput,
-                                             aexp, corr_type, okprint=okprint, store=store)
+        correction_smooth = correction_power(mainpath, simset, noutput,
+                                             aexp, corr_type, okprint=okprint, store=store, outpath=outpath)
 
         if corr_type == "var_pres" or corr_type == "var_pres_smooth" or corr_type == "var_pres_pl":
             simset_256 = DeusPurSet("all_256")
             power_k, power_pmean, power_psigma = mean_power("nyquist", mainpath, simset_256, 1,
-                                                            simset_256.nsimmax+1, noutput,
+                                                            simset_256.nsimmax, noutput,
                                                             aexp, okprint=okprint, store=store)
             simset_1024 = DeusPurSet("all_1024")
             power_k1024, power_pmean1024, power_psigma1024 = mean_power("nyquist", mainpath, simset_1024, 1,
-                                                                        simset_1024.nsimmax+1, noutput, aexp, okprint=okprint, store=store)
+                                                                        simset_1024.nsimmax, noutput, aexp, okprint=okprint, store=store)
             index = (power_k1024 <= power_k[power_k.size-1])
             power_pmean_1024 = power_pmean1024[index]
             corrected_p = correction_smooth * power_p + power_pmean_1024 - correction_smooth * power_pmean
@@ -333,7 +336,7 @@ def mass_corrected_power(mainpath="", simset=DeusPurSet("all_256"), nsim=1, nout
 
 
 # ------------------------- CORRECTION TO THE LOW RES SPECTRA ------------------------------ #
-def correction_power(mainpath="", simset=DeusPurSet("all_256"), noutput=1, aexp=1., corr_type="var_pres_smooth", okprint=False, store=False):
+def correction_power(mainpath="", simset=DeusPurSet("all_256"), noutput=1, aexp=1., corr_type="var_pres_smooth", okprint=False, store=False, outpath="."):
     """ Correction factor for mass resolution corrected power spectra.
     The correction types are:
     - var_pres: variance preserving correction
@@ -357,6 +360,8 @@ def correction_power(mainpath="", simset=DeusPurSet("all_256"), noutput=1, aexp=
         verbose (default False)
     store: bool
         store file. If True and file exists it will be overwritten (default False)
+    outpath: string
+        path where output file is stored (default .)
 
     Returns
     -------
@@ -364,10 +369,14 @@ def correction_power(mainpath="", simset=DeusPurSet("all_256"), noutput=1, aexp=
         correction factor
     """
 
-    fname = "correction_"+corr_type+"_"+str("%05d"%noutput)+".txt"
+    fname = outpath+"/correction_"+corr_type+"_"+str("%05d"%noutput)+".txt"
     if os.path.isfile(fname) and not store:
+        if okprint:
+            print "Reading correction from file ", fname
         correction = pd.read_csv(fname, delim_whitespace=True, header=None).values.T
     else:
+        if okprint:
+            print fname, " not found. Computing correction"
         simset_256 = DeusPurSet("all_256")
         simset_1024 = DeusPurSet("all_1024")
 
@@ -495,7 +504,7 @@ def correction_power(mainpath="", simset=DeusPurSet("all_256"), noutput=1, aexp=
 
 # ----------------------- WRAPPER FOR ALL POWER TYPES ------------------------- #
 def power_spectrum(powertype="power", mainpath="", simset=DeusPurSet("all_256"), nsim=1, noutput=1,
-                   aexp=0., okprint=False, store=False, rebin=0, irsd=0, multipole=0, shotnoise=True, mask=0, k_interp = np.zeros(0)):
+                   aexp=0., okprint=False, store=False, rebin=0, irsd=0, multipole=0, shotnoise=True, mask=0, k_interp = np.zeros(0), outpath="."):
     """ Wrapper for different power spectrum types. If file exists it will be read from file.
     Different power types are:
     - power: raw power spectrum from file
@@ -537,7 +546,8 @@ def power_spectrum(powertype="power", mainpath="", simset=DeusPurSet("all_256"),
         mask index (default 0)
     k_interp: numpy array (default empty)
         array of k values where the power spectrum is interpolated
-
+    outpath: string
+        path where output file is stored (default .)
     Returns
     -------
     2 numpy arrays
@@ -565,7 +575,7 @@ def power_spectrum(powertype="power", mainpath="", simset=DeusPurSet("all_256"),
                                                growth_a, growth_dplus, okprint, store)
         elif powertype == "mcorrected":
             power_k, power_p = mass_corrected_power(mainpath, internal_simset, nsim, noutput,
-                                                    aexp, okprint=okprint, store=store)
+                                                    aexp, okprint=okprint, store=store, outpath=outpath)
         elif powertype == "linear":
             power_k_CAMB, power_p_CAMB = read_power_camb(mainpath, internal_simset)
             if k_interp.size==0:
@@ -663,10 +673,10 @@ def load_power(powertype, mainpath, simset, noutput, aexp, rebin=0, irsd=0, mult
         vector of k values and array of power spectra of shape (nsim,nbin)
     """
 
-    fname = outpath+"/"+output_file_name("powers", powertype, simset, 1, simset.nsimmax+1, noutput, multipole, irsd, mask, extension=".npy")
+    fname = outpath+"/"+output_file_name("powers", powertype, simset, 1, simset.nsimmax, noutput, multipole, irsd, mask, extension=".npy")
     if okprint:
         print fname
-    power_k, dummy = power_spectrum(powertype, mainpath, simset, 1, noutput, aexp, okprint, False, 0, irsd, multipole, shotnoise, mask)
+    power_k, dummy = power_spectrum(powertype, mainpath, simset, 1, noutput, aexp, okprint, False, 0, irsd, multipole, shotnoise, mask, outpath=outpath)
     if os.path.isfile(fname):
         powers_array=np.load(fname)
     else:
@@ -676,7 +686,7 @@ def load_power(powertype, mainpath, simset, noutput, aexp, rebin=0, irsd=0, mult
                 true_simset, true_isim = sim_iterator(simset, isim+1)
                 print true_simset, true_isim
             dummy, powers_array[isim] = power_spectrum(powertype, mainpath, simset, isim+1, noutput,
-                                                       aexp, False, False, 0, irsd, multipole, shotnoise, mask)
+                                                       aexp, False, False, 0, irsd, multipole, shotnoise, mask, outpath=outpath)
         np.save(fname, powers_array)
     if rebin>0:
         nmodes = simset.num_modes(power_k)
