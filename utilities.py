@@ -323,7 +323,7 @@ class Pinocchio10k(Simset):
         self.mainpath = mainpath
         self.l_box = 1500.
         self.npart = 1000.
-        self.nsimmax = 9999
+        self.nsimmax = 8932
         self.cosmo_par = {'om_b': 0.02224, 'om_m': 0.284954*0.483025, 'n_s': 0.9632, 'h': 0.695, 'w_0': -1., 'sigma_8': 0.828, 'm_nu': 0.}
         Simset.__init__(self, self.l_box, self.npart, self.nsimmax, self.cosmo_par)
         self.nyquist = math.pi/self.l_box*self.npart
@@ -552,7 +552,7 @@ def output_file_name(prefix="cov", powertype="", simset=DeusPurSet("all_256"),
         file name
     """
 
-    nsim = isimmax-isimmin
+    nsim = isimmax-isimmin+1 # +1 because simulation number starts at 1
 
     if isinstance(simset, DeusPurSet):
         nmodel = simset.nmodel
@@ -578,8 +578,10 @@ def output_file_name(prefix="cov", powertype="", simset=DeusPurSet("all_256"),
                 fname = fname+"mask"+str(mask)+"_"+simset.name
             else:
                 fname = fname+simset.name
+        elif isinstance(simset,Pinocchio10k):
+            fname = prefix+"_"+powertype+"_irsd"+str(int(irsd))+"_ds"+str(simset.binsize)
         else:
-            fname = prefix+"_"+powertype+"_irsd"+str(int(irsd))
+            fname = prefix+"_"+powertype
         if nsim != simset.nsimmax:
             fname = fname+"_"+str(isimmin)+"_"+str(isimmax)
         if mpole<0 and mpole2<0:
