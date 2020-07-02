@@ -13,7 +13,7 @@ from power_covariance import *
 
 
 # -------------------------------- FISHER -------------------------------- #
-def fisher_matrix(simset = DeusPurSet("all_256"), list_par = ['om_m','n_s','w_0','sigma_8'], list_noutput = None,  fiducial = None, galaxy = False, derivative = "pkann", cholewsky = False, hartlap=False, powertype = "power", mainpath = "", isimmin = 1, isimmax = None, frac=1., kmin = None, kmax = None, dtheta = 0.05, okprint = False, store = False, outpath = "./", test_diag = False, test_gaussian = False):
+def fisher_matrix(simset = DeusPurSet("all_256"), list_par = ['om_m','n_s','w_0','sigma_8'], list_noutput = None,  fiducial = None, galaxy = False, derivative = "pkann", cholewsky = False, hartlap=False, powertype = "power", mainpath = "", isimmin = 1, isimmax = None, frac=1., kmin = None, kmax = None, dtheta = 0.05, okprint = False, store = False, outpath = "./", test_diag = False, test_gaussian = False, test_diag_gal = False):
     """ Function to compute the Fisher matrix using the covariance estimated from a set of simulations. The derivatives can be computed using an emulator or passed as argument
 
     Parameters
@@ -54,6 +54,8 @@ def fisher_matrix(simset = DeusPurSet("all_256"), list_par = ['om_m','n_s','w_0'
         verbose (default False)
     store: bool
         store file. If True and file exists it will be overwritten (default False)
+    outpath: string
+        path where output file is stored (default .)
     test_diag: bool
         use correlation coefficient of the fiducial (default False)
     test_gaussian: bool
@@ -74,7 +76,7 @@ def fisher_matrix(simset = DeusPurSet("all_256"), list_par = ['om_m','n_s','w_0'
         list_noutput = range(1,len(simset.alist))
         print list_noutput
     if isimmax==None:
-        isimmax = simset.nsimmax+1
+        isimmax = simset.nsimmax
 
     fltformat="%-.12e"
     nsim=isimmax-isimmin
@@ -115,14 +117,16 @@ def fisher_matrix(simset = DeusPurSet("all_256"), list_par = ['om_m','n_s','w_0'
         # ------------------- Biased tracers ------------------- #
         if galaxy:
             simset256 = DeusPurSet("all_256")
-            power_k, power_pmean, dummy = mean_power("mcorrected", mainpath, simset256, 1, simset256.nsimmax+1, ioutput, aexp, okprint=okprint)
+            power_k, power_pmean, dummy = mean_power("mcorrected", mainpath, simset256, 1, simset256.nsimmax, ioutput, aexp, okprint=okprint, outpath=outpath)
             # Cut scales if necessary
             if kmin!=None or kmax!=None:
                 power_k = power_k[imin:imax]
-                power_pcov=power_pmean[imin:imax]
+                power_pmean = power_pmean[imin:imax]
             bias=1.#galaxy_bias(power_k,redshift)
             ng=galaxy_density(ioutput,frac)
-            biased_cov = pow(bias,4.)*power_pcov + 2.*pow(bias,2.)*np.sqrt(np.outer(power_pmean,power_pmean))/ng + 1./pow(ng,2.)
+            biased_cov = pow(bias,4.)*power_pcov #+ (2.*pow(bias,2.)*power_pmean/ng + 1./pow(ng,2.))*np.eye(power_pcov.shape[0]) #np.sqrt(np.outer(power_pmean,power_pmean))
+            if test_diag_gal:
+                biased_cov = np.diag(np.diag(biased_cov))
             if cholewsky:
                 cov_fac = scipy.linalg.cho_factor(biased_cov)
             else:
