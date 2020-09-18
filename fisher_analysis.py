@@ -13,7 +13,7 @@ from power_covariance import *
 
 
 # -------------------------------- FISHER -------------------------------- #
-def fisher_matrix(simset = DeusPurSet("all_256"), list_par = ['om_m','n_s','w_0','sigma_8'], list_noutput = None,  fiducial = None, galaxy = False, derivative = "pkann", cholewsky = False, hartlap=False, powertype = "power", mainpath = "", isimmin = 1, isimmax = None, frac=1., kmin = None, kmax = None, dtheta = 0.05, okprint = False, store = False, outpath = "./", test_diag = False, test_gaussian = False):
+def fisher_matrix(simset = DeusPurSet("all_256"), list_par = ['om_m','n_s','w_0','sigma_8'], list_noutput = None,  fiducial = None, galaxy = False, derivative = "pkann", cholewsky = False, hartlap=False, powertype = "power", mainpath = "", isimmin = 1, isimmax = None, frac=1., kmin = None, kmax = None, dtheta = 0.05, okprint = False, store = False, outpath = "./", test_diag = False, test_gaussian = False, test_fix_ng = False):
     """ Function to compute the Fisher matrix using the covariance estimated from a set of simulations. The derivatives can be computed using an emulator or passed as argument
 
     Parameters
@@ -58,6 +58,8 @@ def fisher_matrix(simset = DeusPurSet("all_256"), list_par = ['om_m','n_s','w_0'
         use correlation coefficient of the fiducial (default False)
     test_gaussian: bool
         use Gaussian covariance (default False)
+    test_fix_ng: bool
+        use non-gaussian part of the covariance of the fiducial (default False)
 
     Returns
     -------
@@ -74,10 +76,10 @@ def fisher_matrix(simset = DeusPurSet("all_256"), list_par = ['om_m','n_s','w_0'
         list_noutput = range(1,len(simset.alist))
         print list_noutput
     if isimmax==None:
-        isimmax = simset.nsimmax+1
+        isimmax = simset.nsimmax
 
     fltformat="%-.12e"
-    nsim=isimmax-isimmin
+    nsim=isimmax-isimmin+1
     dalpha = dtheta
     dbeta = dtheta
     npar=len(list_par)
@@ -88,18 +90,31 @@ def fisher_matrix(simset = DeusPurSet("all_256"), list_par = ['om_m','n_s','w_0'
         aexp=simset.snap_to_a(ioutput)
         redshift=1./aexp-1.
         # ------------------- Data covariance ------------------- #
-        if test_gaussian:
+        if test_gaussian and not test_diag:
             power_k, power_pmean, dummy = mean_power(powertype, mainpath, simset, isimmin, isimmax, ioutput, aexp, okprint=okprint, outpath=outpath)
             nk = simset.num_modes(power_k)
             power_pcov = np.diag(2./nk*np.power(power_pmean,2))
         else:
-            power_k,dummy,dummy,power_pcov=cov_power(powertype, mainpath, simset, isimmin, isimmax, ioutput, aexp, okprint=okprint, outpath=outpath)
+            power_k,dummy,power_pmean,power_pcov=cov_power(powertype, mainpath, simset, isimmin, isimmax, ioutput, aexp, okprint=okprint, outpath=outpath)
         ksize = power_k.size
         if test_diag:
             simset_fid = DeusPurSet("512_adaphase_512_328-125", 2, datapath=simset.datapath)
-            dummy,dummy,power_psigma_fid,power_pcov_fid=cov_power(powertype, mainpath, simset_fid, isimmin, isimmax, ioutput, aexp, okprint=okprint, outpath=outpath)
+            if test_gaussian:
+                dummy,power_pmean_fid,dummy=mean_power(powertype, mainpath, simset_fid, isimmin, isimmax, ioutput, aexp, okprint=okprint, outpath=outpath)
+                nk = simset.num_modes(power_k)
+                power_psigma_fid = np.sqrt(2./nk)*power_pmean_fid
+            else:
+                dummy,dummy,power_psigma_fid=mean_power(powertype, mainpath, simset_fid, isimmin, isimmax, ioutput, aexp, okprint=okprint, outpath=outpath)
             power_psigma = np.sqrt(np.diag(power_pcov))
             power_pcov=power_pcov/np.outer(power_psigma,power_psigma)*np.outer(power_psigma_fid,power_psigma_fid)
+        if test_fix_ng:
+            simset_fid = DeusPurSet("512_adaphase_512_328-125", 2, datapath=simset.datapath)
+            dummy,power_pmean_fid,power_psigma_fid = mean_power(powertype, mainpath, simset_fid, isimmin, isimmax, ioutput, aexp, okprint=okprint, outpath=outpath)
+            nk = simset.num_modes(power_k)
+            power_psigma = np.sqrt(np.diag(power_pcov))
+            ng_var = np.diag(power_pcov) - 2./nk*np.power(power_pmean,2)
+            new_sigma = np.sqrt(2./nk*np.power(power_pmean_fid,2) + ng_var)
+            power_pcov = power_pcov/np.outer(power_psigma,power_psigma)*np.outer(new_sigma,new_sigma)
         # Cut scales if necessary
         if kmin!=None or kmax!=None:
             if kmin==None:
@@ -115,7 +130,7 @@ def fisher_matrix(simset = DeusPurSet("all_256"), list_par = ['om_m','n_s','w_0'
         # ------------------- Biased tracers ------------------- #
         if galaxy:
             simset256 = DeusPurSet("all_256")
-            power_k, power_pmean, dummy = mean_power("mcorrected", mainpath, simset256, 1, simset256.nsimmax+1, ioutput, aexp, okprint=okprint)
+            power_k, power_pmean, dummy = mean_power("mcorrected", mainpath, simset256, 1, simset256.nsimmax, ioutput, aexp, okprint=okprint)
             # Cut scales if necessary
             if kmin!=None or kmax!=None:
                 power_k = power_k[imin:imax]
@@ -164,11 +179,13 @@ def fisher_matrix(simset = DeusPurSet("all_256"), list_par = ['om_m','n_s','w_0'
         fisher+=fisher_iz
 
     if (store):
-        fname = outpath+"/fisher_"+powertype+"_"
-        if not galaxy:
-            fname += "matter.txt"
+        if galaxy:
+            file_id="galaxy"
         else:
-            fname += "galaxy.txt"
+            file_id="matter"
+        fname = output_file_name("fisher", powertype, simset,
+                             isimmin, isimmax, file_id)
+        fname = outpath + "/" + fname
         if okprint:
             print "Writing file ", fname
         f = open(fname, "w")
@@ -186,12 +203,12 @@ def sim_derivative(powertype, mainpath, noutput, list_par, ksize, outpath="./", 
     for ia,param in enumerate(list_par):
         simsetf = DeusPurSet("512_adaphase_512_328-125",cosmo_iterator(param,'fid'),datapath=datapath)
         if param=='h':
-            kf, dummy, dummy = mean_power(powertype, mainpath, simsetf, 1, simsetf.nsimmax+1, noutput, aexp, outpath=outpath)
+            kf, dummy, dummy = mean_power(powertype, mainpath, simsetf, 1, simsetf.nsimmax, noutput, aexp, outpath=outpath)
         pks = {}
         for variation in ['m','p']:
             simset = DeusPurSet("512_adaphase_512_328-125",cosmo_iterator(param,variation),datapath=datapath)
             aexp = simset.snap_to_a(noutput)
-            k, pk, dummy = mean_power(powertype, mainpath, simset, 1, simset.nsimmax+1, noutput, aexp, outpath=outpath)
+            k, pk, dummy = mean_power(powertype, mainpath, simset, 1, simset.nsimmax, noutput, aexp, outpath=outpath)
             if param=='h':
                 pk = pk * simset.cosmo_par['h']**3 / simsetf.cosmo_par['h']**3
                 pk = np.interp(kf, k, pk)
