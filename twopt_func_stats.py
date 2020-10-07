@@ -108,7 +108,7 @@ def load_twopt(simset, multipole=0, irsd=0, sample="ndens1", okprint=False, outp
             except:
                 twopts_array[isim,:] = np.nan
                 if okprint:
-                    print "File number ",isim," is missing"
+                    print "File number ",isim+1," is missing"
         np.save(fname, twopts_array)
     return s, twopts_array
 
@@ -211,6 +211,7 @@ def cov_twopt(simset, isimmin, isimmax, multipole=0, irsd=0, sample="ndens1", ok
             print "Computing covariance"
         s, twopts = load_twopt(simset, multipole, irsd, sample, okprint, outpath = outpath)
         twopts = twopts[isimmin-1:isimmax]
+        twopts = twopts[~np.isnan(twopts).any(axis=1)]
         twopt_cov=np.cov(twopts,rowvar=False)
         if store:
             if okprint:
@@ -269,14 +270,20 @@ def cross_mpole_cov_twopt(simset, isimmin, isimmax, multipole1, multipole2, irsd
         s, twopts2 = load_twopt(simset, multipole2, irsd, sample, okprint, outpath = outpath)
         twopts1 = twopts1[isimmin-1:isimmax]
         twopts2 = twopts2[isimmin-1:isimmax]
-        mean1 = np.mean(twopts1, axis=0)
-        mean2 = np.mean(twopts2, axis=0)
+        mean1 = np.nanmean(twopts1, axis=0)
+        mean2 = np.nanmean(twopts2, axis=0)
         diff1 = twopts1 - mean1
         diff2 = twopts2 - mean2
         twopt_cov = np.zeros((s.size,s.size))
+        nan_count=0
         for isim in range(isimmin,isimmax):
+            if np.isnan(diff1[isim-isimmin]).any() or np.isnan(diff2[isim-isimmin]).any():
+                nan_count+=1
+                continue
             twopt_cov += np.outer(diff1[isim-isimmin],diff2[isim-isimmin])
-        twopt_cov/=float(isimmax-isimmin)
+        if okprint:
+            print "number of missing simulations ", nan_count
+        twopt_cov/=float(isimmax-isimmin-nan_count)
     return s, twopt_cov
 
 
