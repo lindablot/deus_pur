@@ -323,7 +323,7 @@ class Pinocchio10k(Simset):
         self.mainpath = mainpath
         self.l_box = 1500.
         self.npart = 1000.
-        self.nsimmax = 8932
+        self.nsimmax = 9999
         self.cosmo_par = {'om_b': 0.02224, 'om_m': 0.284954*0.483025, 'n_s': 0.9632, 'h': 0.695, 'w_0': -1., 'sigma_8': 0.828, 'm_nu': 0.}
         Simset.__init__(self, self.l_box, self.npart, self.nsimmax, self.cosmo_par)
         self.nyquist = math.pi/self.l_box*self.npart
